@@ -20,464 +20,478 @@
       "h": 1323,
       "title": "E · Ответ · I"
     },
-    "E-learn-postponed.dc.html": {
+    "E-learn-front-seen.dc.html": {
       "x": 2144,
+      "y": 0,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Вопрос · I · после ответа"
+    },
+    "E-learn-postponed.dc.html": {
+      "x": 3216,
       "y": 0,
       "w": 992,
       "h": 1323,
       "title": "E · Вопрос · I · уже отложена"
     },
     "E-learn-postponed-back.dc.html": {
-      "x": 3216,
-      "y": 0,
+      "x": 0,
+      "y": 1483,
       "w": 992,
       "h": 1323,
       "title": "E · Ответ · I · уже отложена"
     },
     "E-learn-last-front.dc.html": {
-      "x": 0,
+      "x": 1072,
       "y": 1483,
       "w": 992,
       "h": 1323,
       "title": "E · Вопрос · I · последняя"
     },
     "E-learn-last.dc.html": {
-      "x": 1072,
+      "x": 2144,
       "y": 1483,
       "w": 992,
       "h": 1323,
       "title": "E · Ответ · I · последняя"
     },
     "E-learn-e2.dc.html": {
-      "x": 2144,
+      "x": 3216,
       "y": 1483,
       "w": 992,
       "h": 1323,
       "title": "E · Вопрос · II"
     },
     "E-learn-e2-back.dc.html": {
-      "x": 3216,
-      "y": 1483,
+      "x": 0,
+      "y": 2966,
       "w": 992,
       "h": 1323,
       "title": "E · Ответ · II"
     },
+    "E-learn-e2-seen.dc.html": {
+      "x": 1072,
+      "y": 2966,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Вопрос · II · после ответа"
+    },
     "E-transition.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 2966,
       "w": 992,
       "h": 1323,
       "title": "E · Следующий проход"
     },
     "E-browse.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 2966,
       "w": 992,
       "h": 1323,
       "title": "E · III · просмотр"
     },
     "E-browse-back.dc.html": {
-      "x": 2144,
-      "y": 2966,
+      "x": 0,
+      "y": 4449,
       "w": 992,
       "h": 1323,
       "title": "E · III · ответ"
     },
     "E-browse-e2.dc.html": {
-      "x": 3216,
-      "y": 2966,
+      "x": 1072,
+      "y": 4449,
       "w": 992,
       "h": 1323,
       "title": "E · II · просмотр"
     },
     "E-browse-e2-back.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 4449,
       "w": 992,
       "h": 1323,
       "title": "E · II · ответ"
     },
     "E-browse-e1.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 4449,
       "w": 992,
       "h": 1323,
       "title": "E · I · просмотр"
     },
     "E-browse-e1-back.dc.html": {
-      "x": 2144,
-      "y": 4449,
+      "x": 0,
+      "y": 5932,
       "w": 992,
       "h": 1323,
       "title": "E · I · ответ"
     },
     "E-pool.dc.html": {
-      "x": 3216,
-      "y": 4449,
+      "x": 1072,
+      "y": 5932,
       "w": 992,
       "h": 1323,
       "title": "E · Новые · просмотр"
     },
     "E-pool-back.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 5932,
       "w": 992,
       "h": 1323,
       "title": "E · Новые · ответ"
     },
     "E-learned.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 5932,
       "w": 992,
       "h": 1323,
       "title": "E · Выучено · просмотр"
     },
     "E-learned-back.dc.html": {
-      "x": 2144,
-      "y": 5932,
+      "x": 0,
+      "y": 7415,
       "w": 992,
       "h": 1323,
       "title": "E · Выучено · ответ"
     },
     "E-empty-e4.dc.html": {
-      "x": 3216,
-      "y": 5932,
+      "x": 1072,
+      "y": 7415,
       "w": 992,
       "h": 1323,
       "title": "E · Пустая эпоха"
     },
     "E-empty-pool.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 7415,
       "w": 992,
       "h": 1323,
       "title": "E · Пустые новые"
     },
     "E-empty-all.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 7415,
       "w": 992,
       "h": 1323,
       "title": "E · Нет карточек для обучения"
     },
     "E-editor-new.dc.html": {
-      "x": 2144,
-      "y": 7415,
+      "x": 0,
+      "y": 8898,
       "w": 992,
       "h": 1323,
       "title": "E · Создание · вопрос"
     },
     "E-editor-new-back.dc.html": {
-      "x": 3216,
-      "y": 7415,
+      "x": 1072,
+      "y": 8898,
       "w": 992,
       "h": 1323,
       "title": "E · Создание · ответ"
     },
     "E-editor-edit.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 8898,
       "w": 992,
       "h": 1323,
       "title": "E · Правка · вопрос"
     },
     "E-editor-edit-back.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 8898,
       "w": 992,
       "h": 1323,
       "title": "E · Правка · ответ"
     },
     "E-dlg-return-learn.dc.html": {
-      "x": 2144,
-      "y": 8898,
+      "x": 0,
+      "y": 10381,
       "w": 992,
       "h": 1323,
       "title": "E · Вернуть в новые · learn"
     },
     "E-menu-learn.dc.html": {
-      "x": 3216,
-      "y": 8898,
+      "x": 1072,
+      "y": 10381,
       "w": 992,
       "h": 1323,
       "title": "E · Меню · I"
     },
     "E-dlg-delete-learn.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 10381,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить карточку · learn"
     },
     "E-dlg-return-learn-e2.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 10381,
       "w": 992,
       "h": 1323,
       "title": "E · Вернуть в новые · learn-e2"
     },
     "E-menu-learn-e2.dc.html": {
-      "x": 2144,
-      "y": 10381,
+      "x": 0,
+      "y": 11864,
       "w": 992,
       "h": 1323,
       "title": "E · Меню · II"
     },
     "E-dlg-delete-learn-e2.dc.html": {
-      "x": 3216,
-      "y": 10381,
+      "x": 1072,
+      "y": 11864,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить карточку · learn-e2"
     },
     "E-dlg-return-browse.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 11864,
       "w": 992,
       "h": 1323,
       "title": "E · Вернуть в новые · browse"
     },
     "E-menu-browse.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 11864,
       "w": 992,
       "h": 1323,
       "title": "E · Меню · III"
     },
     "E-dlg-delete-browse.dc.html": {
-      "x": 2144,
-      "y": 11864,
+      "x": 0,
+      "y": 13347,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить карточку · browse"
     },
     "E-dlg-return-browse-e2.dc.html": {
-      "x": 3216,
-      "y": 11864,
+      "x": 1072,
+      "y": 13347,
       "w": 992,
       "h": 1323,
       "title": "E · Вернуть в новые · browse-e2"
     },
     "E-menu-browse-e2.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 13347,
       "w": 992,
       "h": 1323,
       "title": "E · Меню · II"
     },
     "E-dlg-delete-browse-e2.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 13347,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить карточку · browse-e2"
     },
     "E-dlg-return-browse-e1.dc.html": {
-      "x": 2144,
-      "y": 13347,
+      "x": 0,
+      "y": 14830,
       "w": 992,
       "h": 1323,
       "title": "E · Вернуть в новые · browse-e1"
     },
     "E-menu-browse-e1.dc.html": {
-      "x": 3216,
-      "y": 13347,
+      "x": 1072,
+      "y": 14830,
       "w": 992,
       "h": 1323,
       "title": "E · Меню · I"
     },
     "E-dlg-delete-browse-e1.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 14830,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить карточку · browse-e1"
     },
     "E-menu-pool.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 14830,
       "w": 992,
       "h": 1323,
       "title": "E · Меню · Новые"
     },
     "E-dlg-delete-pool.dc.html": {
-      "x": 2144,
-      "y": 14830,
+      "x": 0,
+      "y": 16313,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить карточку · pool"
     },
     "E-menu-learned.dc.html": {
-      "x": 3216,
-      "y": 14830,
+      "x": 1072,
+      "y": 16313,
       "w": 992,
       "h": 1323,
       "title": "E · Меню · Выучено"
     },
     "E-dlg-delete-learned.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 16313,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить карточку · learned"
     },
     "E-dlg-discard.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 16313,
       "w": 992,
       "h": 1323,
       "title": "E · Отмена создания"
     },
     "E-dlg-delete-edit.dc.html": {
-      "x": 2144,
-      "y": 16313,
+      "x": 0,
+      "y": 17796,
       "w": 992,
       "h": 1323,
       "title": "E · Удаление из редактора"
     },
     "E-dlg-editor-back.dc.html": {
-      "x": 3216,
-      "y": 16313,
+      "x": 1072,
+      "y": 17796,
       "w": 992,
       "h": 1323,
       "title": "E · Системная кнопка «Назад»"
     },
     "E-dlg-need-card.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 17796,
       "w": 992,
       "h": 1323,
       "title": "E · Нечего повторять"
     },
     "E-decks.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 17796,
       "w": 992,
       "h": 1323,
       "title": "E · Колоды"
     },
     "E-decks-empty.dc.html": {
-      "x": 2144,
-      "y": 17796,
+      "x": 0,
+      "y": 19279,
       "w": 992,
       "h": 1323,
       "title": "E · Первый запуск"
     },
     "E-decks-pages.dc.html": {
-      "x": 3216,
-      "y": 17796,
+      "x": 1072,
+      "y": 19279,
       "w": 992,
       "h": 1323,
       "title": "E · Колоды · несколько страниц"
     },
     "E-decks-page2.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 19279,
       "w": 992,
       "h": 1323,
       "title": "E · Колоды · страница 2"
     },
     "E-deck-menu.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 19279,
       "w": 992,
       "h": 1323,
       "title": "E · Меню колоды"
     },
     "E-deck-menu-2.dc.html": {
-      "x": 2144,
-      "y": 19279,
+      "x": 0,
+      "y": 20762,
       "w": 992,
       "h": 1323,
       "title": "E · Меню · Английские времена"
     },
     "E-deck-rename-2.dc.html": {
-      "x": 3216,
-      "y": 19279,
+      "x": 1072,
+      "y": 20762,
       "w": 992,
       "h": 1323,
       "title": "E · Переименовать · Английские времена"
     },
     "E-dlg-delete-deck-2.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 20762,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить · Английские времена"
     },
     "E-deck-menu-3.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 20762,
       "w": 992,
       "h": 1323,
       "title": "E · Меню · Формулы"
     },
     "E-deck-rename-3.dc.html": {
-      "x": 2144,
-      "y": 20762,
+      "x": 0,
+      "y": 22245,
       "w": 992,
       "h": 1323,
       "title": "E · Переименовать · Формулы"
     },
     "E-dlg-delete-deck-3.dc.html": {
-      "x": 3216,
-      "y": 20762,
+      "x": 1072,
+      "y": 22245,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить · Формулы"
     },
     "E-deck-menu-4.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 22245,
       "w": 992,
       "h": 1323,
       "title": "E · Меню · История искусства"
     },
     "E-deck-rename-4.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 22245,
       "w": 992,
       "h": 1323,
       "title": "E · Переименовать · История искусства"
     },
     "E-dlg-delete-deck-4.dc.html": {
-      "x": 2144,
-      "y": 22245,
+      "x": 0,
+      "y": 23728,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить · История искусства"
     },
     "E-deck-new.dc.html": {
-      "x": 3216,
-      "y": 22245,
+      "x": 1072,
+      "y": 23728,
       "w": 992,
       "h": 1323,
       "title": "E · Новая колода"
     },
     "E-deck-rename.dc.html": {
-      "x": 0,
+      "x": 2144,
       "y": 23728,
       "w": 992,
       "h": 1323,
       "title": "E · Переименовать"
     },
     "E-dlg-delete-deck.dc.html": {
-      "x": 1072,
+      "x": 3216,
       "y": 23728,
       "w": 992,
       "h": 1323,
       "title": "E · Удалить колоду"
     },
     "E-dlg-import-error.dc.html": {
-      "x": 2144,
-      "y": 23728,
+      "x": 0,
+      "y": 25211,
       "w": 992,
       "h": 1323,
       "title": "E · Ошибка импорта"
     },
     "E-tokens.dc.html": {
-      "x": 3216,
-      "y": 23728,
+      "x": 1072,
+      "y": 25211,
       "w": 992,
       "h": 1323,
       "title": "E · Правила оформления"
@@ -486,12 +500,14 @@
   "order": [
     "E-learn-front.dc.html",
     "E-learn-back.dc.html",
+    "E-learn-front-seen.dc.html",
     "E-learn-postponed.dc.html",
     "E-learn-postponed-back.dc.html",
     "E-learn-last-front.dc.html",
     "E-learn-last.dc.html",
     "E-learn-e2.dc.html",
     "E-learn-e2-back.dc.html",
+    "E-learn-e2-seen.dc.html",
     "E-transition.dc.html",
     "E-browse.dc.html",
     "E-browse-back.dc.html",

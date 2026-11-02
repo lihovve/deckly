@@ -97,16 +97,21 @@ def add(key, title, body, group, note=''):
 def learn(key, back_key, epoch=1, pos='14 из 40', successes='3 / 8', front='der Apfel', back='яблоко', small='мн. ч. die Äpfel', reason=''):
     menu = 'menu-learn-e2' if epoch == 2 else 'menu-learn'
     prefix = head(f'Обучение · карточка {pos}', successes, menu=menu) + tabs(epoch, epoch)
-    for is_back, name, target in [(False, key, back_key), (True, back_key, key)]:
-        defer_label = 'В конец прохода' + (f': {reason.lower()}' if reason else '')
-        defer = btn('', None if reason else 'learn-postponed', 'off' if reason else 'quiet', 'defer', attrs=f'aria-label="{defer_label}" title="{defer_label}"')
+    seen_key = key + '-seen' if not reason else key
+    states = [(False, key, back_key, False), (True, back_key, seen_key, True)]
+    if not reason:
+        states.append((False, seen_key, back_key, True))
+    for is_back, name, target, revealed in states:
+        blocked_reason = reason or ('Ответ уже открыт' if revealed else '')
+        defer_label = 'В конец прохода' + (f': {blocked_reason.lower()}' if blocked_reason else '')
+        defer = btn('', None if blocked_reason else 'learn-postponed', 'off' if blocked_reason else 'quiet', 'defer', attrs=f'aria-label="{defer_label}" title="{defer_label}"')
         flip_label = 'Показать вопрос' if is_back else 'Показать ответ'
         flip = btn('', target, '' if is_back else 'primary', 'flip', attrs=f'aria-label="{flip_label}" title="{flip_label}"')
         next_key = 'transition' if reason == 'Последняя' else ('learn-e2' if epoch == 2 else 'learn-front')
         ratings = [btn('Не знал', next_key, glyph='cross'), btn('Знал', next_key, glyph='check')] if is_back else []
-        add(name, ('Ответ' if is_back else 'Вопрос') + f' · {ROMAN[epoch]}' + (f' · {reason.lower()}' if reason else ''),
+        add(name, ('Ответ' if is_back else 'Вопрос') + f' · {ROMAN[epoch]}' + (f' · {reason.lower()}' if reason else ' · после ответа' if revealed and not is_back else ''),
             prefix + card(handwriting(back, small) if is_back else handwriting(front), 'Ответ' if is_back else 'Вопрос') + foot([defer, flip] + ratings),
-            'Обучение', 'Переворот на своём месте. Оценки появляются после ответа.' if is_back else 'Счётчик карточек и успехи в одном стиле; активная эпоха отмечена ▶.')
+            'Обучение', 'Ответ уже открыт: перенос в конец заблокирован, в том числе после возврата к вопросу.' if revealed else 'Счётчик карточек и успехи в одном стиле; активная эпоха отмечена ▶.')
 
 
 learn('learn-front', 'learn-back')
