@@ -1,159 +1,558 @@
 {
   "v": 3,
-  "createdOnFiles": {
-    "v": 1,
-    "at": "2026-11-01T23:10:00Z"
-  },
-  "title": "Карточки — экраны для Boox Go 10.3",
+  "title": "Карточки · Вариант E / v5",
   "launch": {
     "view": "canvas"
   },
   "pages": [],
   "boards": {
-    "BFront.dc.html": {
-      "x": 5000,
+    "E-learn-front.dc.html": {
+      "x": 0,
       "y": 0,
       "w": 992,
       "h": 1323,
-      "title": "B · Обучение — лицо"
+      "title": "E · Вопрос · I"
     },
-    "BBack.dc.html": {
-      "x": 6072,
+    "E-learn-back.dc.html": {
+      "x": 1072,
       "y": 0,
       "w": 992,
       "h": 1323,
-      "title": "B · Обучение — оборот"
+      "title": "E · Ответ · I"
     },
-    "BTransition.dc.html": {
-      "x": 7144,
+    "E-learn-postponed.dc.html": {
+      "x": 2144,
       "y": 0,
       "w": 992,
       "h": 1323,
-      "title": "B · Переход между эпохами"
+      "title": "E · Вопрос · I · уже отложена"
     },
-    "BPool.dc.html": {
-      "x": 5000,
-      "y": 1723,
+    "E-learn-postponed-back.dc.html": {
+      "x": 3216,
+      "y": 0,
       "w": 992,
       "h": 1323,
-      "title": "B · Пул новых"
+      "title": "E · Ответ · I · уже отложена"
     },
-    "BBrowse.dc.html": {
-      "x": 6072,
-      "y": 1723,
+    "E-learn-last-front.dc.html": {
+      "x": 0,
+      "y": 1483,
       "w": 992,
       "h": 1323,
-      "title": "B · Просмотр эпохи 3"
+      "title": "E · Вопрос · I · последняя"
     },
-    "BLearned.dc.html": {
-      "x": 7144,
-      "y": 1723,
+    "E-learn-last.dc.html": {
+      "x": 1072,
+      "y": 1483,
       "w": 992,
       "h": 1323,
-      "title": "B · Стек выученных"
+      "title": "E · Ответ · I · последняя"
     },
-    "BEmpty.dc.html": {
-      "x": 8216,
-      "y": 1723,
+    "E-learn-e2.dc.html": {
+      "x": 2144,
+      "y": 1483,
       "w": 992,
       "h": 1323,
-      "title": "B · Пустая секция"
+      "title": "E · Вопрос · II"
     },
-    "BEditor.dc.html": {
-      "x": 5000,
-      "y": 3446,
+    "E-learn-e2-back.dc.html": {
+      "x": 3216,
+      "y": 1483,
       "w": 992,
       "h": 1323,
-      "title": "B · Создание карточки"
+      "title": "E · Ответ · II"
     },
-    "BDecks.dc.html": {
-      "x": 6072,
-      "y": 3446,
+    "E-transition.dc.html": {
+      "x": 0,
+      "y": 2966,
       "w": 992,
       "h": 1323,
-      "title": "B · Управление колодами"
+      "title": "E · Следующий проход"
     },
-    "BDialogs.dc.html": {
-      "x": 7144,
-      "y": 3446,
-      "w": 1416,
-      "h": 1323,
-      "title": "B · Диалоги"
-    },
-    "BMenu.dc.html": {
-      "x": 8640,
-      "y": 3446,
+    "E-browse.dc.html": {
+      "x": 1072,
+      "y": 2966,
       "w": 992,
-      "h": 740,
-      "title": "B · Меню редких действий"
-    },
-    "BStates.dc.html": {
-      "x": 5000,
-      "y": 5169,
-      "w": 1416,
       "h": 1323,
-      "title": "B · Состояния и токены"
+      "title": "E · III · просмотр"
     },
-    "BStrip.dc.html": {
-      "x": 6496,
-      "y": 5169,
-      "w": 944,
-      "h": 136,
-      "title": "B · Компонент: лента секций"
+    "E-browse-back.dc.html": {
+      "x": 2144,
+      "y": 2966,
+      "w": 992,
+      "h": 1323,
+      "title": "E · III · ответ"
     },
-    "Icon.dc.html": {
-      "x": 7520,
-      "y": 5169,
-      "w": 48,
-      "h": 48,
-      "title": "Компонент: иконка"
+    "E-browse-e2.dc.html": {
+      "x": 3216,
+      "y": 2966,
+      "w": 992,
+      "h": 1323,
+      "title": "E · II · просмотр"
+    },
+    "E-browse-e2-back.dc.html": {
+      "x": 0,
+      "y": 4449,
+      "w": 992,
+      "h": 1323,
+      "title": "E · II · ответ"
+    },
+    "E-browse-e1.dc.html": {
+      "x": 1072,
+      "y": 4449,
+      "w": 992,
+      "h": 1323,
+      "title": "E · I · просмотр"
+    },
+    "E-browse-e1-back.dc.html": {
+      "x": 2144,
+      "y": 4449,
+      "w": 992,
+      "h": 1323,
+      "title": "E · I · ответ"
+    },
+    "E-pool.dc.html": {
+      "x": 3216,
+      "y": 4449,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Новые · просмотр"
+    },
+    "E-pool-back.dc.html": {
+      "x": 0,
+      "y": 5932,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Новые · ответ"
+    },
+    "E-learned.dc.html": {
+      "x": 1072,
+      "y": 5932,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Выучено · просмотр"
+    },
+    "E-learned-back.dc.html": {
+      "x": 2144,
+      "y": 5932,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Выучено · ответ"
+    },
+    "E-empty-e4.dc.html": {
+      "x": 3216,
+      "y": 5932,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Пустая эпоха"
+    },
+    "E-empty-pool.dc.html": {
+      "x": 0,
+      "y": 7415,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Пустые новые"
+    },
+    "E-empty-all.dc.html": {
+      "x": 1072,
+      "y": 7415,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Нет карточек для обучения"
+    },
+    "E-editor-new.dc.html": {
+      "x": 2144,
+      "y": 7415,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Создание · вопрос"
+    },
+    "E-editor-new-back.dc.html": {
+      "x": 3216,
+      "y": 7415,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Создание · ответ"
+    },
+    "E-editor-edit.dc.html": {
+      "x": 0,
+      "y": 8898,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Правка · вопрос"
+    },
+    "E-editor-edit-back.dc.html": {
+      "x": 1072,
+      "y": 8898,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Правка · ответ"
+    },
+    "E-dlg-return-learn.dc.html": {
+      "x": 2144,
+      "y": 8898,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Вернуть в новые · learn"
+    },
+    "E-menu-learn.dc.html": {
+      "x": 3216,
+      "y": 8898,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню · I"
+    },
+    "E-dlg-delete-learn.dc.html": {
+      "x": 0,
+      "y": 10381,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить карточку · learn"
+    },
+    "E-dlg-return-learn-e2.dc.html": {
+      "x": 1072,
+      "y": 10381,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Вернуть в новые · learn-e2"
+    },
+    "E-menu-learn-e2.dc.html": {
+      "x": 2144,
+      "y": 10381,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню · II"
+    },
+    "E-dlg-delete-learn-e2.dc.html": {
+      "x": 3216,
+      "y": 10381,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить карточку · learn-e2"
+    },
+    "E-dlg-return-browse.dc.html": {
+      "x": 0,
+      "y": 11864,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Вернуть в новые · browse"
+    },
+    "E-menu-browse.dc.html": {
+      "x": 1072,
+      "y": 11864,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню · III"
+    },
+    "E-dlg-delete-browse.dc.html": {
+      "x": 2144,
+      "y": 11864,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить карточку · browse"
+    },
+    "E-dlg-return-browse-e2.dc.html": {
+      "x": 3216,
+      "y": 11864,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Вернуть в новые · browse-e2"
+    },
+    "E-menu-browse-e2.dc.html": {
+      "x": 0,
+      "y": 13347,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню · II"
+    },
+    "E-dlg-delete-browse-e2.dc.html": {
+      "x": 1072,
+      "y": 13347,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить карточку · browse-e2"
+    },
+    "E-dlg-return-browse-e1.dc.html": {
+      "x": 2144,
+      "y": 13347,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Вернуть в новые · browse-e1"
+    },
+    "E-menu-browse-e1.dc.html": {
+      "x": 3216,
+      "y": 13347,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню · I"
+    },
+    "E-dlg-delete-browse-e1.dc.html": {
+      "x": 0,
+      "y": 14830,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить карточку · browse-e1"
+    },
+    "E-menu-pool.dc.html": {
+      "x": 1072,
+      "y": 14830,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню · Новые"
+    },
+    "E-dlg-delete-pool.dc.html": {
+      "x": 2144,
+      "y": 14830,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить карточку · pool"
+    },
+    "E-menu-learned.dc.html": {
+      "x": 3216,
+      "y": 14830,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню · Выучено"
+    },
+    "E-dlg-delete-learned.dc.html": {
+      "x": 0,
+      "y": 16313,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить карточку · learned"
+    },
+    "E-dlg-discard.dc.html": {
+      "x": 1072,
+      "y": 16313,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Отмена создания"
+    },
+    "E-dlg-delete-edit.dc.html": {
+      "x": 2144,
+      "y": 16313,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удаление из редактора"
+    },
+    "E-dlg-editor-back.dc.html": {
+      "x": 3216,
+      "y": 16313,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Системная кнопка «Назад»"
+    },
+    "E-dlg-need-card.dc.html": {
+      "x": 0,
+      "y": 17796,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Нечего повторять"
+    },
+    "E-decks.dc.html": {
+      "x": 1072,
+      "y": 17796,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Колоды"
+    },
+    "E-decks-empty.dc.html": {
+      "x": 2144,
+      "y": 17796,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Первый запуск"
+    },
+    "E-decks-pages.dc.html": {
+      "x": 3216,
+      "y": 17796,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Колоды · несколько страниц"
+    },
+    "E-decks-page2.dc.html": {
+      "x": 0,
+      "y": 19279,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Колоды · страница 2"
+    },
+    "E-deck-menu.dc.html": {
+      "x": 1072,
+      "y": 19279,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню колоды"
+    },
+    "E-deck-menu-2.dc.html": {
+      "x": 2144,
+      "y": 19279,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню · Английские времена"
+    },
+    "E-deck-rename-2.dc.html": {
+      "x": 3216,
+      "y": 19279,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Переименовать · Английские времена"
+    },
+    "E-dlg-delete-deck-2.dc.html": {
+      "x": 0,
+      "y": 20762,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить · Английские времена"
+    },
+    "E-deck-menu-3.dc.html": {
+      "x": 1072,
+      "y": 20762,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню · Формулы"
+    },
+    "E-deck-rename-3.dc.html": {
+      "x": 2144,
+      "y": 20762,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Переименовать · Формулы"
+    },
+    "E-dlg-delete-deck-3.dc.html": {
+      "x": 3216,
+      "y": 20762,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить · Формулы"
+    },
+    "E-deck-menu-4.dc.html": {
+      "x": 0,
+      "y": 22245,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Меню · История искусства"
+    },
+    "E-deck-rename-4.dc.html": {
+      "x": 1072,
+      "y": 22245,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Переименовать · История искусства"
+    },
+    "E-dlg-delete-deck-4.dc.html": {
+      "x": 2144,
+      "y": 22245,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить · История искусства"
+    },
+    "E-deck-new.dc.html": {
+      "x": 3216,
+      "y": 22245,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Новая колода"
+    },
+    "E-deck-rename.dc.html": {
+      "x": 0,
+      "y": 23728,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Переименовать"
+    },
+    "E-dlg-delete-deck.dc.html": {
+      "x": 1072,
+      "y": 23728,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Удалить колоду"
+    },
+    "E-dlg-import-error.dc.html": {
+      "x": 2144,
+      "y": 23728,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Ошибка импорта"
+    },
+    "E-tokens.dc.html": {
+      "x": 3216,
+      "y": 23728,
+      "w": 992,
+      "h": 1323,
+      "title": "E · Правила оформления"
     }
   },
   "order": [
-    "BFront.dc.html",
-    "BBack.dc.html",
-    "BTransition.dc.html",
-    "BPool.dc.html",
-    "BBrowse.dc.html",
-    "BLearned.dc.html",
-    "BEmpty.dc.html",
-    "BEditor.dc.html",
-    "BDecks.dc.html",
-    "BDialogs.dc.html",
-    "BMenu.dc.html",
-    "BStates.dc.html",
-    "BStrip.dc.html",
-    "Icon.dc.html"
+    "E-learn-front.dc.html",
+    "E-learn-back.dc.html",
+    "E-learn-postponed.dc.html",
+    "E-learn-postponed-back.dc.html",
+    "E-learn-last-front.dc.html",
+    "E-learn-last.dc.html",
+    "E-learn-e2.dc.html",
+    "E-learn-e2-back.dc.html",
+    "E-transition.dc.html",
+    "E-browse.dc.html",
+    "E-browse-back.dc.html",
+    "E-browse-e2.dc.html",
+    "E-browse-e2-back.dc.html",
+    "E-browse-e1.dc.html",
+    "E-browse-e1-back.dc.html",
+    "E-pool.dc.html",
+    "E-pool-back.dc.html",
+    "E-learned.dc.html",
+    "E-learned-back.dc.html",
+    "E-empty-e4.dc.html",
+    "E-empty-pool.dc.html",
+    "E-empty-all.dc.html",
+    "E-editor-new.dc.html",
+    "E-editor-new-back.dc.html",
+    "E-editor-edit.dc.html",
+    "E-editor-edit-back.dc.html",
+    "E-dlg-return-learn.dc.html",
+    "E-menu-learn.dc.html",
+    "E-dlg-delete-learn.dc.html",
+    "E-dlg-return-learn-e2.dc.html",
+    "E-menu-learn-e2.dc.html",
+    "E-dlg-delete-learn-e2.dc.html",
+    "E-dlg-return-browse.dc.html",
+    "E-menu-browse.dc.html",
+    "E-dlg-delete-browse.dc.html",
+    "E-dlg-return-browse-e2.dc.html",
+    "E-menu-browse-e2.dc.html",
+    "E-dlg-delete-browse-e2.dc.html",
+    "E-dlg-return-browse-e1.dc.html",
+    "E-menu-browse-e1.dc.html",
+    "E-dlg-delete-browse-e1.dc.html",
+    "E-menu-pool.dc.html",
+    "E-dlg-delete-pool.dc.html",
+    "E-menu-learned.dc.html",
+    "E-dlg-delete-learned.dc.html",
+    "E-dlg-discard.dc.html",
+    "E-dlg-delete-edit.dc.html",
+    "E-dlg-editor-back.dc.html",
+    "E-dlg-need-card.dc.html",
+    "E-decks.dc.html",
+    "E-decks-empty.dc.html",
+    "E-decks-pages.dc.html",
+    "E-decks-page2.dc.html",
+    "E-deck-menu.dc.html",
+    "E-deck-menu-2.dc.html",
+    "E-deck-rename-2.dc.html",
+    "E-dlg-delete-deck-2.dc.html",
+    "E-deck-menu-3.dc.html",
+    "E-deck-rename-3.dc.html",
+    "E-dlg-delete-deck-3.dc.html",
+    "E-deck-menu-4.dc.html",
+    "E-deck-rename-4.dc.html",
+    "E-dlg-delete-deck-4.dc.html",
+    "E-deck-new.dc.html",
+    "E-deck-rename.dc.html",
+    "E-dlg-delete-deck.dc.html",
+    "E-dlg-import-error.dc.html",
+    "E-tokens.dc.html"
   ],
-  "notes": {
-    "rowA2": {
-      "x": 5000,
-      "y": -300,
-      "text": "Вариант B: обучение",
-      "kind": "title1",
-      "maxW": 3136
-    },
-    "rowB2": {
-      "x": 5000,
-      "y": 1423,
-      "text": "Вариант B: просмотр секций без обучения",
-      "kind": "title1",
-      "maxW": 4208
-    },
-    "rowC2": {
-      "x": 5000,
-      "y": 3146,
-      "text": "Вариант B: создание карточек, колоды, диалоги, меню",
-      "kind": "title1",
-      "maxW": 4632
-    },
-    "rowD2": {
-      "x": 5000,
-      "y": 4869,
-      "text": "Вариант B: компоненты и состояния",
-      "kind": "title1",
-      "maxW": 2440
-    }
-  },
+  "notes": {},
   "designSystems": []
 }
