@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Лента секций</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit}
+</style>
+</helmet>
+<nav aria-label="Секции колоды" style="width: 944px; height: 136px; display: flex; align-items: flex-start; font-family: 'IBM Plex Sans', sans-serif; color: #000000; background: #FFFFFF">
+  <sc-for list="{{cells}}" as="c" hint-placeholder-count="6">
+    <sc-if value="{{c.arrow}}" hint-placeholder-val="{{false}}"><span aria-hidden="true" style="width: 24px; height: 104px; flex-shrink: 0; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></span></sc-if>
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px">
+      <sc-if value="{{c.isOpen}}" hint-placeholder-val="{{false}}">
+        <button aria-label="{{c.aria}}" style="width: 100%; height: 104px; box-sizing: border-box; border: 2px solid #000000; border-radius: 14px; background: #000000; color: #FFFFFF; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+          <span style="font-size: 18px; font-weight: 600; letter-spacing: 0.04em">{{c.name}}</span>
+          <span style="font-size: 32px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums">{{c.count}}</span>
+        </button>
+      </sc-if>
+      <sc-if value="{{c.isClosed}}" hint-placeholder-val="{{true}}">
+        <button aria-label="{{c.aria}}" style="width: 100%; height: 104px; box-sizing: border-box; border: 2px solid #000000; border-radius: 14px; background: #FFFFFF; color: #000000; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+          <span style="font-size: 18px; font-weight: 600; letter-spacing: 0.04em">{{c.name}}</span>
+          <span style="font-size: 32px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums">{{c.count}}</span>
+        </button>
+      </sc-if>
+      <sc-if value="{{c.isActive}}" hint-placeholder-val="{{false}}"><span style="height: 26px; display: flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 700"><span style="width: 10px; height: 10px; border-radius: 50%; background: #000000; display: block"></span>учим</span></sc-if>
+      <sc-if value="{{c.notActive}}" hint-placeholder-val="{{true}}"><span style="height: 26px; display: block"></span></sc-if>
+    </div>
+  </sc-for>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"open":{"editor":"enum","default":"e1","options":["new","e1","e2","e3","e4","learned"]},"active":{"editor":"enum","default":"1","options":["1","2","3","4"]},"n0":{"editor":"text","default":"112"},"n1":{"editor":"text","default":"40"},"n2":{"editor":"text","default":"23"},"n3":{"editor":"text","default":"9"},"n4":{"editor":"text","default":"4"},"n5":{"editor":"text","default":"61"},"$preview":{"width":944,"height":136}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const open = p.open ?? 'e1';
+    const active = 'e' + String(p.active ?? '1');
+    const n = [p.n0 ?? '112', p.n1 ?? '40', p.n2 ?? '23', p.n3 ?? '9', p.n4 ?? '4', p.n5 ?? '61'];
+    const keys = ['new', 'e1', 'e2', 'e3', 'e4', 'learned'];
+    const names = ['НОВЫЕ', 'ЭПОХА 1', 'ЭПОХА 2', 'ЭПОХА 3', 'ЭПОХА 4', 'ВЫУЧЕНО'];
+    const full = ['Пул новых', 'Эпоха 1', 'Эпоха 2', 'Эпоха 3', 'Эпоха 4', 'Выученные'];
+    const cells = keys.map(function (k, i) {
+      const isOpen = k === open;
+      const isActive = k === active;
+      return {
+        arrow: i > 0,
+        isOpen: isOpen,
+        isClosed: !isOpen,
+        isActive: isActive,
+        notActive: !isActive,
+        name: names[i],
+        count: String(n[i]),
+        aria: full[i] + ', карточек: ' + n[i] + (isActive ? ', идёт обучение' : '') + (isOpen ? ', открыта' : '')
+      };
+    });
+    return { cells: cells };
+  }
+}
+</script>
+</body>
+</html>

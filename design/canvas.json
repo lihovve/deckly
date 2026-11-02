@@ -1,0 +1,159 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-01T23:10:00Z"
+  },
+  "title": "Карточки — экраны для Boox Go 10.3",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "BFront.dc.html": {
+      "x": 5000,
+      "y": 0,
+      "w": 992,
+      "h": 1323,
+      "title": "B · Обучение — лицо"
+    },
+    "BBack.dc.html": {
+      "x": 6072,
+      "y": 0,
+      "w": 992,
+      "h": 1323,
+      "title": "B · Обучение — оборот"
+    },
+    "BTransition.dc.html": {
+      "x": 7144,
+      "y": 0,
+      "w": 992,
+      "h": 1323,
+      "title": "B · Переход между эпохами"
+    },
+    "BPool.dc.html": {
+      "x": 5000,
+      "y": 1723,
+      "w": 992,
+      "h": 1323,
+      "title": "B · Пул новых"
+    },
+    "BBrowse.dc.html": {
+      "x": 6072,
+      "y": 1723,
+      "w": 992,
+      "h": 1323,
+      "title": "B · Просмотр эпохи 3"
+    },
+    "BLearned.dc.html": {
+      "x": 7144,
+      "y": 1723,
+      "w": 992,
+      "h": 1323,
+      "title": "B · Стек выученных"
+    },
+    "BEmpty.dc.html": {
+      "x": 8216,
+      "y": 1723,
+      "w": 992,
+      "h": 1323,
+      "title": "B · Пустая секция"
+    },
+    "BEditor.dc.html": {
+      "x": 5000,
+      "y": 3446,
+      "w": 992,
+      "h": 1323,
+      "title": "B · Создание карточки"
+    },
+    "BDecks.dc.html": {
+      "x": 6072,
+      "y": 3446,
+      "w": 992,
+      "h": 1323,
+      "title": "B · Управление колодами"
+    },
+    "BDialogs.dc.html": {
+      "x": 7144,
+      "y": 3446,
+      "w": 1416,
+      "h": 1323,
+      "title": "B · Диалоги"
+    },
+    "BMenu.dc.html": {
+      "x": 8640,
+      "y": 3446,
+      "w": 992,
+      "h": 740,
+      "title": "B · Меню редких действий"
+    },
+    "BStates.dc.html": {
+      "x": 5000,
+      "y": 5169,
+      "w": 1416,
+      "h": 1323,
+      "title": "B · Состояния и токены"
+    },
+    "BStrip.dc.html": {
+      "x": 6496,
+      "y": 5169,
+      "w": 944,
+      "h": 136,
+      "title": "B · Компонент: лента секций"
+    },
+    "Icon.dc.html": {
+      "x": 7520,
+      "y": 5169,
+      "w": 48,
+      "h": 48,
+      "title": "Компонент: иконка"
+    }
+  },
+  "order": [
+    "BFront.dc.html",
+    "BBack.dc.html",
+    "BTransition.dc.html",
+    "BPool.dc.html",
+    "BBrowse.dc.html",
+    "BLearned.dc.html",
+    "BEmpty.dc.html",
+    "BEditor.dc.html",
+    "BDecks.dc.html",
+    "BDialogs.dc.html",
+    "BMenu.dc.html",
+    "BStates.dc.html",
+    "BStrip.dc.html",
+    "Icon.dc.html"
+  ],
+  "notes": {
+    "rowA2": {
+      "x": 5000,
+      "y": -300,
+      "text": "Вариант B: обучение",
+      "kind": "title1",
+      "maxW": 3136
+    },
+    "rowB2": {
+      "x": 5000,
+      "y": 1423,
+      "text": "Вариант B: просмотр секций без обучения",
+      "kind": "title1",
+      "maxW": 4208
+    },
+    "rowC2": {
+      "x": 5000,
+      "y": 3146,
+      "text": "Вариант B: создание карточек, колоды, диалоги, меню",
+      "kind": "title1",
+      "maxW": 4632
+    },
+    "rowD2": {
+      "x": 5000,
+      "y": 4869,
+      "text": "Вариант B: компоненты и состояния",
+      "kind": "title1",
+      "maxW": 2440
+    }
+  },
+  "designSystems": []
+}

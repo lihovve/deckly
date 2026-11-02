@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Вариант B — обучение, лицо</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Caveat:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#000000}a:hover{color:#000000}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 992px; height: 1323px; box-sizing: border-box; background: #FFFFFF; color: #000000; font-family: 'IBM Plex Sans', sans-serif; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+  <header style="height: 80px; display: flex; align-items: center; justify-content: space-between">
+    <button aria-label="Колоды, текущая: Немецкий A2" style="height: 80px; border: 0; background: #FFFFFF; color: #000000; padding: 0 12px 0 0; display: flex; align-items: center; gap: 12px; font-size: 32px; font-weight: 700">Немецкий A2<dc-import name="Icon" glyph="chevronDown" size="32" hint-size="32px,32px"></dc-import></button>
+    <button aria-label="Другие действия с карточкой" style="width: 80px; height: 80px; box-sizing: border-box; border: 2px solid #000000; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0"><dc-import name="Icon" glyph="more" size="40" hint-size="40px,40px"></dc-import></button>
+  </header>
+  <dc-import name="BStrip" open="e1" active="1" n0="112" n1="40" n2="23" n3="9" n4="4" n5="61" hint-size="944px,136px"></dc-import>
+  <div style="height: 56px; display: flex; flex-direction: column; justify-content: center; gap: 10px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 22px; font-weight: 600">
+      <span>Проход эпохи 1</span>
+      <span style="font-variant-numeric: tabular-nums">карточка 14 из 40</span>
+    </div>
+    <div role="img" aria-label="Пройдено 14 из 40" style="height: 14px; box-sizing: border-box; border: 2px solid #000000; border-radius: 7px; overflow: hidden"><div style="width: 35%; height: 100%; background: #000000"></div></div>
+  </div>
+  <section aria-label="Карточка, лицо" style="flex: 1; min-height: 0; position: relative; box-sizing: border-box; border: 2px solid #000000; border-radius: 20px; display: flex; align-items: center; justify-content: center">
+    <div role="img" aria-label="Успехов у карточки: 3 из 8" style="position: absolute; top: 24px; left: 28px; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 20px; font-weight: 500">успехов 3 из 8</span>
+      <div style="display: flex; gap: 8px">
+        <sc-for list="{{pips}}" as="pip" hint-placeholder-count="8">
+          <sc-if value="{{pip.on}}" hint-placeholder-val="{{true}}"><span style="width: 16px; height: 16px; border-radius: 50%; background: #000000; display: block"></span></sc-if>
+          <sc-if value="{{pip.off}}" hint-placeholder-val="{{false}}"><span style="width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: 2px solid #000000; display: block"></span></sc-if>
+        </sc-for>
+      </div>
+    </div>
+    <button aria-label="Сейчас лицо, перевернуть" style="position: absolute; top: 20px; right: 20px; height: 72px; box-sizing: border-box; border: 2px solid #000000; border-radius: 36px; background: #FFFFFF; color: #000000; padding: 0 24px 0 18px; display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 600"><dc-import name="Icon" glyph="star" size="36" hint-size="36px,36px"></dc-import>лицо</button>
+    <p style="margin: 0; font-family: 'Caveat', cursive; font-size: 150px; font-weight: 500; line-height: 1">der Apfel</p>
+  </section>
+  <div style="height: 128px; display: flex; gap: 16px">
+    <button aria-label="Отложить в конец прохода" style="width: 168px; height: 128px; box-sizing: border-box; border: 2px solid #000000; border-radius: 18px; background: #FFFFFF; color: #000000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 20px; font-weight: 500; padding: 0"><dc-import name="Icon" glyph="toEnd" size="40" hint-size="40px,40px"></dc-import>в конец</button>
+    <button aria-label="Показать ответ" style="flex: 1; height: 128px; box-sizing: border-box; border: 2px solid #000000; border-radius: 18px; background: #000000; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 18px; font-size: 30px; font-weight: 600; padding: 0"><dc-import name="Icon" glyph="flip" tone="inverse" size="44" hint-size="44px,44px"></dc-import>Показать ответ</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":992,"height":1323}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const done = 3, total = 8;
+    const pips = [];
+    for (let i = 0; i < total; i++) pips.push({ on: i < done, off: i >= done });
+    return { pips: pips };
+  }
+}
+</script>
+</body>
+</html>

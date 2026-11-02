@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Вариант B — переход между эпохами</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#000000}a:hover{color:#000000}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 992px; height: 1323px; box-sizing: border-box; background: #FFFFFF; color: #000000; font-family: 'IBM Plex Sans', sans-serif; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+  <header style="height: 80px; display: flex; align-items: center">
+    <button aria-label="Колоды, текущая: Немецкий A2" style="height: 80px; border: 0; background: #FFFFFF; color: #000000; padding: 0 12px 0 0; display: flex; align-items: center; gap: 12px; font-size: 32px; font-weight: 700">Немецкий A2<dc-import name="Icon" glyph="chevronDown" size="32" hint-size="32px,32px"></dc-import></button>
+  </header>
+  <dc-import name="BStrip" open="e2" active="2" n0="112" n1="40" n2="23" n3="9" n4="4" n5="61" hint-size="944px,136px"></dc-import>
+  <button aria-label="Начать проход эпохи 2" style="flex: 1; min-height: 0; box-sizing: border-box; border: 2px solid #000000; border-radius: 20px; background: #FFFFFF; color: #000000; padding: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; text-align: center">
+    <span style="font-size: 26px; font-weight: 500">Проход эпохи 1 завершён</span>
+    <span style="width: 120px; height: 2px; background: #000000; display: block"></span>
+    <span style="font-size: 26px; font-weight: 500">Дальше</span>
+    <span style="font-size: 128px; font-weight: 700; line-height: 1">Эпоха 2</span>
+    <span style="font-size: 34px; font-weight: 600; font-variant-numeric: tabular-nums">23 карточки</span>
+    <span style="margin-top: 48px; height: 96px; padding: 0 48px; box-sizing: border-box; border: 3px solid #000000; border-radius: 48px; display: flex; align-items: center; font-size: 26px; font-weight: 600">Коснитесь, чтобы начать</span>
+  </button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":992,"height":1323}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

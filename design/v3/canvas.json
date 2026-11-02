@@ -1,0 +1,334 @@
+{
+  "v": 3,
+  "title": "Карточки · Вариант C / v3",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "C-front.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Обучение · вопрос"
+    },
+    "C-back.dc.html": {
+      "x": 1072,
+      "y": 0,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Обучение · ответ"
+    },
+    "C-postponed.dc.html": {
+      "x": 2144,
+      "y": 0,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Уже отложенная карточка"
+    },
+    "C-last.dc.html": {
+      "x": 3216,
+      "y": 0,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Последняя карточка прохода"
+    },
+    "C-pool.dc.html": {
+      "x": 0,
+      "y": 1483,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Новые"
+    },
+    "C-pool-back.dc.html": {
+      "x": 1072,
+      "y": 1483,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Новые · ответ"
+    },
+    "C-browse2.dc.html": {
+      "x": 2144,
+      "y": 1483,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Просмотр · эпоха 2"
+    },
+    "C-browse2-back.dc.html": {
+      "x": 3216,
+      "y": 1483,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Просмотр · эпоха 2 · ответ"
+    },
+    "C-browse.dc.html": {
+      "x": 0,
+      "y": 2966,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Просмотр · эпоха 3"
+    },
+    "C-browse-back.dc.html": {
+      "x": 1072,
+      "y": 2966,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Просмотр · эпоха 3 · ответ"
+    },
+    "C-learned.dc.html": {
+      "x": 2144,
+      "y": 2966,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Выученные"
+    },
+    "C-learned-back.dc.html": {
+      "x": 3216,
+      "y": 2966,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Выученные · ответ"
+    },
+    "C-empty.dc.html": {
+      "x": 0,
+      "y": 4449,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Пустая эпоха"
+    },
+    "C-empty-pool.dc.html": {
+      "x": 1072,
+      "y": 4449,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Пустой пул новых"
+    },
+    "C-transition.dc.html": {
+      "x": 2144,
+      "y": 4449,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Следующий проход"
+    },
+    "C-epoch2.dc.html": {
+      "x": 3216,
+      "y": 4449,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Начало эпохи 2"
+    },
+    "C-epoch2-back.dc.html": {
+      "x": 0,
+      "y": 5932,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Эпоха 2 · ответ"
+    },
+    "C-editor.dc.html": {
+      "x": 1072,
+      "y": 5932,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Новая карточка"
+    },
+    "C-editor-back.dc.html": {
+      "x": 2144,
+      "y": 5932,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Новая карточка · оборот"
+    },
+    "C-edit.dc.html": {
+      "x": 3216,
+      "y": 5932,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Редактирование карточки"
+    },
+    "C-edit-back.dc.html": {
+      "x": 0,
+      "y": 7415,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Редактирование карточки"
+    },
+    "C-menu.dc.html": {
+      "x": 1072,
+      "y": 7415,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Действия с карточкой"
+    },
+    "C-pool-menu.dc.html": {
+      "x": 2144,
+      "y": 7415,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Карточка в новых"
+    },
+    "C-browse-menu.dc.html": {
+      "x": 3216,
+      "y": 7415,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Карточка в эпохе"
+    },
+    "C-learned-menu.dc.html": {
+      "x": 0,
+      "y": 8898,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Выученная карточка"
+    },
+    "C-delete.dc.html": {
+      "x": 1072,
+      "y": 8898,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Удалить карточку?"
+    },
+    "C-delete-edit.dc.html": {
+      "x": 2144,
+      "y": 8898,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Удалить карточку?"
+    },
+    "C-discard.dc.html": {
+      "x": 3216,
+      "y": 8898,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Выбросить черновик?"
+    },
+    "C-return.dc.html": {
+      "x": 0,
+      "y": 10381,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Вернуть в новые?"
+    },
+    "C-delete-deck.dc.html": {
+      "x": 1072,
+      "y": 10381,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Удалить колоду «Формулы»?"
+    },
+    "C-need-card.dc.html": {
+      "x": 2144,
+      "y": 10381,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Нужно создать карточку"
+    },
+    "C-import-error.dc.html": {
+      "x": 3216,
+      "y": 10381,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Не удалось импортировать"
+    },
+    "C-decks.dc.html": {
+      "x": 0,
+      "y": 11864,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Колоды"
+    },
+    "C-deck-menu.dc.html": {
+      "x": 1072,
+      "y": 11864,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Действия с колодой"
+    },
+    "C-rename.dc.html": {
+      "x": 2144,
+      "y": 11864,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Переименовать колоду"
+    },
+    "C-new-deck.dc.html": {
+      "x": 3216,
+      "y": 11864,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Новая колода"
+    },
+    "C-import.dc.html": {
+      "x": 0,
+      "y": 13347,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Импорт из файла"
+    },
+    "C-export.dc.html": {
+      "x": 1072,
+      "y": 13347,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Экспорт в файл"
+    },
+    "C-tokens.dc.html": {
+      "x": 2144,
+      "y": 13347,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Система оформления"
+    },
+    "C-ready.dc.html": {
+      "x": 3216,
+      "y": 13347,
+      "w": 992,
+      "h": 1323,
+      "title": "C · Порог успехов достигнут"
+    }
+  },
+  "order": [
+    "C-front.dc.html",
+    "C-back.dc.html",
+    "C-postponed.dc.html",
+    "C-last.dc.html",
+    "C-pool.dc.html",
+    "C-pool-back.dc.html",
+    "C-browse2.dc.html",
+    "C-browse2-back.dc.html",
+    "C-browse.dc.html",
+    "C-browse-back.dc.html",
+    "C-learned.dc.html",
+    "C-learned-back.dc.html",
+    "C-empty.dc.html",
+    "C-empty-pool.dc.html",
+    "C-transition.dc.html",
+    "C-epoch2.dc.html",
+    "C-epoch2-back.dc.html",
+    "C-editor.dc.html",
+    "C-editor-back.dc.html",
+    "C-edit.dc.html",
+    "C-edit-back.dc.html",
+    "C-menu.dc.html",
+    "C-pool-menu.dc.html",
+    "C-browse-menu.dc.html",
+    "C-learned-menu.dc.html",
+    "C-delete.dc.html",
+    "C-delete-edit.dc.html",
+    "C-discard.dc.html",
+    "C-return.dc.html",
+    "C-delete-deck.dc.html",
+    "C-need-card.dc.html",
+    "C-import-error.dc.html",
+    "C-decks.dc.html",
+    "C-deck-menu.dc.html",
+    "C-rename.dc.html",
+    "C-new-deck.dc.html",
+    "C-import.dc.html",
+    "C-export.dc.html",
+    "C-tokens.dc.html",
+    "C-ready.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}

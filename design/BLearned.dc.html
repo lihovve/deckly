@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Вариант B — стек выученных</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Caveat:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#000000}a:hover{color:#000000}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 992px; height: 1323px; box-sizing: border-box; background: #FFFFFF; color: #000000; font-family: 'IBM Plex Sans', sans-serif; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+  <header style="height: 80px; display: flex; align-items: center; justify-content: space-between">
+    <button aria-label="Колоды, текущая: Немецкий A2" style="height: 80px; border: 0; background: #FFFFFF; color: #000000; padding: 0 12px 0 0; display: flex; align-items: center; gap: 12px; font-size: 32px; font-weight: 700">Немецкий A2<dc-import name="Icon" glyph="chevronDown" size="32" hint-size="32px,32px"></dc-import></button>
+    <button aria-label="Другие действия с карточкой" style="width: 80px; height: 80px; box-sizing: border-box; border: 2px solid #000000; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0"><dc-import name="Icon" glyph="more" size="40" hint-size="40px,40px"></dc-import></button>
+  </header>
+  <dc-import name="BStrip" open="learned" active="1" n0="112" n1="40" n2="23" n3="9" n4="4" n5="61" hint-size="944px,136px"></dc-import>
+  <a href="BFront.dc.html" style="height: 72px; box-sizing: border-box; border: 3px solid #000000; border-radius: 14px; padding: 0 24px; display: flex; align-items: center; gap: 16px; color: #000000; text-decoration: none; font-size: 24px; font-weight: 600"><dc-import name="Icon" glyph="cornerBack" size="36" hint-size="36px,36px"></dc-import>К обучению: эпоха 1, карточка 14 из 40</a>
+  <section aria-label="Карточка 5 из 61, лицо" style="flex: 1; min-height: 0; position: relative; box-sizing: border-box; border: 2px solid #000000; border-radius: 20px; display: flex; align-items: center; justify-content: center">
+    <div style="position: absolute; top: 24px; left: 28px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums">карточка 5 из 61</span>
+      <span style="display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 500"><dc-import name="Icon" glyph="check" size="24" hint-size="24px,24px"></dc-import>выучена</span>
+    </div>
+    <button aria-label="Сейчас лицо, перевернуть" style="position: absolute; top: 20px; right: 20px; height: 72px; box-sizing: border-box; border: 2px solid #000000; border-radius: 36px; background: #FFFFFF; color: #000000; padding: 0 24px 0 18px; display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 600"><dc-import name="Icon" glyph="star" size="36" hint-size="36px,36px"></dc-import>лицо</button>
+    <p style="margin: 0; font-family: 'Caveat', cursive; font-size: 150px; font-weight: 500; line-height: 1">der Hund</p>
+  </section>
+  <div style="height: 128px; display: flex; gap: 16px">
+    <button aria-label="Предыдущая карточка" style="flex: 1; height: 128px; box-sizing: border-box; border: 2px solid #000000; border-radius: 18px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0"><dc-import name="Icon" glyph="arrowLeft" size="52" hint-size="52px,52px"></dc-import></button>
+    <button aria-label="Следующая карточка" style="flex: 1; height: 128px; box-sizing: border-box; border: 2px solid #000000; border-radius: 18px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0"><dc-import name="Icon" glyph="arrowRight" size="52" hint-size="52px,52px"></dc-import></button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":992,"height":1323}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

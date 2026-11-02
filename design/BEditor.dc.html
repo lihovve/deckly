@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Вариант B — создание карточки</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Caveat:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#000000}a:hover{color:#000000}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 992px; height: 1323px; box-sizing: border-box; background: #FFFFFF; color: #000000; font-family: 'IBM Plex Sans', sans-serif; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+  <header style="height: 80px; display: flex; align-items: center; justify-content: space-between; gap: 16px">
+    <button aria-label="Отменить создание" style="width: 220px; height: 80px; box-sizing: border-box; border: 2px solid #000000; border-radius: 14px; background: #FFFFFF; color: #000000; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 24px; font-weight: 600; padding: 0"><dc-import name="Icon" glyph="close" size="32" hint-size="32px,32px"></dc-import>Отменить</button>
+    <h1 style="margin: 0; font-size: 30px; font-weight: 700">Новая карточка</h1>
+    <button aria-label="Сохранить и выйти" style="width: 220px; height: 80px; box-sizing: border-box; border: 2px solid #000000; border-radius: 14px; background: #000000; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 24px; font-weight: 600; padding: 0"><dc-import name="Icon" glyph="check" tone="inverse" size="32" hint-size="32px,32px"></dc-import>Готово</button>
+  </header>
+  <div role="tablist" aria-label="Сторона карточки" style="height: 88px; display: flex; box-sizing: border-box; border: 2px solid #000000; border-radius: 16px; overflow: hidden">
+    <button role="tab" aria-selected="true" style="flex: 1; border: 0; background: #000000; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 26px; font-weight: 600; padding: 0"><dc-import name="Icon" glyph="star" tone="inverse" size="32" hint-size="32px,32px"></dc-import>Лицо</button>
+    <button role="tab" aria-selected="false" style="flex: 1; border: 0; border-left: 2px solid #000000; background: #FFFFFF; color: #000000; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 26px; font-weight: 600; padding: 0"><dc-import name="Icon" glyph="circle" size="32" hint-size="32px,32px"></dc-import>Оборот<span style="font-size: 20px; font-weight: 400">· пусто</span></button>
+  </div>
+  <section aria-label="Холст для рисования, лицо" style="flex: 1; min-height: 0; box-sizing: border-box; border: 3px solid #000000; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px">
+    <p style="margin: 0; font-family: 'Caveat', cursive; font-size: 150px; font-weight: 500; line-height: 1">der Baum</p>
+    <svg width="420" height="40" viewBox="0 0 420 40" fill="none" stroke="#000000" stroke-width="5" stroke-linecap="round" aria-hidden="true"><path d="M8 26c40-14 80-16 120-8s84 10 128 0 70-12 104-6"></path></svg>
+  </section>
+  <div role="toolbar" aria-label="Инструменты" style="height: 128px; display: flex; align-items: center; justify-content: space-between">
+    <div style="display: flex; gap: 12px">
+      <button aria-label="Перо" aria-pressed="true" style="width: 132px; height: 128px; box-sizing: border-box; border: 2px solid #000000; border-radius: 18px; background: #000000; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 20px; font-weight: 500; padding: 0"><dc-import name="Icon" glyph="pen" tone="inverse" size="44" hint-size="44px,44px"></dc-import>перо</button>
+      <button aria-label="Ластик" aria-pressed="false" style="width: 132px; height: 128px; box-sizing: border-box; border: 2px solid #000000; border-radius: 18px; background: #FFFFFF; color: #000000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 20px; font-weight: 500; padding: 0"><dc-import name="Icon" glyph="eraser" size="44" hint-size="44px,44px"></dc-import>ластик</button>
+    </div>
+    <div role="radiogroup" aria-label="Толщина" style="height: 128px; display: flex; box-sizing: border-box; border: 2px solid #000000; border-radius: 18px; overflow: hidden">
+      <button role="radio" aria-checked="false" aria-label="Тонкая линия" style="width: 96px; border: 0; background: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0"><span style="width: 8px; height: 8px; border-radius: 50%; background: #000000; display: block"></span></button>
+      <button role="radio" aria-checked="true" aria-label="Средняя линия" style="width: 96px; border: 0; border-left: 2px solid #000000; border-right: 2px solid #000000; background: #000000; display: flex; align-items: center; justify-content: center; padding: 0"><span style="width: 14px; height: 14px; border-radius: 50%; background: #FFFFFF; display: block"></span></button>
+      <button role="radio" aria-checked="false" aria-label="Толстая линия" style="width: 96px; border: 0; background: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0"><span style="width: 22px; height: 22px; border-radius: 50%; background: #000000; display: block"></span></button>
+    </div>
+    <button aria-label="Отменить последнее действие" style="width: 132px; height: 128px; box-sizing: border-box; border: 2px solid #000000; border-radius: 18px; background: #FFFFFF; color: #000000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 20px; font-weight: 500; padding: 0"><dc-import name="Icon" glyph="undo" size="44" hint-size="44px,44px"></dc-import>шаг назад</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":992,"height":1323}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
