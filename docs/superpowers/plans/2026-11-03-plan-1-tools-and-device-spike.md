@@ -252,7 +252,7 @@
   (по умолчанию `$ANDROID_HOME/platform-tools/adb`, иначе `~/Android/Sdk/platform-tools/adb`),
   `CHUNK_SIZE` (1048576), `MAX_TRIES` (5), `WAIT_TIMEOUT` (60 секунд).
 
-- [ ] **Step 1: Подменный adb `tools/test/fake-adb.sh`**
+- [x] **Step 1: Подменный adb `tools/test/fake-adb.sh`**
 
   Эмулирует планшет папкой `$FAKE_ROOT`: удалённый путь `/data/local/tmp/...` превращается в
   `$FAKE_ROOT/data/local/tmp/...`. Понимает `wait-for-device`, `push <src> <dst>`, `shell "<команда>"`
@@ -264,7 +264,7 @@
   счётчик попыток — в `$FAKE_ROOT/.pushes`. `FAKE_NO_DEVICE=1` — `wait-for-device` висит.
   `FAKE_PM_FAIL=1` — `pm install` печатает `Failure [INSTALL_FAILED_INVALID_APK]`.
 
-- [ ] **Step 2: Написать падающие тесты `tools/test/install-apk-test.sh`**
+- [x] **Step 2: Написать падающие тесты `tools/test/install-apk-test.sh`**
 
   Каждый тест создаёт свежий `FAKE_ROOT`, APK из 3,5 МБ случайных байт и вызывает скрипт с
   `ADB=tools/test/fake-adb.sh`. В конце печатает `N passed, M failed`, код выхода — `M`.
@@ -282,12 +282,12 @@
   test_missing_apk()            # путь к несуществующему файлу → код 1
   ```
 
-- [ ] **Step 3: Убедиться, что тесты падают**
+- [x] **Step 3: Убедиться, что тесты падают**
 
   Run: `bash tools/test/install-apk-test.sh`
   Expected: `0 passed, 6 failed` (скрипта ещё нет).
 
-- [ ] **Step 4: Написать `tools/install-apk.sh`**
+- [x] **Step 4: Написать `tools/install-apk.sh`**
 
   Порядок: проверить аргумент → посчитать md5 APK → `timeout $WAIT_TIMEOUT $ADB wait-for-device`
   (иначе код 2) → `shell rm -rf` и `mkdir -p /data/local/tmp/deckly-install` →
@@ -298,12 +298,12 @@
   `shell pm install -r -t …/app.apk`, в выводе должно быть `Success` (иначе код 5) → удалить папку
   на устройстве (через `trap`, в том числе при ошибке) → `Установлено: <apk>, кусков N, md5 X`.
 
-- [ ] **Step 5: Тесты проходят**
+- [x] **Step 5: Тесты проходят**
 
   Run: `bash tools/test/install-apk-test.sh`
   Expected: `6 passed, 0 failed`.
 
-- [ ] **Step 6: Commit** — `tools/install-apk.sh tools/test/`, «Установка APK на Boox кусками с проверкой md5».
+- [x] **Step 6: Commit** — `tools/install-apk.sh tools/test/`, «Установка APK на Boox кусками с проверкой md5».
 
 ### Task 3: прототип пера
 
