@@ -33,7 +33,11 @@
 - Репозитории: `google()`, `mavenCentral()`, `http://repo.boox.com/repository/maven-public/` с
   `isAllowInsecureProtocol = true`. jitpack не подключается: ни одна зависимость из него не
   берётся (расхождение с ТЗ, см. ниже).
-- Никаких сетевых разрешений в манифесте.
+- Разрешения: `INTERNET` нет. Разрешения, которые приносят манифесты Onyx SDK
+  (`ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`, `BLUETOOTH`, `DUMP`,
+  `WAKE_LOCK`, `FOREGROUND_SERVICE`, `SYSTEM_ALERT_WINDOW`, `READ_EXTERNAL_STORAGE`,
+  `WRITE_EXTERNAL_STORAGE`), прототип вырезает (задача 3), а прогон на планшете показывает, работает
+  ли SDK без них (задача 5). Итог решает, что вырезать в настоящем приложении.
 - `adb` — только из `~/Android/Sdk/platform-tools` (37.0.1). Debian-овский `/usr/bin/adb` 34.0.5
   перед работой останавливается (`/usr/bin/adb kill-server`): два сервера adb мешают друг другу.
 - Ни одному `adb install` / `adb push` большого файла не верить: только `tools/install-apk.sh`.
@@ -378,12 +382,19 @@
   Если `SdkStatus.isOnyxDevice` ложно или `initError` не пуст, режимы «Onyx» недоступны, а режим
   по умолчанию — «Canvas». `onPause`/`onResume` активити зовут `pause()`/`resume()` листа.
 
-- [ ] **Step 6: Собрать**
+- [ ] **Step 6: Вырезать разрешения SDK**
 
-  Run: `./gradlew :spike:assembleDebug`
-  Expected: `BUILD SUCCESSFUL`. Проверка поведения — задача 5.
+  В `spike/src/main/AndroidManifest.xml` для каждого разрешения из Global Constraints — строка
+  `<uses-permission android:name="android.permission.X" tools:node="remove" />`.
 
-- [ ] **Step 7: Commit** — `spike/`, «Прототип: перо Onyx (обычный и SF-рендер), запасной Canvas, журнал проверок».
+- [ ] **Step 7: Собрать**
+
+  Run: `./gradlew :spike:assembleDebug && ~/Android/Sdk/build-tools/37.0.0/aapt2 dump permissions spike/build/outputs/apk/debug/spike-debug.apk`
+  Expected: `BUILD SUCCESSFUL`; в списке разрешений только `MANAGE_EXTERNAL_STORAGE` и
+  служебное `app.deckly.spike.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` от androidx. Проверка
+  поведения — задача 5.
+
+- [ ] **Step 8: Commit** — `spike/`, «Прототип: перо Onyx (обычный и SF-рендер), запасной Canvas, журнал проверок».
 
 ### Task 4: прототип базы в `/sdcard/Deckly/`
 
@@ -479,7 +490,10 @@
   касание пальцем по листу — ничего не рисует; кнопки внизу — срабатывают и от пальца, и от пера;
   «GC» и «REGAL+» — какой режим чище снимает следы. Исполнитель параллельно читает
   `adb logcat -s DecklySpike` и записывает `SDK`, `INPUT_DEVICE`, `PEN_RENDER`, `PEN_SESSION ms`,
-  `MOTION tool/buttons` для кнопки пера.
+  `MOTION tool/buttons` для кнопки пера. После каждого режима:
+  `adb logcat -d | grep -E 'SecurityException|Permission Denial'`. Если перо Onyx не работает и в
+  логе отказ по вырезанному разрешению — вернуть именно его, пересобрать, повторить режим и
+  записать, какое разрешение SDK действительно нужно.
 
 - [ ] **Step 6: База.**
   Run: `tools/spike-db-killtest.sh 20`
@@ -504,7 +518,8 @@
   - база: остаётся в `/sdcard/Deckly/`, если шаги 6–7 прошли и `avgMs ≤ 30`, `maxMs ≤ 200`
     **(моё решение по порогам)**; иначе — запасной вариант из документа архитектуры (закрытая
     папка + снимок `VACUUM INTO`);
-  - копирование по USB: видна ли свежая база после сворачивания.
+  - копирование по USB: видна ли свежая база после сворачивания;
+  - разрешения: какие из вырезанных SDK действительно нужны (по умолчанию в приложении вырезаются все).
   Обновить документ архитектуры по этим решениям. Предложить владельцу правки раздела «Onyx SDK»
   в ТЗ по списку «Расхождения с ТЗ» с учётом подтверждённого на планшете; внести после согласия.
 
