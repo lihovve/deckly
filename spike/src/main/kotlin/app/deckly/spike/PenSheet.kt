@@ -16,3 +16,9 @@ object PenDefaults {
     const val STROKE_WIDTH = 3f
     const val ERASE_RADIUS = 16f
 }
+
+/** Переключатели прототипа, которые меняет экран и читает лист. */
+object PenSettings {
+    /** GC по месту стирания через 200 мс после ластика (кнопка «GC после ластика»). */
+    @Volatile var isGcAfterErase: Boolean = true
+}

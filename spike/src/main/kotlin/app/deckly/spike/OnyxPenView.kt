@@ -28,8 +28,20 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
 
     private var touchHelper: TouchHelper? = null
     private val surfaceLock = Any()
-    private var pendingGcRect: Rect? = null
-    private var pendingGc: Runnable? = null
+
+    // Пауза, выставленная владельцем листа (активити, окно без фокуса, цикл «Статус»). Пока она стоит,
+    // отложенная фиксация стирания не должна включать перо.
+    @Volatile private var isPausedByOwner = false
+
+    // Фиксация стирания (см. commitErase): состояние под eraseLock, потому что колбэки пера могут
+    // прийти не в том потоке, где срабатывают отложенные шаги.
+    private val eraseLock = Any()
+    private var pendingEraseRect: Rect? = null
+    private var eraseCommitStartedAt = 0L
+    private var isEraseGcDone = false
+
+    private val gcStep = Runnable { runEraseGcStep() }
+    private val resumeStep = Runnable { runEraseResumeStep() }
 
     private val callback = object : RawInputCallback() {
         override fun onBeginRawDrawing(shortcutDrawing: Boolean, point: TouchPoint) {
@@ -77,6 +89,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
+        cancelEraseCommit()
         val helper = touchHelper ?: return
         try {
             helper.setRawDrawingEnabled(false)
@@ -90,6 +103,17 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
     // --- PenSheet ------------------------------------------------------------------------------
 
     override fun pause() {
+        isPausedByOwner = true
+        cancelEraseCommit()
+        disableRawDrawing()
+    }
+
+    override fun resume() {
+        isPausedByOwner = false
+        enableRawDrawing()
+    }
+
+    private fun disableRawDrawing() {
         try {
             touchHelper?.setRawDrawingEnabled(false)
         } catch (error: Throwable) {
@@ -98,7 +122,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
     }
 
     // setRawDrawingEnabled(true) выключает трек ластика и сбрасывает стиль, поэтому их ставим заново.
-    override fun resume() {
+    private fun enableRawDrawing() {
         val helper = touchHelper ?: return
         try {
             helper.setRawDrawingEnabled(true)
@@ -171,6 +195,12 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
             mark("eraser")
             applyPenStyle(helper)
             mark("style")
+            // Поверхность могла пересоздаться, пока владелец держит паузу (окно без фокуса): перо
+            // включит resume().
+            if (isPausedByOwner) {
+                helper.setRawDrawingEnabled(false)
+                mark("paused")
+            }
             SpikeLog.line(
                 "PEN_SESSION",
                 "ms" to (previous - started),
@@ -200,7 +230,9 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         helper.setStrokeColor(Color.BLACK)
     }
 
-    // --- обратные вызовы пера (не в потоке интерфейса) -----------------------------------------
+    // --- обратные вызовы пера -------------------------------------------------------------------
+    // SFTouchRender доставляет их через hostView.post(), то есть в потоке интерфейса (по байткоду
+    // SDK 1.5.8); для остальных рендеров поток не проверялся, поэтому код на него не полагается.
 
     private fun logPoint(event: String, point: TouchPoint) {
         SpikeLog.line(
@@ -244,9 +276,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         val dirty = StrokeStore.union(removedRect, StrokeStore.boundsOfPath(path, ERASER_TRACK_WIDTH))
         SpikeLog.line("PEN_ERASE", "removed" to removed, "rect" to dirty?.toShortString())
         if (dirty == null) return
-        drawSurface(dirty)
-        refreshRegion(dirty)
-        scheduleGc(dirty)
+        commitErase(dirty)
     }
 
     private fun strokeBounds(points: List<TouchPoint>): Rect {
@@ -298,28 +328,88 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         }
     }
 
-    // Ластик кнопкой пера на Go 10.3 оставляет серый след; Notable PR #346 снимает его обновлением
-    // GC по грязному прямоугольнику через 200 мс после стирания.
-    private fun scheduleGc(rect: Rect) {
-        pendingGc?.let { removeCallbacks(it) }
-        pendingGcRect = StrokeStore.union(pendingGcRect, rect)
-        val task = Runnable {
-            val gcRect = pendingGcRect ?: return@Runnable
-            pendingGcRect = null
+    // --- фиксация стирания (как коммит стирания у Notable) -------------------------------------
+    //
+    // Пока сырое перо включено, прошивка замораживает экран: перерисовка поверхности и обновление
+    // региона не показались бы, и удалённый штрих остался бы на экране. Поэтому после стирания перо
+    // выключается, поверхность перерисовывается и обновляется регион; через GC_DELAY_MS идёт GC по
+    // накопленному прямоугольнику (если включён переключатель, он снимает серый след ластика на
+    // Go 10.3, Notable PR #346); ещё через ERASE_RESUME_MS перо включается снова. Пока перо выключено,
+    // штрихи не принимаются.
+
+    private fun commitErase(dirty: Rect) {
+        synchronized(eraseLock) {
+            if (eraseCommitStartedAt == 0L) {
+                eraseCommitStartedAt = SystemClock.elapsedRealtime()
+                isEraseGcDone = false
+                disableRawDrawing()
+            }
+            pendingEraseRect = StrokeStore.union(pendingEraseRect, dirty)
+            removeCallbacks(gcStep)
+            removeCallbacks(resumeStep)
+        }
+        drawSurface(dirty)
+        refreshRegion(dirty)
+        postDelayed(gcStep, GC_DELAY_MS)
+    }
+
+    private fun runEraseGcStep() {
+        val rect = synchronized(eraseLock) { pendingEraseRect }
+        val isGcEnabled = PenSettings.isGcAfterErase
+        if (isGcEnabled && rect != null) {
             try {
-                EpdController.invalidate(this, gcRect.left, gcRect.top, gcRect.right, gcRect.bottom, UpdateMode.GC)
-                SpikeLog.line("PEN_GC", "rect" to gcRect.toShortString())
+                EpdController.invalidate(this, rect.left, rect.top, rect.right, rect.bottom, UpdateMode.GC)
+                SpikeLog.line("PEN_GC", "rect" to rect.toShortString())
             } catch (error: Throwable) {
                 SpikeLog.line("PEN_GC", "error" to error)
             }
         }
-        pendingGc = task
-        postDelayed(task, GC_DELAY_MS)
+        synchronized(eraseLock) { isEraseGcDone = isGcEnabled }
+        postDelayed(resumeStep, ERASE_RESUME_MS)
+    }
+
+    private fun runEraseResumeStep() {
+        val rect: Rect?
+        val pausedMs: Long
+        val isGc: Boolean
+        synchronized(eraseLock) {
+            rect = pendingEraseRect
+            pausedMs = SystemClock.elapsedRealtime() - eraseCommitStartedAt
+            isGc = isEraseGcDone
+            pendingEraseRect = null
+            eraseCommitStartedAt = 0L
+        }
+        // Если владелец успел поставить паузу (активити ушла, окно потеряло фокус), перо не включаем.
+        val isResumed = !isPausedByOwner
+        if (isResumed) {
+            enableRawDrawing()
+        }
+        SpikeLog.line(
+            "ERASE_COMMIT",
+            "rect" to rect?.toShortString(),
+            "gc" to isGc,
+            "pausedMs" to pausedMs,
+            "resumed" to isResumed,
+        )
+    }
+
+    // Отменяет отложенную фиксацию (пауза владельца, уничтожение поверхности); перо включит resume().
+    private fun cancelEraseCommit() {
+        synchronized(eraseLock) {
+            removeCallbacks(gcStep)
+            removeCallbacks(resumeStep)
+            if (eraseCommitStartedAt != 0L) {
+                SpikeLog.line("ERASE_COMMIT_CANCELLED", "rect" to pendingEraseRect?.toShortString())
+            }
+            pendingEraseRect = null
+            eraseCommitStartedAt = 0L
+        }
     }
 
     private companion object {
         const val ERASER_STROKE_ID = 8
         const val ERASER_TRACK_WIDTH = 20f
         const val GC_DELAY_MS = 200L
+        const val ERASE_RESUME_MS = 150L
     }
 }

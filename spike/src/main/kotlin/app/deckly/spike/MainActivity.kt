@@ -69,14 +69,27 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Перо включается, только пока окно в фокусе: шторка уведомлений и системные окна ложатся поверх
+    // сырого пера (Notable делает так же). Без фокуса в onResume перо включит onWindowFocusChanged.
     override fun onResume() {
         super.onResume()
-        currentSheet?.resume()
+        if (hasWindowFocus()) {
+            currentSheet?.resume()
+        }
     }
 
     override fun onPause() {
         currentSheet?.pause()
         super.onPause()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            currentSheet?.resume()
+        } else {
+            currentSheet?.pause()
+        }
     }
 
     private companion object {
@@ -95,6 +108,7 @@ private fun SpikeScreen(
 ) {
     val isPenAvailable = SdkStatus.isPenAvailable
     var mode by rememberSaveable { mutableStateOf(if (isPenAvailable) PenMode.ONYX else PenMode.CANVAS) }
+    var isGcAfterErase by remember { mutableStateOf(PenSettings.isGcAfterErase) }
     val lines by SpikeLog.lines.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
@@ -136,6 +150,11 @@ private fun SpikeScreen(
             PenButton("GC") { scope.repaintAll(getSheet, UpdateMode.GC) }
             PenButton("REGAL+") { scope.repaintAll(getSheet, UpdateMode.REGAL_PLUS) }
             PenButton("Статус") { scope.refreshSheet(getSheet) }
+            PenButton("GC после ластика: ${if (isGcAfterErase) "вкл" else "выкл"}", selected = isGcAfterErase) {
+                isGcAfterErase = !isGcAfterErase
+                PenSettings.isGcAfterErase = isGcAfterErase
+                SpikeLog.line("SETTING", "gcAfterErase" to isGcAfterErase)
+            }
         }
         // Ряд кнопок базы (задача 4) добавляется здесь.
     }

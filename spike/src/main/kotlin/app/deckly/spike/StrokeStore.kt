@@ -20,8 +20,9 @@ data class SpikeStroke(val points: FloatArray, val width: Float) {
 }
 
 /**
- * Штрихи листа, общие для обоих холстов (Onyx и Canvas). Пишет поток обратных вызовов пера, читает
- * поток интерфейса, поэтому все операции под одной блокировкой.
+ * Штрихи листа, общие для обоих холстов (Onyx и Canvas). Пишут колбэки пера и жесты, читает
+ * рисование; поток колбэков зависит от рендера SDK (см. OnyxPenView), поэтому все операции под одной
+ * блокировкой.
  */
 object StrokeStore {
     private val strokes = mutableListOf<SpikeStroke>()
