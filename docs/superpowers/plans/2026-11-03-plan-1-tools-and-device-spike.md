@@ -330,7 +330,7 @@
 
 **Interfaces:**
 - Consumes: модуль `:spike` и каталог версий из задачи 1.
-- Produces: `SpikeLog.line(event: String, vararg fields: Pair<String, Any?>)` — пишет в logcat
+- Produces: `SpikeLog.write(event: String, vararg fields: Pair<String, Any?>)` — пишет в logcat
   с тегом `DecklySpike` строку `EVENT k=v k=v` и добавляет её в `SpikeLog.lines: StateFlow<List<String>>`
   (последние 30). Задача 4 пишет через него же.
 
@@ -342,7 +342,7 @@
   Если да — в `try/catch (Throwable)`: `HiddenApiBypass.setHiddenApiExemptions("")`,
   `RxManager.Builder.initAppContext(this)`, `ResManager.init(this)`
   (`com.onyx.android.sdk.utils.ResManager`), `deviceClass = Device.currentDevice().javaClass.simpleName`.
-  Итог — `SpikeLog.line("SDK", "onyx" to …, "init" to (initError?.toString() ?: "ok"), "device" to …)`.
+  Итог — `SpikeLog.write("SDK", "onyx" to …, "init" to (initError?.toString() ?: "ok"), "device" to …)`.
   Для проверки отказа SDK: экстра `--ez noSdk true` в интенте `MainActivity` до создания листа
   выставляет `initError = IllegalStateException("noSdk")`, и экран ведёт себя так, будто SDK не
   поднялся. Инициализация в `Application` при этом остаётся как есть.
@@ -439,7 +439,7 @@
 - Create: `tools/spike-db-killtest.sh`
 
 **Interfaces:**
-- Consumes: `SpikeLog.line` из задачи 3.
+- Consumes: `SpikeLog.write` из задачи 3.
 - Produces: строки logcat `PROBE_SERIES n=… avgMs=… maxMs=…`,
   `PROBE_CHECK file=… journal=… integrity=… counter=… entries=… consistent=…`,
   `PROBE_SCAN path=… uri=…`, `PROBE_DENIED` — их разбирает `spike-db-killtest.sh` и задача 5.
