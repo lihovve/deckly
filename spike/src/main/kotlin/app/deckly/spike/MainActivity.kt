@@ -1,7 +1,10 @@
 package app.deckly.spike
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -38,9 +41,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import app.deckly.spike.db.DbProbe
 import com.onyx.android.sdk.api.device.epd.EpdController
 import com.onyx.android.sdk.api.device.epd.UpdateMode
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -50,8 +56,11 @@ private enum class PenMode(val label: String) {
     CANVAS("Canvas"),
 }
 
+private enum class ProbeAction { SERIES, CHECK, FOREIGN }
+
 class MainActivity : ComponentActivity() {
     private var currentSheet: PenSheet? = null
+    private val probe by lazy { DbProbe(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,13 +69,51 @@ class MainActivity : ComponentActivity() {
             SdkStatus.initError = IllegalStateException("noSdk")
             SdkStatus.logSummary()
         }
+        // Каждый запуск приложения сначала проверяет базу; экстра probe делает то же, что кнопки, без касаний.
+        // При пересоздании активити (savedInstanceState != null) проверка и серия заново не запускаются.
+        if (savedInstanceState == null) {
+            runLaunchProbe(intent.getStringExtra(EXTRA_PROBE))
+        }
         setContent {
             SpikeScreen(
                 getSheet = { currentSheet },
                 onSheetCreated = { currentSheet = it },
                 onSheetReleased = { released -> if (currentSheet === released) currentSheet = null },
+                onProbe = { runProbe(it) },
+                onRequestAllFilesAccess = { requestAllFilesAccess() },
             )
         }
+    }
+
+    private fun runLaunchProbe(action: String?) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            probe.check()
+            when (action) {
+                "series" -> probe.runSeries()
+                "foreign" -> probe.checkForeign()
+                // Проверка при запуске уже выполнена.
+                "check", null -> Unit
+                else -> SpikeLog.write("PROBE_UNKNOWN", "action" to action)
+            }
+        }
+    }
+
+    private fun runProbe(action: ProbeAction) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            when (action) {
+                ProbeAction.SERIES -> probe.runSeries()
+                ProbeAction.CHECK -> probe.check()
+                ProbeAction.FOREIGN -> probe.checkForeign()
+            }
+        }
+    }
+
+    private fun requestAllFilesAccess() {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+            Uri.fromParts("package", packageName, null),
+        )
+        startActivity(intent)
     }
 
     // Перо включается, только пока окно в фокусе: шторка уведомлений и системные окна ложатся поверх
@@ -94,6 +141,7 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val EXTRA_NO_SDK = "noSdk"
+        const val EXTRA_PROBE = "probe"
     }
 }
 
@@ -105,6 +153,8 @@ private fun SpikeScreen(
     getSheet: () -> PenSheet?,
     onSheetCreated: (PenSheet) -> Unit,
     onSheetReleased: (PenSheet) -> Unit,
+    onProbe: (ProbeAction) -> Unit,
+    onRequestAllFilesAccess: () -> Unit,
 ) {
     val isPenAvailable = SdkStatus.isPenAvailable
     var mode by rememberSaveable { mutableStateOf(if (isPenAvailable) PenMode.ONYX else PenMode.CANVAS) }
@@ -156,7 +206,12 @@ private fun SpikeScreen(
                 SpikeLog.write("SETTING", "gcAfterErase" to isGcAfterErase)
             }
         }
-        // Ряд кнопок базы (задача 4) добавляется здесь.
+        ButtonRow {
+            PenButton("Доступ к файлам") { onRequestAllFilesAccess() }
+            PenButton("База: серия") { onProbe(ProbeAction.SERIES) }
+            PenButton("База: проверка") { onProbe(ProbeAction.CHECK) }
+            PenButton("База: чужая") { onProbe(ProbeAction.FOREIGN) }
+        }
     }
 }
 

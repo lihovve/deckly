@@ -445,7 +445,7 @@
   `PROBE_SCAN path=… uri=…`, `PROBE_DENIED` — их разбирает `spike-db-killtest.sh` и задача 5.
   Запуск по интенту: `adb shell am start -n app.deckly.spike/.MainActivity --es probe series|check|foreign`.
 
-- [ ] **Step 1: `ProbeDatabase` на Room 3**
+- [x] **Step 1: `ProbeDatabase` на Room 3**
 
   Сущности: `Counter(@PrimaryKey id: Int = 1, value: Long)` и
   `Entry(@PrimaryKey(autoGenerate = true) id: Long = 0, counterValue: Long, payload: String)`.
@@ -457,7 +457,7 @@
   `file.absolutePath` вместо имени, драйвер Android SQLite, `JournalMode.TRUNCATE`. Точные имена
   API Room 3 сверить с документацией `androidx.room3`.
 
-- [ ] **Step 2: `DbProbe`**
+- [x] **Step 2: `DbProbe`**
 
   Папка — `/sdcard/Deckly/spike/`. Если `Environment.isExternalStorageManager()` ложно — каждая
   операция пишет `PROBE_DENIED` и ничего не открывает.
@@ -467,13 +467,13 @@
   - `suspend fun checkForeign()` — `check(File(dir, "foreign.db"))`: база, созданная не этим
     приложением (кладётся по adb в задаче 5).
 
-- [ ] **Step 3: Кнопки и интент**
+- [x] **Step 3: Кнопки и интент**
 
   Кнопки «Доступ к файлам» (`Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION` с
   `package:app.deckly.spike`), «База: серия», «База: проверка», «База: чужая». Экстра `probe` в
   интенте запуска вызывает то же без касаний. Каждый запуск приложения сначала выполняет `check()`.
 
-- [ ] **Step 4: `tools/spike-db-killtest.sh [раз=20]`**
+- [x] **Step 4: `tools/spike-db-killtest.sh [раз=20]`**
 
   Для каждого раза: `wait-for-device` → `am start … --es probe series` → пауза случайно
   0,3–2,0 с → `am force-stop app.deckly.spike` → `logcat -c` → `am start … --es probe check` →
@@ -481,12 +481,31 @@
   `consistent K из N, integrity ok K из N`; код выхода 0 только при `N из N` по обоим.
   `adb` берётся так же, как в `install-apk.sh`.
 
-- [ ] **Step 5: Собрать**
+- [x] **Step 5: Собрать**
 
   Run: `./gradlew :spike:assembleDebug && bash -n tools/spike-db-killtest.sh`
   Expected: `BUILD SUCCESSFUL`, синтаксис скрипта без ошибок.
 
-- [ ] **Step 6: Commit** — `spike/ tools/spike-db-killtest.sh`, «Прототип: Room 3 в /sdcard/Deckly, проверка после убийства».
+- [x] **Step 6: Commit** — `spike/ tools/spike-db-killtest.sh`, «Прототип: Room 3 в /sdcard/Deckly, проверка после убийства».
+
+- [x] **Дополнение к задаче 4: тесты скрипта и схема чужой базы**
+
+  - `tools/test/spike-db-killtest-test.sh` — девять тестов на заглушке adb (порядок вызовов, итог
+    «consistent K из N, integrity ok K из N», коды выхода 0/1/2/3, повтор упавшей команды adb).
+    Run: `bash tools/test/spike-db-killtest-test.sh`; Expected: `9 passed, 0 failed`.
+  - Коды выхода `spike-db-killtest.sh`: 0 — N из N; 1 — хотя бы один запуск не прошёл; 2 — планшет не
+    найден; 3 — `PROBE_DENIED` (доступ ко всем файлам не выдан), прогон прекращается.
+  - Для задачи 5, шаг 7. Room открывает `foreign.db`, только если схема совпадает с его схемой. Схема из
+    сгенерированного `ProbeDatabase_Impl.kt` (`spike/build/generated/ksp/debug/kotlin/app/deckly/spike/db/`):
+    ```sql
+    CREATE TABLE IF NOT EXISTS `Counter` (`id` INTEGER NOT NULL, `value` INTEGER NOT NULL, PRIMARY KEY(`id`));
+    CREATE TABLE IF NOT EXISTS `Entry` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `counterValue` INTEGER NOT NULL, `payload` TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT);
+    INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c8f5e0999649f16c380ef339a423ec53');
+    PRAGMA user_version = 1;
+    ```
+    Строки: `Counter(1, 3)` и три строки `Entry` со значениями счётчика 1, 2, 3. Хеш `identity_hash`
+    меняется вместе со схемой: перед созданием файла сверить его с `ProbeDatabase_Impl.kt`.
 
 ### Task 5: прогон на планшете и итоги
 
