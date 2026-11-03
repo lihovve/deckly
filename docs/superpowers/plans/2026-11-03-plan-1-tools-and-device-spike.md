@@ -334,7 +334,7 @@
   с тегом `DecklySpike` строку `EVENT k=v k=v` и добавляет её в `SpikeLog.lines: StateFlow<List<String>>`
   (последние 30). Задача 4 пишет через него же.
 
-- [ ] **Step 1: `SdkStatus` и инициализация**
+- [x] **Step 1: `SdkStatus` и инициализация**
 
   `object SdkStatus { var isOnyxDevice: Boolean; var initError: Throwable?; var deviceClass: String? }`.
   `SpikeApplication.onCreate()`: `isOnyxDevice` — `Build.MANUFACTURER` или `Build.BRAND` равен
@@ -349,7 +349,7 @@
   Затем по одной строке на каждое устройство ввода:
   `INPUT_DEVICE name=… sources=0x… isStylus=…`.
 
-- [ ] **Step 2: `StrokeStore`**
+- [x] **Step 2: `StrokeStore`**
 
   Общий для обоих холстов: `data class SpikeStroke(val points: FloatArray /* x,y,pressure… */, val width: Float)`;
   `add(stroke)`, `eraseAlong(path: List<PointF>, radius: Float): Rect?` (удаляет штрихи целиком, если
@@ -357,7 +357,7 @@
   `drawTo(canvas: Canvas)`. Координаты — в пикселях холста: в прототипе система координат
   карточки не нужна.
 
-- [ ] **Step 3: `OnyxPenView : SurfaceView`**
+- [x] **Step 3: `OnyxPenView : SurfaceView`**
 
   Конструктор принимает `useSfRender: Boolean`. `TouchHelper` создаётся в `surfaceCreated`: при
   `useSfRender` — `TouchHelper.create(this, TouchHelper.FEATURE_SF_TOUCH_RENDER, callback)`, иначе
@@ -378,7 +378,7 @@
   `EpdController.invalidate(this, l, t, r, b, UpdateMode.GC)`; begin/end ластика и пера пишутся
   отдельными строками.
 
-- [ ] **Step 4: `CanvasPenView : View`** (запасной путь)
+- [x] **Step 4: `CanvasPenView : View`** (запасной путь)
 
   `onTouchEvent`: в начале каждого жеста строка `MOTION tool=… buttons=0x…` — так видно, что
   присылает кнопка пера InkSense Plus. `TOOL_TYPE_STYLUS` без кнопки рисует; `TOOL_TYPE_ERASER` или
@@ -386,7 +386,7 @@
   поглощается и пишет `PEN_FINGER_IGNORED`. После штриха — частичное обновление его прямоугольника:
   `EpdController.invalidate(this, l, t, r, b, UpdateMode.DU)` в `try/catch`, иначе `invalidate()`.
 
-- [ ] **Step 5: Экран `MainActivity`** (Compose Foundation, без Material)
+- [x] **Step 5: Экран `MainActivity`** (Compose Foundation, без Material)
 
   Сверху — блок статуса: последние строки `SpikeLog.lines`. Пока перо Onyx включено, прошивка
   замораживает экран, поэтому статус обновляется кнопкой «Статус»: `pause()` → перерисовка → через
@@ -398,19 +398,19 @@
   Если `SdkStatus.isOnyxDevice` ложно или `initError` не пуст, режимы «Onyx» недоступны, а режим
   по умолчанию — «Canvas». `onPause`/`onResume` активити зовут `pause()`/`resume()` листа.
 
-- [ ] **Step 6: Вырезать разрешения SDK**
+- [x] **Step 6: Вырезать разрешения SDK**
 
   В `spike/src/main/AndroidManifest.xml` для каждого разрешения из Global Constraints — строка
   `<uses-permission android:name="android.permission.X" tools:node="remove" />`.
 
-- [ ] **Step 7: Собрать**
+- [x] **Step 7: Собрать**
 
   Run: `./gradlew :spike:assembleDebug && ~/Android/Sdk/build-tools/37.0.0/aapt2 dump permissions spike/build/outputs/apk/debug/spike-debug.apk`
   Expected: `BUILD SUCCESSFUL`; в списке разрешений только `MANAGE_EXTERNAL_STORAGE` и
   служебное `app.deckly.spike.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` от androidx. Проверка
   поведения — задача 5.
 
-- [ ] **Step 8: Commit** — `spike/`, «Прототип: перо Onyx (обычный и SF-рендер), запасной Canvas, журнал проверок».
+- [x] **Step 8: Commit** — `spike/`, «Прототип: перо Onyx (обычный и SF-рендер), запасной Canvas, журнал проверок».
 
 ### Task 4: прототип базы в `/sdcard/Deckly/`
 
