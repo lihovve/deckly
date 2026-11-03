@@ -100,7 +100,7 @@
   `~/Android/Sdk` с `platform-tools`, `platforms;android-37.0`, `build-tools;37.0.0`;
   каталог версий с алиасами ниже — их используют задачи 3–4 и план 2.
 
-- [ ] **Step 1: Написать `tools/setup-android-sdk.sh`**
+- [x] **Step 1: Написать `tools/setup-android-sdk.sh`**
 
   Идемпотентный: пропускает то, что уже стоит. Делает:
   1. Скачивает `https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip`
@@ -112,12 +112,12 @@
   5. Пишет `local.properties` в корень репозитория: `sdk.dir=/home/<user>/Android/Sdk`.
   6. Печатает строку для `~/.bashrc`: `export ANDROID_HOME=$HOME/Android/Sdk`.
 
-- [ ] **Step 2: Запустить и проверить**
+- [x] **Step 2: Запустить и проверить**
 
   Run: `bash tools/setup-android-sdk.sh && ~/Android/Sdk/platform-tools/adb version`
   Expected: `Version 37.0.1-…`; `ls ~/Android/Sdk/platforms` показывает `android-37.0`.
 
-- [ ] **Step 3: Создать обёртку Gradle**
+- [x] **Step 3: Создать обёртку Gradle**
 
   Создать `settings.gradle.kts` из одной строки `rootProject.name = "deckly"` (Gradle 9 без файла
   настроек не работает). Скачать `https://services.gradle.org/distributions/gradle-9.8.2-bin.zip`
@@ -129,7 +129,7 @@
   Run: `sha256sum gradle/wrapper/gradle-wrapper.jar && ./gradlew --version`
   Expected: `3b8a25775a69158b5ad2b1d17a80a88dc7b40a352a73eb27d06c612a7ce68e98`; `Gradle 9.8.2`.
 
-- [ ] **Step 4: Каталог версий `gradle/libs.versions.toml`**
+- [x] **Step 4: Каталог версий `gradle/libs.versions.toml`**
 
   ```toml
   [versions]
@@ -175,7 +175,7 @@
   ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
   ```
 
-- [ ] **Step 5: Корневая сборка**
+- [x] **Step 5: Корневая сборка**
 
   - `settings.gradle.kts`: `pluginManagement` (google, mavenCentral, gradlePluginPortal);
     `dependencyResolutionManagement` с `RepositoriesMode.FAIL_ON_PROJECT_REPOS` и репозиториями из
@@ -186,7 +186,7 @@
     `android.useAndroidX=true`, `android.nonTransitiveRClass=true`.
   - `.gitignore`: добавить `local.properties`, `.gradle/`, `.kotlin/`, `build/`.
 
-- [ ] **Step 6: Модуль `:spike`**
+- [x] **Step 6: Модуль `:spike`**
 
   `spike/build.gradle.kts`: плагины `android-application`, `kotlin-compose`, `ksp`;
   `namespace = applicationId = "app.deckly.spike"`, версии SDK и ABI из Global Constraints,
@@ -222,13 +222,13 @@
   `<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>`.
   `SpikeApplication.onCreate()` пока пустой; `MainActivity` показывает `BasicText("Deckly spike")`.
 
-- [ ] **Step 7: Собрать и проверить APK**
+- [x] **Step 7: Собрать и проверить APK**
 
   Run: `./gradlew :spike:assembleDebug && ./gradlew buildEnvironment | grep kotlin-gradle-plugin && unzip -l spike/build/outputs/apk/debug/spike-debug.apk | awk '$4 ~ /^lib\// {split($4, p, "/"); print p[2]}' | sort -u`
   Expected: `BUILD SUCCESSFUL`; `kotlin-gradle-plugin:2.4.21`; единственная папка ABI — `arm64-v8a`;
   в APK есть `lib/arm64-v8a/libonyx_pen_touch_reader.so`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
   ```bash
   git add tools/setup-android-sdk.sh settings.gradle.kts build.gradle.kts gradle.properties gradle/ gradlew gradlew.bat .gitignore spike/
