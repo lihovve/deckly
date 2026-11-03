@@ -153,7 +153,7 @@ private fun SpikeScreen(
             PenButton("GC после ластика: ${if (isGcAfterErase) "вкл" else "выкл"}", selected = isGcAfterErase) {
                 isGcAfterErase = !isGcAfterErase
                 PenSettings.isGcAfterErase = isGcAfterErase
-                SpikeLog.line("SETTING", "gcAfterErase" to isGcAfterErase)
+                SpikeLog.write("SETTING", "gcAfterErase" to isGcAfterErase)
             }
         }
         // Ряд кнопок базы (задача 4) добавляется здесь.
@@ -185,9 +185,9 @@ private fun CoroutineScope.repaintAll(getSheet: () -> PenSheet?, updateMode: Upd
         sheet?.redrawAll()
         try {
             EpdController.repaintEveryThing(updateMode)
-            SpikeLog.line("REPAINT", "mode" to updateMode)
+            SpikeLog.write("REPAINT", "mode" to updateMode)
         } catch (error: Throwable) {
-            SpikeLog.line("REPAINT", "mode" to updateMode, "error" to error)
+            SpikeLog.write("REPAINT", "mode" to updateMode, "error" to error)
         }
         delay(REFRESH_SETTLE_MS)
         sheet?.resume()

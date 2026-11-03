@@ -17,7 +17,7 @@ object SpikeLog {
     private val mutableLines = MutableStateFlow<List<String>>(emptyList())
     val lines: StateFlow<List<String>> = mutableLines.asStateFlow()
 
-    fun line(event: String, vararg fields: Pair<String, Any?>) {
+    fun write(event: String, vararg fields: Pair<String, Any?>) {
         val text = buildString {
             append(event)
             for ((key, value) in fields) {

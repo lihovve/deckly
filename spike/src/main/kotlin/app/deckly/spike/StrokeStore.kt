@@ -40,7 +40,7 @@ object StrokeStore {
     }
 
     @Synchronized
-    fun count(): Int = strokes.size
+    fun countStrokes(): Int = strokes.size
 
     @Synchronized
     fun clear() {
@@ -62,7 +62,7 @@ object StrokeStore {
             val stroke = iterator.next()
             if (isTouched(stroke, path, radiusSquared)) {
                 iterator.remove()
-                dirty = union(dirty, boundsOf(stroke))
+                dirty = union(dirty, computeBounds(stroke))
             }
         }
         return dirty
@@ -76,7 +76,7 @@ object StrokeStore {
     }
 
     /** Границы пути ластика с запасом [radius]: там прошивка оставляет след, который надо снять. */
-    fun boundsOfPath(path: List<PointF>, radius: Float): Rect? {
+    fun computePathBounds(path: List<PointF>, radius: Float): Rect? {
         if (path.isEmpty()) return null
         val first = path.first()
         val bounds = Rect(first.x.toInt(), first.y.toInt(), first.x.toInt(), first.y.toInt())
@@ -106,7 +106,7 @@ object StrokeStore {
         return false
     }
 
-    private fun boundsOf(stroke: SpikeStroke): Rect {
+    private fun computeBounds(stroke: SpikeStroke): Rect {
         var left = Float.MAX_VALUE
         var top = Float.MAX_VALUE
         var right = -Float.MAX_VALUE

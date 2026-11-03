@@ -47,9 +47,9 @@ check_that() {
 }
 
 has_exit_code() { [[ "$exit_code" -eq "$1" ]]; }
-output_contains() { [[ "$output" == *"$1"* ]]; }
-output_lacks() { [[ "$output" != *"$1"* ]]; }
-path_is_absent() { [[ ! -e "$1" ]]; }
+has_output_containing() { [[ "$output" == *"$1"* ]]; }
+has_no_output_containing() { [[ "$output" != *"$1"* ]]; }
+is_path_absent() { [[ ! -e "$1" ]]; }
 # Каждая строка журнала подменного adb, подходящая под регулярное выражение $1, идёт сразу после
 # wait-for-device; такие строки есть.
 is_always_after_wait() {
@@ -58,8 +58,8 @@ is_always_after_wait() {
     { previous = $0 }
     END { exit (found && !bad) ? 0 : 1 }' "$FAKE_ROOT/.calls"
 }
-pm_was_called_once() { [[ "$(wc -l < "$FAKE_ROOT/.pm_calls" 2>/dev/null)" -eq 1 ]]; }
-installed_apk_matches() { [[ "$(md5sum "$FAKE_ROOT/installed.apk" 2>/dev/null | cut -c1-32)" == "$APK_MD5" ]]; }
+has_pm_called_once() { [[ "$(wc -l < "$FAKE_ROOT/.pm_calls" 2>/dev/null)" -eq 1 ]]; }
+has_matching_installed_apk() { [[ "$(md5sum "$FAKE_ROOT/installed.apk" 2>/dev/null | cut -c1-32)" == "$APK_MD5" ]]; }
 
 DEVICE_DIR_REL="data/local/tmp/deckly-install"
 
@@ -69,9 +69,9 @@ test_clean_install() {
   prepare_case clean_install
   run_install
   check_that "код 0" has_exit_code 0
-  check_that "md5 установленного APK равен md5 исходного" installed_apk_matches
-  check_that "в выводе «Установлено»" output_contains "Установлено"
-  check_that "папка на планшете убрана" path_is_absent "$FAKE_ROOT/$DEVICE_DIR_REL"
+  check_that "md5 установленного APK равен md5 исходного" has_matching_installed_apk
+  check_that "в выводе «Установлено»" has_output_containing "Установлено"
+  check_that "папка на планшете убрана" is_path_absent "$FAKE_ROOT/$DEVICE_DIR_REL"
   check_that "перед каждой передачей куска ждём планшет" is_always_after_wait '^push$'
   check_that "перед склейкой ждём планшет" is_always_after_wait '^shell:cat$'
   check_that "перед pm install ждём планшет" is_always_after_wait '^shell:pm$'
@@ -81,17 +81,17 @@ test_retries_corrupted_chunk() {
   prepare_case retries_corrupted_chunk
   run_install FAKE_CORRUPT_PUSHES=001:2
   check_that "код 0" has_exit_code 0
-  check_that "md5 установленного APK равен md5 исходного" installed_apk_matches
-  check_that "в выводе «кусок 001: попытка 3»" output_contains "кусок 001: попытка 3"
+  check_that "md5 установленного APK равен md5 исходного" has_matching_installed_apk
+  check_that "в выводе «кусок 001: попытка 3»" has_output_containing "кусок 001: попытка 3"
 }
 
 test_gives_up_after_max_tries() {
   prepare_case gives_up_after_max_tries
   run_install FAKE_CORRUPT_PUSHES=000:5 MAX_TRIES=5
   check_that "код 3" has_exit_code 3
-  check_that "pm install не вызывался" path_is_absent "$FAKE_ROOT/installed.path"
-  check_that "успех не объявлен" output_lacks "Установлено"
-  check_that "папка на планшете убрана и после ошибки" path_is_absent "$FAKE_ROOT/$DEVICE_DIR_REL"
+  check_that "pm install не вызывался" is_path_absent "$FAKE_ROOT/installed.path"
+  check_that "успех не объявлен" has_no_output_containing "Установлено"
+  check_that "папка на планшете убрана и после ошибки" is_path_absent "$FAKE_ROOT/$DEVICE_DIR_REL"
 }
 
 test_no_device_times_out() {
@@ -101,43 +101,43 @@ test_no_device_times_out() {
   elapsed=$(( SECONDS - started ))
   check_that "код 2" has_exit_code 2
   check_that "не позже чем за 5 с (заняло ${elapsed} с)" test "$elapsed" -le 5
-  check_that "в выводе «планшет не найден»" output_contains "планшет не найден"
+  check_that "в выводе «планшет не найден»" has_output_containing "планшет не найден"
 }
 
 test_pm_failure_reported() {
   prepare_case pm_failure_reported
   run_install FAKE_PM_FAIL=1
   check_that "код 5" has_exit_code 5
-  check_that "в выводе INSTALL_FAILED_INVALID_APK" output_contains "INSTALL_FAILED_INVALID_APK"
-  check_that "отказ pm не повторяется: pm вызван один раз" pm_was_called_once
-  check_that "успех не объявлен" output_lacks "Установлено"
-  check_that "папка на планшете убрана и после ошибки" path_is_absent "$FAKE_ROOT/$DEVICE_DIR_REL"
+  check_that "в выводе INSTALL_FAILED_INVALID_APK" has_output_containing "INSTALL_FAILED_INVALID_APK"
+  check_that "отказ pm не повторяется: pm вызван один раз" has_pm_called_once
+  check_that "успех не объявлен" has_no_output_containing "Установлено"
+  check_that "папка на планшете убрана и после ошибки" is_path_absent "$FAKE_ROOT/$DEVICE_DIR_REL"
 }
 
 test_pm_transport_error_retried() {
   prepare_case pm_transport_error_retried
   run_install FAKE_PM_FLAKY=1
   check_that "код 0" has_exit_code 0
-  check_that "md5 установленного APK равен md5 исходного" installed_apk_matches
-  check_that "в выводе «Установлено»" output_contains "Установлено"
+  check_that "md5 установленного APK равен md5 исходного" has_matching_installed_apk
+  check_that "в выводе «Установлено»" has_output_containing "Установлено"
 }
 
 test_hung_push_retried() {
   prepare_case hung_push_retried
   run_install FAKE_HANG_PUSH=002:1 OP_TIMEOUT=1
   check_that "код 0" has_exit_code 0
-  check_that "md5 установленного APK равен md5 исходного" installed_apk_matches
-  check_that "в выводе «кусок 002: попытка 2»" output_contains "кусок 002: попытка 2"
+  check_that "md5 установленного APK равен md5 исходного" has_matching_installed_apk
+  check_that "в выводе «кусок 002: попытка 2»" has_output_containing "кусок 002: попытка 2"
 }
 
 test_bad_assembly_reported() {
   prepare_case bad_assembly_reported
   run_install FAKE_BAD_ASSEMBLY=1
   check_that "код 4" has_exit_code 4
-  check_that "склейка повторена до MAX_TRIES: «склейка: попытка 5»" output_contains "склейка: попытка 5"
-  check_that "pm install не вызывался" path_is_absent "$FAKE_ROOT/installed.path"
-  check_that "успех не объявлен" output_lacks "Установлено"
-  check_that "папка на планшете убрана и после ошибки" path_is_absent "$FAKE_ROOT/$DEVICE_DIR_REL"
+  check_that "склейка повторена до MAX_TRIES: «склейка: попытка 5»" has_output_containing "склейка: попытка 5"
+  check_that "pm install не вызывался" is_path_absent "$FAKE_ROOT/installed.path"
+  check_that "успех не объявлен" has_no_output_containing "Установлено"
+  check_that "папка на планшете убрана и после ошибки" is_path_absent "$FAKE_ROOT/$DEVICE_DIR_REL"
 }
 
 test_missing_apk() {

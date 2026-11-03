@@ -53,7 +53,7 @@ fail() {
 
 # Одна операция adb push или adb shell, не дольше OP_TIMEOUT. Ввод закрыт: adb в фоновой группе
 # процессов, которую создаёт timeout, не должен ждать терминал.
-adb_op() {
+run_adb() {
   timeout --kill-after="$KILL_AFTER" "$OP_TIMEOUT" "$ADB" "$@" < /dev/null
 }
 
@@ -99,7 +99,7 @@ begin_attempt() {
 # md5 файла на планшете (первые 32 символа вывода md5sum); пусто, если спросить не удалось.
 read_device_md5() {
   local md5
-  md5="$(adb_op shell "md5sum $1" 2> /dev/null | cut -c1-32)" || md5=""
+  md5="$(run_adb shell "md5sum $1" 2> /dev/null | cut -c1-32)" || md5=""
   echo "$md5"
 }
 
@@ -108,7 +108,7 @@ prepare_device_dir() {
   for (( try = 1; try <= MAX_TRIES; try++ )); do
     begin_attempt "подготовка папки" "$try"
     device_dir_exists=1
-    if adb_op shell "rm -rf $DEVICE_DIR && mkdir -p $DEVICE_DIR" > /dev/null; then
+    if run_adb shell "rm -rf $DEVICE_DIR && mkdir -p $DEVICE_DIR" > /dev/null; then
       return 0
     fi
   done
@@ -124,7 +124,7 @@ push_chunk() {
 
   for (( try = 1; try <= MAX_TRIES; try++ )); do
     begin_attempt "кусок $suffix" "$try"
-    adb_op push "$chunk" "$DEVICE_DIR/$name" > /dev/null || true
+    run_adb push "$chunk" "$DEVICE_DIR/$name" > /dev/null || true
     device_md5="$(read_device_md5 "$DEVICE_DIR/$name")"
     if [[ "$device_md5" == "$local_md5" ]]; then
       echo "кусок $suffix: md5 совпал"
@@ -140,7 +140,7 @@ assemble_apk() {
   local expected_md5=$1 try device_md5=""
   for (( try = 1; try <= MAX_TRIES; try++ )); do
     begin_attempt "склейка" "$try"
-    adb_op shell "cat $DEVICE_DIR/app.apk.part.* > $DEVICE_DIR/app.apk" || true
+    run_adb shell "cat $DEVICE_DIR/app.apk.part.* > $DEVICE_DIR/app.apk" || true
     device_md5="$(read_device_md5 "$DEVICE_DIR/app.apk")"
     if [[ "$device_md5" == "$expected_md5" ]]; then
       return 0
@@ -155,7 +155,7 @@ install_apk() {
   local try install_output=""
   for (( try = 1; try <= MAX_TRIES; try++ )); do
     begin_attempt "установка" "$try"
-    install_output="$(adb_op shell "pm install -r -t $DEVICE_DIR/app.apk" 2>&1)" || true
+    install_output="$(run_adb shell "pm install -r -t $DEVICE_DIR/app.apk" 2>&1)" || true
     if grep -q 'Failure' <<< "$install_output"; then
       fail 5 "Ошибка: pm install отказал:
 $install_output"

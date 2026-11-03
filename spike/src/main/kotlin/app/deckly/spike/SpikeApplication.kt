@@ -47,7 +47,7 @@ class SpikeApplication : Application() {
     private fun logInputDevices() {
         for (id in InputDevice.getDeviceIds()) {
             val device = InputDevice.getDevice(id) ?: continue
-            SpikeLog.line(
+            SpikeLog.write(
                 "INPUT_DEVICE",
                 "id" to id,
                 "name" to device.name,

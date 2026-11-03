@@ -95,7 +95,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
             helper.setRawDrawingEnabled(false)
             helper.closeRawDrawing()
         } catch (error: Throwable) {
-            SpikeLog.line("PEN_CLOSE", "error" to error)
+            SpikeLog.write("PEN_CLOSE", "error" to error)
         }
         touchHelper = null
     }
@@ -117,7 +117,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         try {
             touchHelper?.setRawDrawingEnabled(false)
         } catch (error: Throwable) {
-            SpikeLog.line("PEN_PAUSE", "error" to error)
+            SpikeLog.write("PEN_PAUSE", "error" to error)
         }
     }
 
@@ -129,7 +129,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
             enableEraserTrack(helper)
             applyPenStyle(helper)
         } catch (error: Throwable) {
-            SpikeLog.line("PEN_RESUME", "error" to error)
+            SpikeLog.write("PEN_RESUME", "error" to error)
         }
     }
 
@@ -148,9 +148,9 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
                 TouchHelper.create(this, callback)
             }
             touchHelper = helper
-            SpikeLog.line("PEN_RENDER", "class" to describeRenders(helper), "requestedSf" to useSfRender)
+            SpikeLog.write("PEN_RENDER", "class" to describeRenders(helper), "requestedSf" to useSfRender)
         } catch (error: Throwable) {
-            SpikeLog.line("PEN_CREATE", "error" to error)
+            SpikeLog.write("PEN_CREATE", "error" to error)
         }
     }
 
@@ -201,14 +201,14 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
                 helper.setRawDrawingEnabled(false)
                 mark("paused")
             }
-            SpikeLog.line(
+            SpikeLog.write(
                 "PEN_SESSION",
                 "ms" to (previous - started),
                 "steps" to steps.joinToString(","),
                 "limit" to limit.toShortString(),
             )
         } catch (error: Throwable) {
-            SpikeLog.line("PEN_SESSION", "error" to error, "steps" to steps.joinToString(","))
+            SpikeLog.write("PEN_SESSION", "error" to error, "steps" to steps.joinToString(","))
         }
     }
 
@@ -220,7 +220,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
             )
             helper.setEraserRawDrawingEnabled(true, ERASER_STROKE_ID)
         } catch (error: Throwable) {
-            SpikeLog.line("PEN_ERASER_TRACK", "error" to error)
+            SpikeLog.write("PEN_ERASER_TRACK", "error" to error)
         }
     }
 
@@ -235,7 +235,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
     // SDK 1.5.8); для остальных рендеров поток не проверялся, поэтому код на него не полагается.
 
     private fun logPoint(event: String, point: TouchPoint) {
-        SpikeLog.line(
+        SpikeLog.write(
             event,
             "x" to point.x.toInt(),
             "y" to point.y.toInt(),
@@ -255,7 +255,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         }
         val stroke = SpikeStroke(values, PenDefaults.STROKE_WIDTH)
         StrokeStore.add(stroke)
-        SpikeLog.line(
+        SpikeLog.write(
             "PEN_STROKE",
             "points" to points.size,
             "firstTs" to points.first().timestamp,
@@ -264,22 +264,22 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
             "uptimeMs" to SystemClock.uptimeMillis(),
         )
         // Поверхность держим в соответствии со штрихами, чтобы после pause() ничего не пропало.
-        drawSurface(strokeBounds(points))
+        drawSurface(computeStrokeBounds(points))
     }
 
     private fun handleErase(pointList: TouchPointList) {
         val path = pointList.points.map { PointF(it.x, it.y) }
-        val before = StrokeStore.count()
+        val before = StrokeStore.countStrokes()
         val removedRect = StrokeStore.eraseAlong(path, PenDefaults.ERASE_RADIUS)
-        val removed = before - StrokeStore.count()
+        val removed = before - StrokeStore.countStrokes()
         // Серый след ластика лежит вдоль пути, а не только на удалённых штрихах.
-        val dirty = StrokeStore.union(removedRect, StrokeStore.boundsOfPath(path, ERASER_TRACK_WIDTH))
-        SpikeLog.line("PEN_ERASE", "removed" to removed, "rect" to dirty?.toShortString())
+        val dirty = StrokeStore.union(removedRect, StrokeStore.computePathBounds(path, ERASER_TRACK_WIDTH))
+        SpikeLog.write("PEN_ERASE", "removed" to removed, "rect" to dirty?.toShortString())
         if (dirty == null) return
         commitErase(dirty)
     }
 
-    private fun strokeBounds(points: List<TouchPoint>): Rect {
+    private fun computeStrokeBounds(points: List<TouchPoint>): Rect {
         val first = points.first()
         val bounds = Rect(first.x.toInt(), first.y.toInt(), first.x.toInt(), first.y.toInt())
         for (point in points) {
@@ -304,7 +304,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
                     StrokeStore.drawTo(it)
                 }
             } catch (error: Throwable) {
-                SpikeLog.line("SURFACE_DRAW", "error" to error)
+                SpikeLog.write("SURFACE_DRAW", "error" to error)
             } finally {
                 canvas?.let { holder.unlockCanvasAndPost(it) }
             }
@@ -324,7 +324,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
                 UpdateMode.ANIMATION_MONO,
             )
         } catch (error: Throwable) {
-            SpikeLog.line("REFRESH_REGION", "error" to error)
+            SpikeLog.write("REFRESH_REGION", "error" to error)
         }
     }
 
@@ -359,9 +359,9 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         if (isGcEnabled && rect != null) {
             try {
                 EpdController.invalidate(this, rect.left, rect.top, rect.right, rect.bottom, UpdateMode.GC)
-                SpikeLog.line("PEN_GC", "rect" to rect.toShortString())
+                SpikeLog.write("PEN_GC", "rect" to rect.toShortString())
             } catch (error: Throwable) {
-                SpikeLog.line("PEN_GC", "error" to error)
+                SpikeLog.write("PEN_GC", "error" to error)
             }
         }
         synchronized(eraseLock) { isEraseGcDone = isGcEnabled }
@@ -384,7 +384,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         if (isResumed) {
             enableRawDrawing()
         }
-        SpikeLog.line(
+        SpikeLog.write(
             "ERASE_COMMIT",
             "rect" to rect?.toShortString(),
             "gc" to isGc,
@@ -399,7 +399,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
             removeCallbacks(gcStep)
             removeCallbacks(resumeStep)
             if (eraseCommitStartedAt != 0L) {
-                SpikeLog.line("ERASE_COMMIT_CANCELLED", "rect" to pendingEraseRect?.toShortString())
+                SpikeLog.write("ERASE_COMMIT_CANCELLED", "rect" to pendingEraseRect?.toShortString())
             }
             pendingEraseRect = null
             eraseCommitStartedAt = 0L

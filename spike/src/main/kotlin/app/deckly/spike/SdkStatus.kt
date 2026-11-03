@@ -11,7 +11,7 @@ object SdkStatus {
         get() = isOnyxDevice && initError == null
 
     fun logSummary() {
-        SpikeLog.line(
+        SpikeLog.write(
             "SDK",
             "onyx" to isOnyxDevice,
             "init" to (initError?.toString() ?: "ok"),

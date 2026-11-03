@@ -64,7 +64,7 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
     private fun beginGesture(event: MotionEvent) {
         val tool = event.getToolType(0)
         val buttons = event.buttonState
-        SpikeLog.line("MOTION", "tool" to toolName(tool), "buttons" to "0x" + Integer.toHexString(buttons))
+        SpikeLog.write("MOTION", "tool" to describeTool(tool), "buttons" to "0x" + Integer.toHexString(buttons))
 
         strokeValues.clear()
         erasePath.clear()
@@ -79,7 +79,7 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
             else -> Gesture.IGNORE
         }
         if (tool == MotionEvent.TOOL_TYPE_FINGER) {
-            SpikeLog.line("PEN_FINGER_IGNORED")
+            SpikeLog.write("PEN_FINGER_IGNORED")
         }
         if (gesture != Gesture.IGNORE) {
             collectPoints(event, includeHistory = false)
@@ -111,13 +111,13 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
     private fun finishStroke() {
         if (strokeValues.isEmpty()) return
         StrokeStore.add(SpikeStroke(strokeValues.toFloatArray(), PenDefaults.STROKE_WIDTH))
-        SpikeLog.line("PEN_STROKE", "points" to strokeValues.size / SpikeStroke.VALUES_PER_POINT)
+        SpikeLog.write("PEN_STROKE", "points" to strokeValues.size / SpikeStroke.VALUES_PER_POINT)
         strokeValues.clear()
         refreshPartially(gestureBounds)
     }
 
     private fun finishErase() {
-        SpikeLog.line("PEN_ERASE", "removed" to removedInGesture, "rect" to gestureBounds?.toShortString())
+        SpikeLog.write("PEN_ERASE", "removed" to removedInGesture, "rect" to gestureBounds?.toShortString())
         erasePath.clear()
         refreshPartially(gestureBounds)
     }
@@ -146,23 +146,23 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
             strokeValues += point.y
             strokeValues += pressure
         }
-        val dirty = boundsOf(points, PenDefaults.STROKE_WIDTH.toInt() + 2)
+        val dirty = computeBounds(points, PenDefaults.STROKE_WIDTH.toInt() + 2)
         extendBounds(dirty)
         invalidateRegion(dirty)
     }
 
     private fun eraseWith(points: List<PointF>) {
         erasePath += points
-        val before = StrokeStore.count()
+        val before = StrokeStore.countStrokes()
         val dirty = StrokeStore.eraseAlong(points, PenDefaults.ERASE_RADIUS)
-        removedInGesture += before - StrokeStore.count()
+        removedInGesture += before - StrokeStore.countStrokes()
         if (dirty != null) {
             extendBounds(dirty)
             invalidateRegion(dirty)
         }
     }
 
-    private fun boundsOf(points: List<PointF>, margin: Int): Rect {
+    private fun computeBounds(points: List<PointF>, margin: Int): Rect {
         val first = points.first()
         val bounds = Rect(first.x.toInt(), first.y.toInt(), first.x.toInt(), first.y.toInt())
         for (point in points) {
@@ -198,7 +198,7 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
         try {
             EpdController.invalidate(this, rect.left, rect.top, rect.right, rect.bottom, UpdateMode.DU)
         } catch (error: Throwable) {
-            SpikeLog.line("REFRESH_REGION", "error" to error)
+            SpikeLog.write("REFRESH_REGION", "error" to error)
             invalidateRegion(rect)
         }
     }
@@ -210,7 +210,7 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
         invalidate(rect)
     }
 
-    private fun toolName(tool: Int): String = when (tool) {
+    private fun describeTool(tool: Int): String = when (tool) {
         MotionEvent.TOOL_TYPE_STYLUS -> "STYLUS"
         MotionEvent.TOOL_TYPE_ERASER -> "ERASER"
         MotionEvent.TOOL_TYPE_FINGER -> "FINGER"
