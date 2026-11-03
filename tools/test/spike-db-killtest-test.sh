@@ -15,9 +15,15 @@ passed=0
 failed=0
 test_ok=1
 
-GOOD_LINE='PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=10 entries=10 consistent=true'
-SKEWED_LINE='PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=9 entries=10 consistent=false'
-CORRUPT_LINE='PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity="*** in database main" counter=10 entries=10 consistent=true'
+DENIED_LINE='PROBE_DENIED'
+
+# Строка PROBE_CHECK: make_check_line ЧИСЛО_СТРОК [СЧЁТЧИК=число строк] [INTEGRITY=ok].
+make_check_line() {
+  local entries=$1 counter=${2:-$1} integrity=${3:-ok} consistent=false
+  if [[ "$counter" == "$entries" ]]; then consistent=true; fi
+  printf 'PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=%s counter=%s entries=%s consistent=%s' \
+    "$integrity" "$counter" "$entries" "$consistent"
+}
 
 # --- заглушка adb --------------------------------------------------------------------------------
 
@@ -93,12 +99,12 @@ has_exit_code() { [[ "$exit_code" -eq "$1" ]]; }
 has_output_containing() { [[ "$output" == *"$1"* ]]; }
 has_call_count() { [[ "$(grep -c -- "$1" "$STUB_ROOT/calls")" -eq "$2" ]]; }
 
-# Строки журнала вызовов $1, $2… встречаются в этом порядке (первое вхождение каждой).
+# Вызовы $1, $2… есть в журнале в этом порядке: каждый ищется после предыдущего найденного.
 has_calls_in_order() {
   local previous=0 pattern line_number
   for pattern in "$@"; do
-    line_number=$(grep -n -m1 -- "$pattern" "$STUB_ROOT/calls" | cut -d: -f1)
-    [[ -n "$line_number" && "$line_number" -gt "$previous" ]] || return 1
+    line_number=$(grep -n -- "$pattern" "$STUB_ROOT/calls" | cut -d: -f1 | awk -v after="$previous" '$1 > after { print; exit }')
+    [[ -n "$line_number" ]] || return 1
     previous=$line_number
   done
 }
@@ -106,44 +112,83 @@ has_calls_in_order() {
 EXTRA_ENV=()
 
 # --- тесты ---------------------------------------------------------------------------------------
+# Первая строка каждого случая — базовая проверка до цикла, дальше по строке на запуск.
 
-test_all_runs_consistent() {
-  prepare_case all_runs_consistent "$GOOD_LINE"
+test_all_runs_in_series_pass() {
+  prepare_case all_runs_in_series_pass "$(make_check_line 0)" "$(make_check_line 700)" "$(make_check_line 1400)" "$(make_check_line 2100)"
   run_killtest 3
   check_that "код 0" has_exit_code 0
-  check_that "итог «consistent 3 из 3, integrity ok 3 из 3»" has_output_containing "consistent 3 из 3, integrity ok 3 из 3"
+  check_that "итог «consistent 3 из 3, integrity ok 3 из 3, посреди серии 3 из 3»" \
+    has_output_containing "consistent 3 из 3, integrity ok 3 из 3, посреди серии 3 из 3"
 }
 
 test_default_is_twenty_runs() {
-  prepare_case default_is_twenty_runs "$GOOD_LINE"
+  local lines=() index
+  for index in $(seq 0 20); do
+    lines+=("$(make_check_line $(( index * 500 )))")
+  done
+  prepare_case default_is_twenty_runs "${lines[@]}"
   run_killtest
   check_that "код 0" has_exit_code 0
-  check_that "итог «consistent 20 из 20, integrity ok 20 из 20»" has_output_containing "consistent 20 из 20, integrity ok 20 из 20"
+  check_that "итог про 20 из 20" \
+    has_output_containing "consistent 20 из 20, integrity ok 20 из 20, посреди серии 20 из 20"
 }
 
 test_calls_follow_the_plan_order() {
-  prepare_case calls_follow_the_plan_order "$GOOD_LINE"
+  prepare_case calls_follow_the_plan_order "$(make_check_line 0)" "$(make_check_line 700)"
   run_killtest 1
-  check_that "порядок: ждём планшет, серия, остановка, очистка журнала, проверка, чтение журнала" \
-    has_calls_in_order 'wait-for-device' '--es probe series' 'force-stop app.deckly.spike' 'logcat -c' '--es probe check' 'logcat -d'
+  check_that "порядок: базовая проверка, остановка, серия, остановка, очистка журнала, проверка, чтение журнала" \
+    has_calls_in_order 'wait-for-device' 'logcat -c' '--es probe check' 'logcat -d' 'force-stop app.deckly.spike' \
+    '--es probe series' 'force-stop app.deckly.spike' 'logcat -c' '--es probe check' 'logcat -d'
+}
+
+test_classifies_increase_per_run() {
+  # Приращения: 1999 (посреди серии), 2000 (после серии), 0 (до серии).
+  prepare_case classifies_increase_per_run "$(make_check_line 0)" "$(make_check_line 1999)" "$(make_check_line 3999)" "$(make_check_line 3999)"
+  run_killtest 3
+  check_that "код 4: посреди серии только 1 из 3" has_exit_code 4
+  check_that "+1999 — посреди серии" has_output_containing "+1999 (посреди серии)"
+  check_that "+2000 — после серии" has_output_containing "+2000 (после серии)"
+  check_that "+0 — до серии" has_output_containing "+0 (до серии)"
+  check_that "итог «посреди серии 1 из 3»" has_output_containing "посреди серии 1 из 3"
+}
+
+test_half_of_runs_in_series_is_enough() {
+  # Из четырёх запусков посреди серии два: ⌈4/2⌉ = 2.
+  prepare_case half_of_runs_in_series_is_enough "$(make_check_line 0)" "$(make_check_line 100)" "$(make_check_line 100)" \
+    "$(make_check_line 2100)" "$(make_check_line 2200)"
+  run_killtest 4
+  check_that "код 0" has_exit_code 0
+  check_that "итог «посреди серии 2 из 4»" has_output_containing "посреди серии 2 из 4"
+}
+
+test_pause_outside_series_exits_with_four() {
+  prepare_case pause_outside_series_exits_with_four "$(make_check_line 5)"
+  run_killtest 3
+  check_that "код 4" has_exit_code 4
+  check_that "итог «consistent 3 из 3, integrity ok 3 из 3, посреди серии 0 из 3»" \
+    has_output_containing "consistent 3 из 3, integrity ok 3 из 3, посреди серии 0 из 3"
+  check_that "напечатаны фактические приращения" has_output_containing "+0 +0 +0"
+  check_that "подсказка про паузу перед остановкой" has_output_containing "KILL_DELAY_MIN_MS"
 }
 
 test_inconsistent_run_fails() {
-  prepare_case inconsistent_run_fails "$GOOD_LINE" "$SKEWED_LINE" "$GOOD_LINE"
+  prepare_case inconsistent_run_fails "$(make_check_line 0)" "$(make_check_line 700)" "$(make_check_line 1400 1399)" "$(make_check_line 2100)"
   run_killtest 3
   check_that "код 1" has_exit_code 1
   check_that "итог «consistent 2 из 3, integrity ok 3 из 3»" has_output_containing "consistent 2 из 3, integrity ok 3 из 3"
 }
 
 test_integrity_failure_fails() {
-  prepare_case integrity_failure_fails "$GOOD_LINE" "$CORRUPT_LINE" "$GOOD_LINE"
+  prepare_case integrity_failure_fails "$(make_check_line 0)" "$(make_check_line 700)" \
+    "$(make_check_line 1400 1400 '"*** in database main"')" "$(make_check_line 2100)"
   run_killtest 3
   check_that "код 1" has_exit_code 1
   check_that "итог «consistent 3 из 3, integrity ok 2 из 3»" has_output_containing "consistent 3 из 3, integrity ok 2 из 3"
 }
 
 test_missing_check_line_fails() {
-  prepare_case missing_check_line_fails "$GOOD_LINE" "NONE" "$GOOD_LINE"
+  prepare_case missing_check_line_fails "$(make_check_line 0)" "$(make_check_line 700)" "NONE" "$(make_check_line 2100)"
   EXTRA_ENV=(CHECK_TIMEOUT=1)
   run_killtest 3
   EXTRA_ENV=()
@@ -153,15 +198,23 @@ test_missing_check_line_fails() {
 }
 
 test_denied_stops_early() {
-  prepare_case denied_stops_early "PROBE_DENIED"
+  prepare_case denied_stops_early "$(make_check_line 0)" "$DENIED_LINE"
   run_killtest 5
   check_that "код 3" has_exit_code 3
   check_that "сказано про PROBE_DENIED" has_output_containing "PROBE_DENIED"
   check_that "остановились после первого запуска" has_call_count '--es probe series' 1
 }
 
+test_denied_at_baseline_stops_before_series() {
+  prepare_case denied_at_baseline_stops_before_series "$DENIED_LINE"
+  run_killtest 5
+  check_that "код 3" has_exit_code 3
+  check_that "сказано про PROBE_DENIED" has_output_containing "PROBE_DENIED"
+  check_that "серия не запускалась" has_call_count '--es probe series' 0
+}
+
 test_no_device_exits_with_two() {
-  prepare_case no_device_exits_with_two "$GOOD_LINE"
+  prepare_case no_device_exits_with_two "$(make_check_line 0)"
   EXTRA_ENV=(STUB_NO_DEVICE=1 WAIT_TIMEOUT=1)
   run_killtest 3
   EXTRA_ENV=()
@@ -170,7 +223,7 @@ test_no_device_exits_with_two() {
 }
 
 test_transient_adb_failure_is_retried() {
-  prepare_case transient_adb_failure_is_retried "$GOOD_LINE"
+  prepare_case transient_adb_failure_is_retried "$(make_check_line 0)" "$(make_check_line 700)"
   EXTRA_ENV=(STUB_FAIL_FIRST_SERIES_START=1)
   run_killtest 1
   EXTRA_ENV=()
@@ -197,13 +250,17 @@ run_test() {
 write_stub_adb
 
 for test_name in \
-  test_all_runs_consistent \
+  test_all_runs_in_series_pass \
   test_default_is_twenty_runs \
   test_calls_follow_the_plan_order \
+  test_classifies_increase_per_run \
+  test_half_of_runs_in_series_is_enough \
+  test_pause_outside_series_exits_with_four \
   test_inconsistent_run_fails \
   test_integrity_failure_fails \
   test_missing_check_line_fails \
   test_denied_stops_early \
+  test_denied_at_baseline_stops_before_series \
   test_no_device_exits_with_two \
   test_transient_adb_failure_is_retried; do
   run_test "$test_name"
