@@ -490,11 +490,17 @@
 
 - [x] **Дополнение к задаче 4: тесты скрипта и схема чужой базы**
 
-  - `tools/test/spike-db-killtest-test.sh` — девять тестов на заглушке adb (порядок вызовов, итог
-    «consistent K из N, integrity ok K из N», коды выхода 0/1/2/3, повтор упавшей команды adb).
-    Run: `bash tools/test/spike-db-killtest-test.sh`; Expected: `9 passed, 0 failed`.
-  - Коды выхода `spike-db-killtest.sh`: 0 — N из N; 1 — хотя бы один запуск не прошёл; 2 — планшет не
-    найден; 3 — `PROBE_DENIED` (доступ ко всем файлам не выдан), прогон прекращается.
+  - `tools/test/spike-db-killtest-test.sh` — тесты на заглушке adb (порядок вызовов с базовой
+    линией, итог, приращения и метки, коды выхода, границы 0/1999/2000, повтор упавшей команды adb).
+    Run: `bash tools/test/spike-db-killtest-test.sh`; Expected: `13 passed, 0 failed`.
+  - Перед циклом — базовая проверка (`PROBE_CHECK`, затем `force-stop`). Каждый запуск получает
+    приращение строк к предыдущей проверке и метку: «до серии» (≤ 0), «посреди серии»
+    (0 < Δ < `SERIES_SIZE` = 2000), «после серии» (≥ 2000). Итог:
+    «consistent K из N, integrity ok K из N, посреди серии M из N».
+  - Коды выхода `spike-db-killtest.sh`: 0 — consistent и integrity N из N и M ≥ ⌈N/2⌉; 1 — хотя бы
+    один запуск несогласован, испорчен или не дал строки; 2 — планшет не найден; 3 — `PROBE_DENIED`
+    (доступ ко всем файлам не выдан), прогон прекращается; 4 — всё цело, но убийства не попали в
+    серию: в stderr приращения по запускам и куда сдвинуть `KILL_DELAY_MIN_MS`/`KILL_DELAY_MAX_MS`.
   - Для задачи 5, шаг 7. Room открывает `foreign.db`, только если схема совпадает с его схемой. Схема из
     сгенерированного `ProbeDatabase_Impl.kt` (`spike/build/generated/ksp/debug/kotlin/app/deckly/spike/db/`):
     ```sql
@@ -551,7 +557,8 @@
 
 - [ ] **Step 6: База.**
   Run: `tools/spike-db-killtest.sh 20`
-  Expected: `consistent 20 из 20, integrity ok 20 из 20`, код 0. Плюс «База: серия» из интерфейса —
+  Expected: `consistent 20 из 20, integrity ok 20 из 20, посреди серии M из 20` с M ≥ 10, код 0.
+  Код 4 — сдвинуть паузу по подсказке скрипта и повторить. Плюс «База: серия» из интерфейса —
   записать `avgMs` и `maxMs` из `PROBE_SERIES`.
 
 - [ ] **Step 7: Чужая база и переустановка.** На компьютере создать `foreign.db` той же схемы
