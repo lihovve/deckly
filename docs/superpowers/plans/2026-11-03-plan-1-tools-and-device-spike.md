@@ -305,6 +305,22 @@
 
 - [x] **Step 6: Commit** — `tools/install-apk.sh tools/test/`, «Установка APK на Boox кусками с проверкой md5».
 
+- [x] **Дополнение к задаче 2 (после приёмки): переживать обрывы связи** — отдельный коммит
+
+  Планшет рвёт связь по нескольку раз в минуту, поэтому каждый шаг по `adb` переживает обрыв:
+  - `OP_TIMEOUT` (120 секунд) вокруг каждого `adb push` и `adb shell`; зависшая операция — неудачная
+    попытка, кусок передаётся заново;
+  - `wait-for-device` перед каждой попыткой, в том числе перед склейкой и `pm install`;
+  - склейка и сверка md5 целого — до `MAX_TRIES` попыток, и только потом код 4;
+  - `pm install`: `Failure` в выводе — сразу код 5; нет ни `Success`, ни `Failure` (обрыв транспорта,
+    `error: device offline`, пустой вывод, таймаут) — повтор до `MAX_TRIES` попыток;
+  - новые тесты: `test_hung_push_retried` (`FAKE_HANG_PUSH=002:1 OP_TIMEOUT=1`) и
+    `test_pm_transport_error_retried` (`FAKE_PM_FLAKY=1`).
+
+  Run: `bash tools/test/install-apk-test.sh`
+  Expected: `9 passed, 0 failed` (шесть тестов шага 2, седьмой `test_bad_assembly_reported` на код 4 и
+  два новых).
+
 ### Task 3: прототип пера
 
 **Files:**
