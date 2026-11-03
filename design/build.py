@@ -94,7 +94,7 @@ def add(key, title, body, group, note=''):
     SCREENS[key] = dict(title=title, body=body, group=group, note=note)
 
 
-def learn(key, back_key, epoch=1, pos='14 из 40', successes='3 / 8', front='der Apfel', back='яблоко', small='мн. ч. die Äpfel', reason=''):
+def learn(key, back_key, epoch=1, pos='14 из 40', successes='3 / 4', front='der Apfel', back='яблоко', small='мн. ч. die Äpfel', reason=''):
     menu = 'menu-learn-e2' if epoch == 2 else 'menu-learn'
     prefix = head(f'Обучение · карточка {pos}', successes, menu=menu) + tabs(epoch, epoch)
     seen_key = key + '-seen' if not reason else key
@@ -117,7 +117,7 @@ def learn(key, back_key, epoch=1, pos='14 из 40', successes='3 / 8', front='de
 learn('learn-front', 'learn-back')
 learn('learn-postponed', 'learn-postponed-back', pos='36 из 40', reason='Уже отложена')
 learn('learn-last-front', 'learn-last', pos='40 из 40', reason='Последняя')
-learn('learn-e2', 'learn-e2-back', epoch=2, pos='1 из 23', successes='2 / 5', front='die Straße', back='улица', small='')
+learn('learn-e2', 'learn-e2-back', epoch=2, pos='1 из 23', successes='2 / 4', front='die Straße', back='улица', small='')
 add('transition', 'Следующий проход', head('Проход завершён') + tabs(2, 2)
     + card('<div class="empty-icon">'+icon('check')+'</div><h2 class="big">II</h2><p class="hint">23 карточки</p>', 'Следующий проход: эпоха II')
     + foot([btn('Начать проход', 'learn-e2', 'primary', 'right')], 'one'), 'Обучение', 'Выпуск, добор и перемешивание выполнены до показа перехода.')
@@ -135,8 +135,8 @@ def browse(key, opened, pos, front, back, metric=None, active=1):
 
 
 browse('browse', 3, '2 из 9', 'die Brücke', 'мост', '1 / 4')
-browse('browse-e2', 2, '1 из 23', 'die Straße', 'улица', '2 / 5')
-browse('browse-e1', 1, '14 из 40', 'der Apfel', 'яблоко', '3 / 8', active=2)
+browse('browse-e2', 2, '1 из 23', 'die Straße', 'улица', '2 / 4')
+browse('browse-e1', 1, '14 из 40', 'der Apfel', 'яблоко', '3 / 4', active=2)
 browse('pool', 0, '2 из 112', 'der Baum', 'дерево')
 browse('learned', 5, '2 из 61', 'das Haus', 'дом')
 
