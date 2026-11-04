@@ -4,23 +4,25 @@ import androidx.room3.withReadTransaction
 import androidx.room3.withWriteTransaction
 import app.deckly.data.db.DecklyDatabase
 import app.deckly.data.db.mapCard
-import app.deckly.data.db.mapCardState
 import app.deckly.data.db.mapDeck
 import app.deckly.data.db.mapDeckEntity
+import app.deckly.data.strokes.StrokeFiles
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.port.DeckRepository
 import app.deckly.domain.port.DeckSummary
 import app.deckly.domain.model.createDeck as buildInitialDeck
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
- * Колоды и состояние алгоритма в Room. Файлы штрихов удаляются [deleteFile] только после коммита
- * транзакции: при откате ни один файл не тронут.
+ * Колоды и состояние алгоритма в Room. Файлы штрихов удаляются только после коммита транзакции:
+ * при откате ни один файл не тронут.
  */
 class RoomDeckRepository(
     private val database: DecklyDatabase,
-    private val deleteFile: (String) -> Unit,
+    private val files: StrokeFiles,
 ) : DeckRepository {
 
     override suspend fun listDecks(): List<DeckSummary> =
@@ -37,15 +39,15 @@ class RoomDeckRepository(
     }
 
     override suspend fun deleteDeck(deckId: Long) {
-        val files = database.withWriteTransaction {
+        val obsoleteFiles = database.withWriteTransaction {
             val draft = database.draftDao().findDraft()?.takeIf { it.deckId == deckId }
-            val files = database.cardDao().listDeckContentFiles(deckId) + listOfNotNull(draft?.contentFile)
+            val obsolete = database.cardDao().listDeckContentFiles(deckId) + listOfNotNull(draft?.contentFile)
             database.draftDao().deleteDraftOfDeck(deckId)
             database.appStateDao().clearCurrentDeck(deckId)
             database.deckDao().deleteDeck(deckId)
-            files
+            obsolete
         }
-        files.forEach(deleteFile)
+        deleteFiles(obsoleteFiles)
     }
 
     override suspend fun loadDeckState(deckId: Long): DeckState =
@@ -55,19 +57,11 @@ class RoomDeckRepository(
         }
 
     override suspend fun saveDeckChanges(changes: DeckChanges) {
-        val files = database.withWriteTransaction {
-            val deckId = changes.deck.id
-            val updatedDecks = database.deckDao().updateDeck(mapDeckEntity(changes.deck))
-            check(updatedDecks == 1) { "Колоды $deckId нет в базе" }
-            for (card in changes.upsertedCards) {
-                val updatedCards = database.cardDao().updateCardState(mapCardState(card))
-                // Новые карточки создаёт только commitDraft или импорт.
-                check(updatedCards == 1) { "Карточки ${card.id} нет в базе" }
-            }
-            val files = database.cardDao().listContentFiles(changes.deletedCardIds)
-            database.cardDao().deleteCards(changes.deletedCardIds)
-            files
-        }
-        files.forEach(deleteFile)
+        val obsoleteFiles = database.withWriteTransaction { database.writeDeckChanges(changes) }
+        deleteFiles(obsoleteFiles)
+    }
+
+    private suspend fun deleteFiles(names: List<String>) {
+        withContext(Dispatchers.IO) { names.forEach(files::deleteContentFile) }
     }
 }

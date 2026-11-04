@@ -2,6 +2,7 @@ package app.deckly.data.repository
 
 import app.deckly.data.SCENARIO_DAY
 import app.deckly.data.Scenario
+import app.deckly.data.TestRepositories
 import app.deckly.data.assertSuspendThrows
 import app.deckly.data.buildEpochCard
 import app.deckly.data.buildFullDeck
@@ -10,8 +11,8 @@ import app.deckly.data.buildPlainCard
 import app.deckly.data.buildSeedContentFile
 import app.deckly.data.buildWaitingEpochScenario
 import app.deckly.data.createTestStorage
-import app.deckly.data.db.DecklyDatabase
-import app.deckly.data.openTestDatabase
+import app.deckly.data.hasStrokeFile
+import app.deckly.data.listStrokeFileNames
 import app.deckly.data.seedDeck
 import app.deckly.data.seedDraft
 import app.deckly.data.sortCardsById
@@ -28,10 +29,10 @@ import kotlin.random.Random
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -41,83 +42,69 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class RoomDeckRepositoryTest {
 
-    private val storage = createTestStorage()
-    private val deletedFiles = mutableListOf<String>()
-    private lateinit var database: DecklyDatabase
-    private lateinit var repository: RoomDeckRepository
-    private lateinit var appState: RoomAppStateRepository
-
-    @Before
-    fun openRepositories() {
-        database = openTestDatabase(storage)
-        repository = RoomDeckRepository(database) { deletedFiles += it }
-        appState = RoomAppStateRepository(database)
-    }
+    private val repos = TestRepositories(createTestStorage())
 
     @After
-    fun closeDatabase() {
-        database.close()
-    }
-
-    /** Закрывает базу и открывает её заново: как после перезапуска приложения. */
-    private fun reopenRepositories() {
-        database.close()
-        openRepositories()
+    fun closeRepositories() {
+        repos.close()
     }
 
     @Test
     fun createdDecksAreListedInCreationOrder() = runTest {
-        val second = repository.createDeck("Б")
-        val first = repository.createDeck("А")
+        val second = repos.decks.createDeck("Б")
+        val first = repos.decks.createDeck("А")
 
         assertTrue(second.id < first.id)
-        assertEquals(listOf(DeckSummary(second.id, "Б"), DeckSummary(first.id, "А")), repository.listDecks())
+        assertEquals(
+            listOf(DeckSummary(second.id, "Б"), DeckSummary(first.id, "А")),
+            repos.decks.listDecks(),
+        )
     }
 
     @Test
     fun createdDeckStartsInInitialState() = runTest {
-        val deck = repository.createDeck("Новая")
+        val deck = repos.decks.createDeck("Новая")
 
         assertEquals(createDeck(deck.id, "Новая"), deck)
-        assertEquals(DeckState(deck, emptyList()), repository.loadDeckState(deck.id))
+        assertEquals(DeckState(deck, emptyList()), repos.decks.loadDeckState(deck.id))
     }
 
     @Test
     fun renameChangesOnlyName() = runTest {
         val state = DeckState(buildFullDeck(), listOf(buildPlainCard(1)))
-        seedDeck(database, state)
+        seedDeck(repos, state)
 
-        repository.renameDeck(state.deck.id, "Новое имя")
+        repos.decks.renameDeck(state.deck.id, "Новое имя")
 
         assertEquals(
             state.copy(deck = state.deck.copy(name = "Новое имя")),
-            repository.loadDeckState(state.deck.id),
+            repos.decks.loadDeckState(state.deck.id),
         )
-        assertEquals(listOf(DeckSummary(state.deck.id, "Новое имя")), repository.listDecks())
+        assertEquals(listOf(DeckSummary(state.deck.id, "Новое имя")), repos.decks.listDecks())
     }
 
     @Test
     fun stateSurvivesReopening() = runTest {
         val scenario = buildInterruptedPassScenario()
         assertInterruptedPassShape(scenario)
-        seedDeck(database, scenario.before)
+        seedDeck(repos, scenario.before)
 
-        repository.saveDeckChanges(collectDeckChanges(scenario.before, scenario.after))
-        reopenRepositories()
+        repos.decks.saveDeckChanges(collectDeckChanges(scenario.before, scenario.after))
+        repos.reopen()
 
-        assertEquals(scenario.after, repository.loadDeckState(scenario.after.deck.id))
+        assertEquals(scenario.after, repos.decks.loadDeckState(scenario.after.deck.id))
     }
 
     @Test
     fun waitingEpochAndTailSurviveReopening() = runTest {
         val scenario = buildWaitingEpochScenario()
         assertWaitingEpochShape(scenario)
-        seedDeck(database, scenario.before)
+        seedDeck(repos, scenario.before)
 
-        repository.saveDeckChanges(collectDeckChanges(scenario.before, scenario.after))
-        reopenRepositories()
+        repos.decks.saveDeckChanges(collectDeckChanges(scenario.before, scenario.after))
+        repos.reopen()
 
-        assertEquals(scenario.after, repository.loadDeckState(scenario.after.deck.id))
+        assertEquals(scenario.after, repos.decks.loadDeckState(scenario.after.deck.id))
     }
 
     @Test
@@ -127,98 +114,98 @@ class RoomDeckRepositoryTest {
             currentEpoch = 2,
             passStarted = true,
         )
-        val before = DeckState(deck, (1L..3L).map { buildEpochCard(it, Section.EPOCH_2, (it - 1).toInt(), successes = 1) })
-        seedDeck(database, before)
+        val cards = (1L..3L).map { buildEpochCard(it, Section.EPOCH_2, (it - 1).toInt(), successes = 1) }
+        val before = DeckState(deck, cards)
+        seedDeck(repos, before)
         val random = Random(3)
         val flipped = ReviewEngine.applyAction(before, ReviewAction.Flip, SCENARIO_DAY, random).state
         val after = ReviewEngine.applyAction(flipped, ReviewAction.Knew, SCENARIO_DAY, random).state
-        val ratedId = before.cards.single { it.successes == 1 && it.position == 0 }.id
+        val ratedId = before.cards.single { it.position == 0 }.id
 
-        repository.saveDeckChanges(collectDeckChanges(before, after))
-        reopenRepositories()
+        repos.decks.saveDeckChanges(collectDeckChanges(before, after))
+        repos.reopen()
 
-        val rated = repository.loadDeckState(deck.id).cards.single { it.id == ratedId }
+        val loaded = repos.decks.loadDeckState(deck.id)
+        val rated = loaded.cards.single { it.id == ratedId }
         assertEquals(2, rated.successes)
         assertEquals(SCENARIO_DAY, rated.lastSuccessDay)
-        assertEquals(after.deck.passCursor, repository.loadDeckState(deck.id).deck.passCursor)
+        assertEquals(after.deck.passCursor, loaded.deck.passCursor)
     }
 
     @Test
     fun failedSaveWritesNothing() = runTest {
         val scenario = buildWaitingEpochScenario()
-        seedDeck(database, scenario.before)
-        val existing = scenario.before.cards.first()
+        seedDeck(repos, scenario.before)
+        val namesBefore = listStrokeFileNames(repos.storage)
         val changes = DeckChanges(
             deck = scenario.after.deck,
-            upsertedCards = listOf(existing.copy(successes = 3), buildPlainCard(999)),
+            upsertedCards = listOf(scenario.before.cards.first().copy(successes = 3), buildPlainCard(999)),
             deletedCardIds = setOf(scenario.before.cards.last().id),
         )
 
-        assertSuspendThrows<IllegalStateException> { repository.saveDeckChanges(changes) }
+        assertSuspendThrows<IllegalStateException> { repos.decks.saveDeckChanges(changes) }
 
-        assertEquals(scenario.before, repository.loadDeckState(scenario.before.deck.id))
-        assertTrue("файлы удалены при откате: $deletedFiles", deletedFiles.isEmpty())
+        assertEquals(scenario.before, repos.decks.loadDeckState(scenario.before.deck.id))
+        assertEquals("файлы удалены при откате", namesBefore, listStrokeFileNames(repos.storage))
     }
 
     @Test
     fun operationsOnMissingDeckFail() = runTest {
         val deck = createDeck(55, "Нет такой")
 
-        assertSuspendThrows<IllegalStateException> { repository.loadDeckState(deck.id) }
-        assertSuspendThrows<IllegalStateException> { repository.renameDeck(deck.id, "Имя") }
+        assertSuspendThrows<IllegalStateException> { repos.decks.loadDeckState(deck.id) }
+        assertSuspendThrows<IllegalStateException> { repos.decks.renameDeck(deck.id, "Имя") }
         assertSuspendThrows<IllegalStateException> {
-            repository.saveDeckChanges(DeckChanges(deck, emptyList(), emptySet()))
+            repos.decks.saveDeckChanges(DeckChanges(deck, emptyList(), emptySet()))
         }
     }
 
     @Test
     fun deletedCardsLoseTheirFiles() = runTest {
         val state = DeckState(buildFullDeck(), listOf(buildPlainCard(1), buildPlainCard(2, 1), buildPlainCard(3, 2)))
-        seedDeck(database, state)
+        seedDeck(repos, state)
 
-        repository.saveDeckChanges(DeckChanges(state.deck, emptyList(), setOf(1L, 3L)))
+        repos.decks.saveDeckChanges(DeckChanges(state.deck, emptyList(), setOf(1L, 3L)))
 
-        assertEquals(setOf(buildSeedContentFile(1), buildSeedContentFile(3)), deletedFiles.toSet())
-        assertEquals(2, deletedFiles.size)
-        assertEquals(listOf(2L), repository.loadDeckState(state.deck.id).cards.map { it.id })
+        assertEquals(setOf(buildSeedContentFile(2)), listStrokeFileNames(repos.storage))
+        assertEquals(listOf(2L), repos.decks.loadDeckState(state.deck.id).cards.map { it.id })
     }
 
     @Test
     fun deletingDeckClearsItsDraftAndCurrentChoice() = runTest {
         val state = DeckState(buildFullDeck(id = 1), listOf(buildPlainCard(1), buildPlainCard(2, 1)))
         val other = DeckState(buildFullDeck(id = 2), listOf(buildPlainCard(3)))
-        seedDeck(database, state)
-        seedDeck(database, other)
-        seedDraft(database, deckId = 1, contentFile = "draft-aaaa.dks")
-        appState.saveCurrentDeckId(1)
+        seedDeck(repos, state)
+        seedDeck(repos, other)
+        seedDraft(repos, deckId = 1, contentFile = "draft-aaaa.dks")
+        repos.appState.saveCurrentDeckId(1)
 
-        repository.deleteDeck(1)
+        repos.decks.deleteDeck(1)
 
-        assertNull(database.draftDao().findDraft())
-        assertNull(appState.loadCurrentDeckId())
-        assertEquals(
-            setOf(buildSeedContentFile(1), buildSeedContentFile(2), "draft-aaaa.dks"),
-            deletedFiles.toSet(),
-        )
-        assertEquals(listOf(DeckSummary(2, other.deck.name)), repository.listDecks())
-        assertEquals(other.sortCardsById(), repository.loadDeckState(2))
+        assertNull(repos.database.draftDao().findDraft())
+        assertNull(repos.appState.loadCurrentDeckId())
+        assertEquals(setOf(buildSeedContentFile(3)), listStrokeFileNames(repos.storage))
+        assertEquals(listOf(DeckSummary(2, other.deck.name)), repos.decks.listDecks())
+        assertEquals(other.sortCardsById(), repos.decks.loadDeckState(2))
     }
 
     @Test
     fun deletingDeckKeepsDraftAndCurrentChoiceOfAnotherDeck() = runTest {
         val state = DeckState(buildFullDeck(id = 1), listOf(buildPlainCard(1)))
         val other = DeckState(buildFullDeck(id = 2), listOf(buildPlainCard(3)))
-        seedDeck(database, state)
-        seedDeck(database, other)
-        seedDraft(database, deckId = 2, contentFile = "draft-bbbb.dks")
-        appState.saveCurrentDeckId(2)
+        seedDeck(repos, state)
+        seedDeck(repos, other)
+        seedDraft(repos, deckId = 2, contentFile = "draft-bbbb.dks")
+        repos.appState.saveCurrentDeckId(2)
 
-        repository.deleteDeck(1)
+        repos.decks.deleteDeck(1)
 
-        assertNotNull(database.draftDao().findDraft())
-        assertEquals(2L, database.draftDao().findDraft()!!.deckId)
-        assertEquals(2L, appState.loadCurrentDeckId())
-        assertEquals(listOf(buildSeedContentFile(1)), deletedFiles)
+        assertNotNull(repos.database.draftDao().findDraft())
+        assertEquals(2L, repos.database.draftDao().findDraft()!!.deckId)
+        assertEquals(2L, repos.appState.loadCurrentDeckId())
+        assertFalse(hasStrokeFile(repos.storage, buildSeedContentFile(1)))
+        assertTrue(hasStrokeFile(repos.storage, "draft-bbbb.dks"))
+        assertTrue(hasStrokeFile(repos.storage, buildSeedContentFile(3)))
     }
 
     private fun assertInterruptedPassShape(scenario: Scenario) {

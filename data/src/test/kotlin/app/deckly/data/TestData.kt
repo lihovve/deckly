@@ -1,11 +1,14 @@
 package app.deckly.data
 
 import app.deckly.domain.model.Card
+import app.deckly.domain.model.CardContent
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
+import app.deckly.domain.model.Stroke
+import app.deckly.domain.model.StrokePoint
 import app.deckly.domain.model.createDeck
 import app.deckly.domain.review.ReviewAction
 import app.deckly.domain.review.ReviewEngine
@@ -68,6 +71,19 @@ fun buildEpochCard(id: Long, section: Section, position: Int, successes: Int = 0
 
 /** Карточки в порядке id: так их отдаёт `loadDeckState`. */
 fun DeckState.sortCardsById(): DeckState = copy(cards = cards.sortedBy { it.id })
+
+/** Штрих, который зависит от [seed]: разные штрихи не равны, нажим не одинаков по точкам. */
+fun buildTestStroke(seed: Int): Stroke = Stroke(
+    width = 2f + seed,
+    points = listOf(
+        StrokePoint(seed.toFloat(), -seed.toFloat(), 0.5f),
+        StrokePoint(seed + 1.25f, seed + 2.5f, 1f),
+    ),
+)
+
+/** Содержимое, которое [seedDeck] кладёт в файл карточки: один штрих на лице, пустой оборот. */
+fun buildSeedContent(cardId: Long): CardContent =
+    CardContent(cardId, listOf(buildTestStroke(cardId.toInt())), emptyList())
 
 /** День, на который рассчитаны сценарии ниже. */
 const val SCENARIO_DAY = 200

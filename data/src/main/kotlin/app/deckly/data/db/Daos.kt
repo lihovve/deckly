@@ -93,6 +93,20 @@ abstract class CardDao {
     abstract suspend fun listDeckContentFiles(deckId: Long): List<String>
 
     @Query(
+        "SELECT card.content_file\n" +
+        "  FROM card",
+    )
+    abstract suspend fun listAllContentFiles(): List<String>
+
+    /** Подменяет ссылку на файл штрихов, не трогая состояние алгоритма. Возвращает число строк. */
+    @Query(
+        "UPDATE card\n" +
+        "   SET content_file = :contentFile\n" +
+        " WHERE card.id = :cardId",
+    )
+    abstract suspend fun updateContentFile(cardId: Long, contentFile: String): Int
+
+    @Query(
         "DELETE\n" +
         "  FROM card\n" +
         " WHERE card.id IN (:cardIds)",
@@ -112,6 +126,13 @@ abstract class DraftDao {
         " WHERE draft.id = 1",
     )
     abstract suspend fun findDraft(): DraftEntity?
+
+    @Query(
+        "DELETE\n" +
+        "  FROM draft\n" +
+        " WHERE draft.id = 1",
+    )
+    abstract suspend fun deleteDraft()
 
     @Query(
         "DELETE\n" +
@@ -137,6 +158,13 @@ abstract class AppStateDao {
         " WHERE app_state.id = 1",
     )
     abstract suspend fun updateCurrentDeck(deckId: Long)
+
+    @Query(
+        "UPDATE app_state\n" +
+        "   SET next_card_id = :nextCardId\n" +
+        " WHERE app_state.id = 1",
+    )
+    abstract suspend fun updateNextCardId(nextCardId: Long)
 
     /** Сбрасывает текущую колоду, если это [deckId]; выбор другой колоды не трогает. */
     @Query(
