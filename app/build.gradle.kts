@@ -25,6 +25,15 @@ android {
     packaging {
         jniLibs { pickFirsts += "**/libc++_shared.so" }
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric берёт манифест и ресурсы из сборки.
+            isIncludeAndroidResources = true
+            // Robolectric грузит нативные библиотеки (SQLite, графика); в будущих JDK без этого флага это станет ошибкой.
+            all { it.jvmArgs("--enable-native-access=ALL-UNNAMED") }
+        }
+    }
 }
 
 dependencies {
@@ -33,4 +42,13 @@ dependencies {
     implementation(project(":ink"))
     implementation(project(":ui-contract"))
     implementation(project(":design-e"))
+
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.coroutines.android)
+    implementation(libs.lifecycle.viewmodel)
+
+    testImplementation(libs.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
