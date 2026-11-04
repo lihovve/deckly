@@ -2,6 +2,7 @@ package app.deckly.data
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import app.deckly.data.db.DatabaseDamagedException
 import app.deckly.domain.editor.Draft
 import app.deckly.domain.editor.saveDraft
 import app.deckly.domain.model.DeckChanges
@@ -73,6 +74,17 @@ class DecklyDataTest {
         data.close()
 
         assertSuspendThrows<Exception> { data.decks.listDecks() }
+    }
+
+    @Test
+    fun garbageFileIsReportedAndLeftAlone() = runTest {
+        val garbage = "это не база SQLite, а просто текст, который длиннее заголовка базы".toByteArray()
+        storage.databaseFile.writeBytes(garbage)
+
+        assertSuspendThrows<DatabaseDamagedException> { openDecklyData(context, rootDir) }
+
+        assertTrue("повреждённую базу нельзя молча стирать", storage.databaseFile.readBytes().contentEquals(garbage))
+        assertEquals("Room не должен открываться", setOf("deckly.db"), rootDir.list().orEmpty().toSet())
     }
 
     @Test
