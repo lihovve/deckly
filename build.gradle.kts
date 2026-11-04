@@ -15,7 +15,6 @@ plugins {
 }
 
 // Разрешённые связи между модулями проекта (документ архитектуры, раздел «Модули»).
-// :spike в проверке не участвует.
 val allowedModuleDependencies = mapOf(
     "app" to setOf("domain", "data", "ink", "ui-contract", "design-e"),
     "data" to setOf("domain"),
@@ -25,12 +24,19 @@ val allowedModuleDependencies = mapOf(
     "domain" to emptySet(),
 )
 
+// Модули, которые в проверке не участвуют. Любой другой модуль обязан быть в таблице выше.
+val modulesOutsideModuleGraph = setOf("spike")
+
 tasks.register("verifyModuleGraph") {
     group = "verification"
-    description = "Падает, если модуль зависит от модуля, которого нет в таблице разрешённых связей."
+    description = "Падает, если модуля нет в таблице связей или он зависит от запрещённого модуля."
 
     doLast {
-        val violations = subprojects
+        val unknownModules = subprojects
+            .map { it.name }
+            .filter { it !in allowedModuleDependencies && it !in modulesOutsideModuleGraph }
+            .map { "$it: модуля нет в таблице связей" }
+        val forbiddenDependencies = subprojects
             .filter { it.name in allowedModuleDependencies }
             .flatMap { module ->
                 val allowed = allowedModuleDependencies.getValue(module.name)
@@ -42,8 +48,7 @@ tasks.register("verifyModuleGraph") {
                     .filter { it !in allowed }
                     .map { "${module.name} → $it" }
             }
-            .distinct()
-            .sorted()
+        val violations = (unknownModules + forbiddenDependencies).distinct().sorted()
         if (violations.isNotEmpty()) {
             throw GradleException("Нарушены границы модулей:\n" + violations.joinToString("\n") { "  $it" })
         }
