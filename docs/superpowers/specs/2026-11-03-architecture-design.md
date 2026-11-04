@@ -85,7 +85,7 @@ app ──► domain, data, ink, ui-contract, design-e
 data ──► domain
 ink ──► domain
 design-e ──► ui-contract
-ui-contract ──► (только Compose runtime)
+ui-contract ──► (только Compose runtime и ui: слоты принимают Modifier)
 domain ──► (только Kotlin и kotlinx-coroutines-core)
 ```
 
@@ -176,7 +176,7 @@ domain ──► (только Kotlin и kotlinx-coroutines-core)
 
 ### `ui-contract` — экраны как абстракции
 
-Android-библиотека, зависящая только от Compose runtime. Внешнего вида здесь нет.
+Android-библиотека, зависящая только от Compose runtime и Compose ui (ради `Modifier` в слотах). Внешнего вида здесь нет.
 
 - **Для каждого экрана** — data class состояния и sealed-тип действий. Состояние содержит только то,
   что показать: имя колоды, числа счётчиков, вкладки секций с количеством и отметками «открыта» и
