@@ -65,3 +65,7 @@ fun buildDeck(
 )
 
 fun buildDeckState(deck: Deck, vararg cards: Card): DeckState = DeckState(deck, cards.toList())
+
+fun buildDeckState(deck: Deck, cards: List<Card>): DeckState = DeckState(deck, cards)
+
+fun DeckState.findCard(id: Long): Card = cards.single { it.id == id }

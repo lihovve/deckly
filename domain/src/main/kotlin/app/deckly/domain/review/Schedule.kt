@@ -54,7 +54,12 @@ fun isEpochMature(state: DeckState, epoch: Int, today: Int): Boolean {
 fun isReadyForCheck(card: Card, today: Int): Boolean =
     card.section == Section.LEARNED && max(0, today - card.sectionDay) >= LEARNED_CHECK_MIN_DAYS
 
-private fun isLearnedCheckPass(deck: Deck): Boolean = deck.passCount[4] % 2 == 1
+/**
+ * Идёт ли следующий проход эпохи 4 с проверкой выученных: на каждом втором, то есть при нечётном
+ * `pass4` (число уже завершённых проходов). Правило живёт здесь одно: им пользуются и пустота эпохи,
+ * и старт прохода.
+ */
+internal fun isLearnedCheckPass(deck: Deck): Boolean = deck.passCount[4] % 2 == 1
 
 private fun findMinIntervalDays(epoch: Int): Int = when (epoch) {
     2 -> 1

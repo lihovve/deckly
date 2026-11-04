@@ -130,6 +130,15 @@ class ScheduleTest {
         assertFalse(isReadyForCheck(inFourthEpoch, today = 100))
     }
 
+    @Test
+    fun learnedCheckComesOnEverySecondFourthEpochPass() {
+        val results = (0..4).map { pass4 ->
+            isLearnedCheckPass(buildDeck(passCount = EpochValues(0, 0, 0, pass4)))
+        }
+
+        assertEquals(listOf(false, true, false, true, false), results)
+    }
+
     private fun assertMaturesOnlyFrom(epoch: Int, lastPassDay: Int, firstMatureDay: Int) {
         val state = buildDeckState(
             buildDeck(lastPassDay = EpochValues<Int?>(null, null, null, null).replace(epoch, lastPassDay)),
