@@ -9,7 +9,13 @@
 # (OP_TIMEOUT), а подготовка папки, передача куска, склейка и установка повторяются до MAX_TRIES
 # раз. Отказ pm install («Failure …») не повторяется: это ответ системы, а не обрыв.
 #
-# Использование: tools/install-apk.sh <файл.apk>
+# Прошивка Boox после установки может отключить пакет и сбросить доступ ко всем файлам. Если вторым
+# аргументом передано имя пакета, после успешной установки скрипт сам включает его
+# (`pm enable --user 0`), выдаёт доступ (`appops set --uid … MANAGE_EXTERNAL_STORAGE allow`) и
+# проверяет оба: у пользователя 0 в `dumpsys package` стоит enabled=0 или enabled=1, а
+# `appops get` отвечает allow. Без пакета поведение прежнее.
+#
+# Использование: tools/install-apk.sh <файл.apk> [пакет]
 #
 # Коды выхода:
 #   0  установлено
@@ -18,12 +24,15 @@
 #   3  кусок не дошёл за MAX_TRIES попыток
 #   4  md5 склеенного APK на планшете не совпал за MAX_TRIES попыток
 #   5  pm install ответил Failure или не вернул Success за MAX_TRIES попыток
+#   6  пакет не включился или доступ ко всем файлам не выдан за MAX_TRIES попыток (APK при этом
+#      уже установлен)
 #
 # Переменные окружения:
 #   ADB           путь к adb; по умолчанию $ANDROID_HOME/platform-tools/adb,
 #                 иначе ~/Android/Sdk/platform-tools/adb
 #   CHUNK_SIZE    размер куска в байтах (1048576)
-#   MAX_TRIES     попыток на каждый шаг (5)
+#   MAX_TRIES     попыток на каждый шаг (5); для включения пакета — попыток всей связки
+#                 «включить, выдать доступ, проверить»
 #   WAIT_TIMEOUT  сколько секунд ждать планшет перед попыткой (60)
 #   OP_TIMEOUT    сколько секунд может длиться одна операция adb push или adb shell (120);
 #                 зависшая операция считается неудачной попыткой
@@ -115,20 +124,27 @@ prepare_device_dir() {
   fail 2 "Ошибка: планшет не отвечает: не удалось создать $DEVICE_DIR за $MAX_TRIES попыток."
 }
 
-# Передаёт один кусок и возвращается, когда его md5 на планшете сошёлся с локальным.
+# Передаёт один кусок и возвращается, когда его md5 на планшете сошёлся с локальным. Итог передачи
+# («1 file pushed …») adb пишет в stderr; он молча отбрасывается, а текст неудавшейся передачи
+# показывается.
 push_chunk() {
-  local chunk=$1 name suffix local_md5 device_md5 try
+  local chunk=$1 name suffix local_md5 device_md5 push_output try
   name="$(basename "$chunk")"
   suffix="${name##*.}"
   local_md5="$(md5sum "$chunk" | cut -c1-32)"
 
   for (( try = 1; try <= MAX_TRIES; try++ )); do
     begin_attempt "кусок $suffix" "$try"
-    run_adb push "$chunk" "$DEVICE_DIR/$name" > /dev/null || true
+    if push_output="$(run_adb push "$chunk" "$DEVICE_DIR/$name" 2>&1)"; then
+      push_output=""
+    fi
     device_md5="$(read_device_md5 "$DEVICE_DIR/$name")"
     if [[ "$device_md5" == "$local_md5" ]]; then
       echo "кусок $suffix: md5 совпал"
       return 0
+    fi
+    if [[ -n "$push_output" ]]; then
+      echo "кусок $suffix: передача не удалась: $push_output" >&2
     fi
   done
 
@@ -168,12 +184,48 @@ $install_output"
 ${install_output:-<пусто>}"
 }
 
+# enabled=N пользователя 0 из `dumpsys package`; пусто, если спросить не удалось или пакета нет.
+# Строки других пользователей не годятся, поэтому берётся именно строка «User 0:».
+read_enabled_state() {
+  local dump
+  dump="$(run_adb shell "dumpsys package $PACKAGE" 2> /dev/null | tr -d '\r')" || dump=""
+  sed -n 's/^ *User 0:.* enabled=\([0-9][0-9]*\).*/\1/p' <<< "$dump" | sed -n 1p
+}
+
+# Включает пакет, выдаёт доступ ко всем файлам и проверяет оба. Каждая операция — через run_adb и
+# после wait-for-device; вся связка повторяется до MAX_TRIES раз: прошивка может отключить пакет
+# снова, и тогда проверка это покажет.
+enable_package_and_grant_access() {
+  local try state appops_output
+  for (( try = 1; try <= MAX_TRIES; try++ )); do
+    begin_attempt "включение пакета" "$try"
+    state=""
+    appops_output=""
+    if run_adb shell "pm enable --user 0 $PACKAGE" > /dev/null 2>&1; then
+      wait_for_device
+      if run_adb shell "appops set --uid $PACKAGE MANAGE_EXTERNAL_STORAGE allow" > /dev/null 2>&1; then
+        wait_for_device
+        state="$(read_enabled_state)"
+        wait_for_device
+        appops_output="$(run_adb shell "appops get --uid $PACKAGE MANAGE_EXTERNAL_STORAGE" 2> /dev/null || true)"
+      fi
+    fi
+    if [[ "$state" =~ ^[01]$ && "$appops_output" == *"MANAGE_EXTERNAL_STORAGE: allow"* ]]; then
+      echo "Пакет включён: $PACKAGE"
+      echo "Доступ ко всем файлам: allow"
+      return 0
+    fi
+  done
+  fail 6 "Ошибка: пакет $PACKAGE не включился или доступ ко всем файлам не выдан за $MAX_TRIES попыток (enabled=${state:-<нет>}, appops: ${appops_output:-<пусто>}). APK уже установлен."
+}
+
 # --- аргументы ---------------------------------------------------------------------------------
 
-if (( $# != 1 )); then
-  fail 1 "Использование: $0 <файл.apk>"
+if (( $# < 1 || $# > 2 )); then
+  fail 1 "Использование: $0 <файл.apk> [пакет]"
 fi
 apk="$1"
+PACKAGE="${2:-}"
 if [[ ! -f "$apk" ]]; then
   fail 1 "Ошибка: файл не найден: $apk"
 fi
@@ -202,3 +254,7 @@ install_apk
 
 remove_device_dir
 echo "Установлено: $apk, кусков ${#chunks[@]}, md5 $apk_md5"
+
+if [[ -n "$PACKAGE" ]]; then
+  enable_package_and_grant_access
+fi
