@@ -94,6 +94,8 @@ class StrokeFilesTest {
         val referencedDraft = files.writeDraftFile(strokes, emptyList())
         val deletedCard = files.writeCardFile(2, strokes, emptyList())
         val orphanDraft = files.writeDraftFile(strokes, emptyList())
+        touch(orphanDraft, 1_000)
+        touch(referencedDraft, 5_000)
         val temporary = writeRaw("card-3-0123456789abcdef.dks.tmp", "недописан")
         val otherTemporary = writeRaw("x.tmp")
 
@@ -143,14 +145,77 @@ class StrokeFilesTest {
     }
 
     @Test
-    fun staleVersionOfExistingCardIsRemovedWhenReferencedFileExists() {
+    fun olderSupersededFileIsRemoved() {
         val current = files.writeCardFile(7, strokes, emptyList())
         val stale = files.writeCardFile(7, listOf(buildTestStroke(9)), emptyList())
+        touch(stale, 1_000)
+        touch(current, 5_000)
 
         files.cleanUpStrokeFiles(buildReferences(cards = mapOf(7L to current)))
 
         assertEquals(setOf(current), listNames())
         assertFalse(stale in listNames())
+    }
+
+    @Test
+    fun newerSupersededFileIsKept() {
+        // База старше strokes/: файл по ссылке старше другого, другой может оказаться последней правкой.
+        val current = files.writeCardFile(7, strokes, emptyList())
+        val newer = files.writeCardFile(7, listOf(buildTestStroke(9)), emptyList())
+        touch(current, 1_000)
+        touch(newer, 5_000)
+
+        files.cleanUpStrokeFiles(buildReferences(cards = mapOf(7L to current)))
+
+        assertEquals(setOf(current, newer), listNames())
+    }
+
+    @Test
+    fun equalTimesKeepBoth() {
+        val current = files.writeCardFile(7, strokes, emptyList())
+        val other = files.writeCardFile(7, listOf(buildTestStroke(9)), emptyList())
+        touch(current, 3_000)
+        touch(other, 3_000)
+
+        files.cleanUpStrokeFiles(buildReferences(cards = mapOf(7L to current)))
+
+        assertEquals(setOf(current, other), listNames())
+    }
+
+    @Test
+    fun olderSupersededDraftFileIsRemoved() {
+        val current = files.writeDraftFile(strokes, emptyList())
+        val stale = files.writeDraftFile(listOf(buildTestStroke(9)), emptyList())
+        touch(stale, 1_000)
+        touch(current, 5_000)
+
+        files.cleanUpStrokeFiles(buildReferences(draft = current))
+
+        assertEquals(setOf(current), listNames())
+    }
+
+    @Test
+    fun newerSupersededDraftFileIsKept() {
+        val current = files.writeDraftFile(strokes, emptyList())
+        val newer = files.writeDraftFile(listOf(buildTestStroke(9)), emptyList())
+        touch(current, 1_000)
+        touch(newer, 5_000)
+
+        files.cleanUpStrokeFiles(buildReferences(draft = current))
+
+        assertEquals(setOf(current, newer), listNames())
+    }
+
+    @Test
+    fun equalTimesKeepBothDraftFiles() {
+        val current = files.writeDraftFile(strokes, emptyList())
+        val other = files.writeDraftFile(listOf(buildTestStroke(9)), emptyList())
+        touch(current, 3_000)
+        touch(other, 3_000)
+
+        files.cleanUpStrokeFiles(buildReferences(draft = current))
+
+        assertEquals(setOf(current, other), listNames())
     }
 
     @Test
@@ -226,6 +291,8 @@ class StrokeFilesTest {
     fun staleDraftFileIsRemovedOnlyWhenTheReferencedOneExists() {
         val current = files.writeDraftFile(strokes, emptyList())
         val stale = files.writeDraftFile(listOf(buildTestStroke(9)), emptyList())
+        touch(stale, 1_000)
+        touch(current, 5_000)
 
         files.cleanUpStrokeFiles(buildReferences(draft = current))
         assertEquals(setOf(current), listNames())

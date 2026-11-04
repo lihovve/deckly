@@ -265,20 +265,40 @@ class RoomDraftRepositoryTest {
     }
 
     @Test
-    fun killBeforeTransactionLeavesNoOrphan() = runTest {
+    fun killBeforeEditTransactionKeepsNewerFileAndRemovesTemporary() = runTest {
         seedDeck(repos, baseState)
-        // Шаг 1 выполнен: файл новой карточки записан. Транзакции и удаления не было. Плюс недописанный .tmp.
+        // Шаг 1 выполнен: файл правки записан. Транзакции и удаления не было. Плюс недописанный .tmp.
         val orphan = repos.files.writeCardFile(101, listOf(buildTestStroke(50)), emptyList())
+        val referencedTime = File(repos.storage.strokesDir, buildSeedContentFile(101)).lastModified()
+        File(repos.storage.strokesDir, orphan).setLastModified(referencedTime + 5_000)
         val temporary = File(repos.storage.strokesDir, "card-101-0123456789abcdef.dks.tmp").apply { writeText("x") }
 
         repos.reopen()
         removeUnreferencedStrokeFiles(repos.database, repos.files)
 
-        assertFalse(hasStrokeFile(repos.storage, orphan))
+        // Файл новее файла по ссылке: от базы старше strokes/ его не отличить, поэтому он остаётся.
+        assertTrue(hasStrokeFile(repos.storage, orphan))
         assertFalse(temporary.exists())
         assertEquals(baseState, repos.decks.loadDeckState(1))
         assertEquals(buildSeedContent(101), repos.contents.loadContent(101))
         assertEquals(buildSeedContent(102), repos.contents.loadContent(102))
+    }
+
+    @Test
+    fun orphanOfInterruptedEditIsRemovedAfterTheNextEdit() = runTest {
+        seedDeck(repos, baseState)
+        val orphan = repos.files.writeCardFile(101, listOf(buildTestStroke(50)), emptyList())
+        File(repos.storage.strokesDir, orphan).setLastModified(10_000)
+        val draft = buildEditDraft(101)
+        val (after, content) = saveDraft(baseState, draft, newCardId = 0, today = SCENARIO_DAY, now = 1_000L)
+        repos.drafts.commitDraft(collectDeckChanges(baseState, after), content)
+        val referenced = repos.database.cardDao().findCard(101)!!.contentFile
+        File(repos.storage.strokesDir, referenced).setLastModified(20_000)
+
+        repos.reopen()
+        removeUnreferencedStrokeFiles(repos.database, repos.files)
+
+        assertEquals(setOf(referenced, buildSeedContentFile(102)), listStrokeFileNames(repos.storage))
     }
 
     @Test
@@ -290,7 +310,10 @@ class RoomDraftRepositoryTest {
         val (after, content) = saveDraft(baseState, draft, newCardId = 0, today = SCENARIO_DAY, now = 1_000L)
         repos.drafts.commitDraft(collectDeckChanges(baseState, after), content)
         // Убили после транзакции, до удаления старого файла: старый файл остался на месте.
-        File(repos.storage.strokesDir, oldFile).writeBytes(oldBytes)
+        File(repos.storage.strokesDir, oldFile).apply {
+            writeBytes(oldBytes)
+            setLastModified(1_000)
+        }
 
         repos.reopen()
         removeUnreferencedStrokeFiles(repos.database, repos.files)

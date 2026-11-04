@@ -80,12 +80,14 @@ open class StrokeFiles(
      * Уборка при открытии хранилища, пока никто не пишет. Удаляет только доказуемо лишнее.
      * - `X.tmp`: если база ссылается на `X`, а `X` нет, это записанный до конца файл, у которого потерялось
      *   переименование (данные сброшены на диск раньше его) — его переименовывают в `X`. Иначе `X.tmp` удаляется.
-     * - `card-<id>-*.dks`: удаляется, если карточка есть в базе, ссылается на другой файл и тот существует
-     *   (старая версия), или если карточки нет, а `id < next_card_id` (удалённая карточка или неудавшееся
-     *   создание). Файл карточки новее базы (`id >= next_card_id`) и единственная копия при пропавшем файле по
-     *   ссылке остаются.
-     * - `draft-*.dks`: удаляется, если строки черновика нет или она ссылается на другой существующий файл.
-     * Остальное, в том числе имена не нашего вида, не трогается.
+     * - `card-<id>-*.dks`: удаляется, если карточка есть в базе, ссылается на другой существующий файл, а этот
+     *   файл СТРОГО старше файла по ссылке (старая версия), или если карточки нет, а `id < next_card_id`
+     *   (удалённая карточка или неудавшееся создание). Файл карточки новее базы (`id >= next_card_id`), файл
+     *   не старше файла по ссылке (база могла быть откачена назад, и это последняя правка) и единственная
+     *   копия при пропавшем файле по ссылке остаются.
+     * - `draft-*.dks`: удаляется, если строки черновика нет или файл строго старше существующего файла по
+     *   ссылке.
+     * Правило одно: в сомнении файл остаётся. Остальное, в том числе имена не нашего вида, не трогается.
      */
     fun cleanUpStrokeFiles(references: StrokeReferences) {
         val referencedNames = references.cardFiles.values.toSet() + listOfNotNull(references.draftFile)
@@ -96,8 +98,8 @@ open class StrokeFiles(
             val isObsolete = when {
                 name.endsWith(TEMPORARY_SUFFIX) -> true
                 !isContentFileName(name) || name in referencedNames -> false
-                name.startsWith(CARD_PREFIX) -> isObsoleteCardFile(name, references)
-                else -> references.draftFile == null || File(strokesDir, references.draftFile).isFile
+                name.startsWith(CARD_PREFIX) -> isObsoleteCardFile(file, references)
+                else -> references.draftFile == null || isOlderThanReferenced(file, references.draftFile)
             }
             if (isObsolete && file.delete()) onFileChanged(file)
         }
@@ -114,10 +116,19 @@ open class StrokeFiles(
         }
     }
 
-    private fun isObsoleteCardFile(name: String, references: StrokeReferences): Boolean {
-        val cardId = CARD_FILE_NAME.matchEntire(name)?.groupValues?.get(1)?.toLongOrNull() ?: return false
+    private fun isObsoleteCardFile(file: File, references: StrokeReferences): Boolean {
+        val cardId = CARD_FILE_NAME.matchEntire(file.name)?.groupValues?.get(1)?.toLongOrNull() ?: return false
         val referencedFile = references.cardFiles[cardId]
-        return if (referencedFile != null) File(strokesDir, referencedFile).isFile else cardId < references.nextCardId
+        return if (referencedFile != null) isOlderThanReferenced(file, referencedFile) else cardId < references.nextCardId
+    }
+
+    /**
+     * Файл строго старше существующего файла по ссылке. Равное время (после git или MTP времена могут
+     * совпасть), более позднее и пропавший файл по ссылке — не «старше»: такой файл остаётся.
+     */
+    private fun isOlderThanReferenced(file: File, referencedName: String): Boolean {
+        val referenced = File(strokesDir, referencedName)
+        return referenced.isFile && file.lastModified() < referenced.lastModified()
     }
 
     private fun writeNewFile(prefix: String, front: List<Stroke>, back: List<Stroke>): String {
