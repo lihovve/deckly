@@ -321,7 +321,7 @@
   Expected: `9 passed, 0 failed` (шесть тестов шага 2, седьмой `test_bad_assembly_reported` на код 4 и
   два новых).
 
-- [ ] **Дополнение к задаче 2 (после прогона на планшете): пакет включён и есть доступ к файлам** — отдельный коммит
+- [x] **Дополнение к задаче 2 (после прогона на планшете): пакет включён и есть доступ к файлам** — отдельный коммит
 
   3 ноября прошивка Boox после `pm install` отключала пакет (`enabled=3`) и сбрасывала доступ ко всем
   файлам. 4 ноября пакет остался `enabled=0`, но и `pm enable`, и `appops` делались руками после каждой
@@ -555,18 +555,18 @@
 - Modify: `docs/superpowers/specs/2026-11-03-architecture-design.md` (раздел «Хранение и резервная
   копия», пункт «Риск», и раздел `ink`), ТЗ, раздел «Onyx SDK» — только с согласия владельца.
 
-- [ ] **Step 1: Подключение.** `/usr/bin/adb kill-server`; планшет по USB с включённой отладкой;
+- [x] **Step 1: Подключение.** `/usr/bin/adb kill-server`; планшет по USB с включённой отладкой;
   `~/Android/Sdk/platform-tools/adb devices -l` показывает устройство. Записать
   `getprop ro.product.model`, `ro.product.device`, `ro.build.display.id`.
 
-- [ ] **Step 2: Wi-Fi.** Владелец включает «Отладку по Wi-Fi»; `adb pair <ip:port>` и
+- [ ] **Step 2: Wi-Fi.** *(Не делали: USB 3–4 ноября работал без обрывов.)* Владелец включает «Отладку по Wi-Fi»; `adb pair <ip:port>` и
   `adb connect <ip:port>`. Дальнейшие шаги идут по Wi-Fi, если `install-apk.sh` проходит по нему без
   повторов кусков; иначе — по USB. Записать число повторов по каждому способу.
 
-- [ ] **Step 3: Имя пера.** `adb shell getevent -lp | grep -E 'add device|name'`. Записать имя
+- [x] **Step 3: Имя пера.** `adb shell getevent -lp | grep -E 'add device|name'`. Записать имя
   устройства ввода пера и совпадает ли оно с `onyx_emp`, `Wacom I2C Digitizer`, `hanvon_tp`.
 
-- [ ] **Step 4: Установка.**
+- [x] **Step 4: Установка.**
   Run: `./gradlew :spike:assembleDebug && tools/install-apk.sh spike/build/outputs/apk/debug/spike-debug.apk`
   Expected: `Установлено: …`, код 0.
   До выдачи доступа: `adb shell am start -n app.deckly.spike/.MainActivity --es probe check` →
@@ -576,7 +576,7 @@
   `adb shell am start -n app.deckly.spike/.MainActivity --ez noSdk true` → строка `SDK … init=…noSdk`,
   открыт режим «Canvas», режимы «Onyx» недоступны, штрих стилусом рисуется.
 
-- [ ] **Step 5: Перо — владелец, в каждом из режимов «Onyx», «Onyx SF», «Canvas»:**
+- [x] **Step 5: Перо — владелец, в каждом из режимов «Onyx», «Onyx SF», «Canvas»:**
   десять штрихов разной длины — появляется ли линия под пером без заметной задержки; стирание
   кнопкой пера — уходит ли штрих целиком и остаётся ли серый след (до и после GC через 200 мс);
   касание пальцем по листу — ничего не рисует; кнопки внизу — срабатывают и от пальца, и от пера;
@@ -587,24 +587,24 @@
   логе отказ по вырезанному разрешению — вернуть именно его, пересобрать, повторить режим и
   записать, какое разрешение SDK действительно нужно.
 
-- [ ] **Step 6: База.**
+- [x] **Step 6: База.**
   Run: `tools/spike-db-killtest.sh 20`
   Expected: `consistent 20 из 20, integrity ok 20 из 20, посреди серии M из 20` с M ≥ 10, код 0.
   Код 4 — сдвинуть паузу по подсказке скрипта и повторить. Плюс «База: серия» из интерфейса —
   записать `avgMs` и `maxMs` из `PROBE_SERIES`.
 
-- [ ] **Step 7: Чужая база и переустановка.** На компьютере создать `foreign.db` той же схемы
+- [x] **Step 7: Чужая база и переустановка.** На компьютере создать `foreign.db` той же схемы
   (`python3 -I` и модуль `sqlite3`: таблицы `Counter` с одной строкой `value=3` и `Entry` с тремя
   строками), передать `adb push` в `/sdcard/Deckly/spike/` и сверить md5. «База: чужая» →
   `PROBE_CHECK … consistent=true`. Затем `adb uninstall app.deckly.spike`, снова шаг 4, «База:
   проверка» → `probe.db` от прошлой установки открывается и `consistent=true`.
 
-- [ ] **Step 8: Видимость файлов.** `adb shell ls -la /sdcard/Deckly/spike/`; владелец открывает
+- [x] **Step 8: Видимость файлов.** `adb shell ls -la /sdcard/Deckly/spike/`; владелец открывает
   планшет на компьютере по USB как устройство хранения файлов и сверяет размер `probe.db` с `ls`
   после «База: серия» и сворачивания приложения; если на планшете есть Termux —
   `ls -la ~/storage/shared/Deckly/spike/`.
 
-- [ ] **Step 9: Решения по итогам**, записать в `2026-11-03-device-spike-results.md` вместе с
+- [x] **Step 9: Решения по итогам**, записать в `2026-11-03-device-spike-results.md` вместе с
   данными шагов 1–8:
   - перо: основной путь — «Onyx», если он прошёл шаг 5; иначе «Onyx SF», если прошёл он; иначе
     «Canvas». Нужен ли GC через 200 мс после стирания;
@@ -622,7 +622,7 @@
     0..1 обязателен в каждой точке штриха; после отрыва своя отрисовка с кривой по
     `PEN_FOUNTAIN_CURVE`, если владелец считает скачок терпимым, иначе SDK на Onyx и своя без SDK.
 
-- [ ] **Step 10: Commit** — итоги, документ архитектуры, ТЗ (если согласовано): «Прототип на
+- [x] **Step 10: Commit** — итоги, документ архитектуры, ТЗ (если согласовано): «Прототип на
   Go 10.3 Gen II: итоги по перу и базе».
 
 ### Task 6: перьевая ручка (толщина от нажима)
@@ -658,7 +658,7 @@
 - `object StrokeRenderer`: `drawStroke(canvas: Canvas, stroke: SpikeStroke)`,
   `computePressureWidth(baseWidth: Float, pressure: Float): Float`, `computeMargin(stroke: SpikeStroke): Int`.
 
-- [ ] **Step 1: Нажим 0..1 и стиль из настроек**
+- [x] **Step 1: Нажим 0..1 и стиль из настроек**
   - `SpikeApplication` после инициализации SDK: `SdkStatus.maxTouchPressure =
     EpdController.getMaxTouchPressure()`. Если меньше или равно 0 или исключение — `4096f`. Лог
     `PEN_MAX_PRESSURE value=… source=sdk|fallback`.
@@ -670,7 +670,7 @@
   - `applyPenStyle`: `setStrokeStyle(PenSettings.penStyle.sdkStyle)`,
     `setStrokeWidth(PenSettings.strokeWidth)`; лог `PEN_STYLE style=… width=… render=…`.
 
-- [ ] **Step 2: `StrokeRenderer`** по `PenSettings.strokeRender`:
+- [x] **Step 2: `StrokeRenderer`** по `PenSettings.strokeRender`:
   - `CONSTANT` — нынешний `StrokeStore.drawStroke` без изменений, перенесённый сюда.
   - `OWN` — каждый отрезок `i-1 → i` через `drawLine` с `Cap.ROUND` и толщиной
     `computePressureWidth(stroke.width, (p[i-1] + p[i]) / 2)`; штрих из одной точки — круг этого
@@ -688,14 +688,14 @@
   - `StrokeStore.drawTo` и `computeBounds` идут через `StrokeRenderer`. `CanvasPenView.drawLiveStroke`
     рисует текущий штрих тем же `drawStroke`, чтобы в Canvas нажим был виден под пером.
 
-- [ ] **Step 3: Данные для подгонки.** После каждого штриха пишется лог
+- [x] **Step 3: Данные для подгонки.** После каждого штриха пишется лог
   `PEN_PRESSURE points=N min=… max=… avg=…` (нажим 0..1, два знака). Если стиль `FOUNTAIN` и SDK
   поднят, вызывается `NeoFountainPenWrapper.computeStrokePoints(points, 1f, width, maxTouchPressure)`
   и пишется лог `PEN_FOUNTAIN_CURVE width=… pairs=p:size,…`: до 12 равномерно взятых точек
   результата, `p` — нормированный нажим, `size` — поле `size`. В результате точек может быть
   больше или меньше, чем на входе. Ошибка — лог `PEN_FOUNTAIN_CURVE error=…`.
 
-- [ ] **Step 4: Кнопки.** Новый ряд: «Перо: карандаш|ручка», «Толщина: 3|6|10», «Отрисовка:
+- [x] **Step 4: Кнопки.** Новый ряд: «Перо: карандаш|ручка», «Толщина: 3|6|10», «Отрисовка:
   ровно|свой|SDK». Нажатие переключает значение по кругу, пишет его в `PenSettings` и вызывает
   `getSheet()?.applyPenSettings()`.
   - `OnyxPenView.applyPenSettings`: если сессия открыта и стирание не коммитится — `disableRawDrawing()`,
@@ -703,13 +703,13 @@
   - Если стирание коммитится — только `redrawAll()`: стиль поставит возобновление пера.
   - `CanvasPenView` — `redrawAll()`.
 
-- [ ] **Step 5: Собрать**
+- [x] **Step 5: Собрать**
   Run: `./gradlew :spike:assembleDebug && unzip -l spike/build/outputs/apk/debug/spike-debug.apk | grep libneopen_jni`
   Expected: `BUILD SUCCESSFUL`; `lib/arm64-v8a/libneopen_jni.so` в APK.
 
-- [ ] **Step 6: Commit** — «Прототип: перьевая ручка и толщина от нажима (не проверено на планшете)».
+- [x] **Step 6: Commit** — «Прототип: перьевая ручка и толщина от нажима (не проверено на планшете)».
 
-- [ ] **Step 7: Планшет — владелец, режим «Onyx».** Установка как в задаче 5, плюс `pm enable` и
+- [x] **Step 7: Планшет — владелец, режим «Onyx».** Установка как в задаче 5, плюс `pm enable` и
   `appops`. Пока перо включено, экран заморожен, поэтому наша перерисовка видна только после
   выключения и включения пера. Это «Статус», любая кнопка ряда «Перо/Толщина/Отрисовка» и фиксация
   ластика. В приложении так же: штрих прошивки стоит до ближайшего обновления, а при обучении

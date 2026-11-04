@@ -1,0 +1,1153 @@
+--------- beginning of main
+11-04 09:51:01.235 I/DecklySpike(15699): SDK onyx=true init=ok device=SDMDevice
+11-04 09:51:01.242 I/DecklySpike(15699): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 09:51:01.244 I/DecklySpike(15699): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 09:51:01.245 I/DecklySpike(15699): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 09:51:01.245 I/DecklySpike(15699): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 09:51:01.246 I/DecklySpike(15699): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 09:51:01.247 I/DecklySpike(15699): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 09:51:01.247 I/DecklySpike(15699): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 09:51:01.248 I/DecklySpike(15699): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 09:51:01.249 I/DecklySpike(15699): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 09:51:01.510 I/DecklySpike(15699): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=3230 entries=3230 consistent=true
+11-04 09:51:02.009 I/DecklySpike(15699): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 09:51:02.152 I/DecklySpike(15699): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 09:51:02.156 I/DecklySpike(15699): PEN_SESSION ms=136 steps=disable:1,close:109,limit:2,open:16,enable:4,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 09:51:02.375 I/DecklySpike(15699): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 09:51:02.382 I/DecklySpike(15699): PEN_SESSION ms=73 steps=disable:13,close:23,limit:3,open:12,enable:14,eraser:2,style:6 limit=[0,0][1830,1454]
+11-04 09:51:02.523 I/DecklySpike(15699): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:08:13.500 I/DecklySpike(15699): SETTING penStyle=ручка
+11-04 10:08:13.866 I/DecklySpike(15699): PEN_STYLE style=ручка width=3.0 render=ровно
+11-04 10:08:17.578 I/DecklySpike(15699): SETTING strokeWidth=6.0
+11-04 10:08:17.911 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=ровно
+11-04 10:08:25.390 I/DecklySpike(15699): PEN_BEGIN x=231 y=1203 pressure=951.0 ts=1793808505388
+11-04 10:08:25.793 I/DecklySpike(15699): PEN_STROKE points=119 firstTs=1793808505388 lastTs=1793808505788 nowMs=1793808505793 uptimeMs=51216289
+11-04 10:08:25.812 I/DecklySpike(15699): PEN_PRESSURE points=119 min=0.03 max=0.31 avg=0.08
+11-04 10:08:25.856 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.38,0.00:2.01,0.00:2.02,0.00:2.04,0.00:2.04,0.00:2.08,0.00:2.07,0.00:2.03,0.00:2.02,0.00:2.06,0.00:2.04,0.00:2.01 in=119 out=119
+11-04 10:08:25.869 I/DecklySpike(15699): PEN_END x=503 y=530 pressure=126.0 ts=1793808505791
+11-04 10:08:26.506 I/DecklySpike(15699): PEN_BEGIN x=440 y=1148 pressure=1048.0 ts=1793808506493
+11-04 10:08:27.109 I/DecklySpike(15699): PEN_STROKE points=182 firstTs=1793808506493 lastTs=1793808507104 nowMs=1793808507108 uptimeMs=51217605
+11-04 10:08:27.120 I/DecklySpike(15699): PEN_PRESSURE points=182 min=0.26 max=0.96 avg=0.82
+11-04 10:08:27.124 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.46,0.00:3.55,0.00:5.81,0.00:6.62,0.00:7.47,0.00:8.03,0.00:8.02,0.00:8.32,0.00:8.32,0.00:8.40,0.00:8.30,0.00:4.02 in=182 out=185
+11-04 10:08:27.131 I/DecklySpike(15699): PEN_END x=625 y=633 pressure=2203.0 ts=1793808507108
+11-04 10:08:27.547 I/DecklySpike(15699): PEN_BEGIN x=644 y=1110 pressure=572.0 ts=1793808507545
+11-04 10:08:29.551 I/DecklySpike(15699): PEN_STROKE points=595 firstTs=1793808507545 lastTs=1793808509545 nowMs=1793808509551 uptimeMs=51220047
+11-04 10:08:29.564 I/DecklySpike(15699): PEN_PRESSURE points=595 min=0.14 max=1.00 avg=0.51
+11-04 10:08:29.573 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.14,0.00:2.41,0.00:2.21,0.00:2.62,0.00:6.38,0.00:8.18,0.00:3.07,0.00:2.31,0.00:2.45,0.00:6.45,0.00:8.37,0.00:3.04 in=595 out=599
+11-04 10:08:29.577 I/DecklySpike(15699): PEN_END x=922 y=269 pressure=1577.0 ts=1793808509549
+11-04 10:14:21.252 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:14:21.591 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=ровно
+11-04 10:15:38.256 I/DecklySpike(15699): SETTING strokeRender=свой
+11-04 10:15:38.614 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:15:46.054 I/DecklySpike(15699): PEN_BEGIN x=814 y=1312 pressure=46.0 ts=1793808946046
+11-04 10:15:47.728 I/DecklySpike(15699): PEN_STROKE points=494 firstTs=1793808946046 lastTs=1793808947723 nowMs=1793808947728 uptimeMs=51658225
+11-04 10:15:47.751 I/DecklySpike(15699): PEN_PRESSURE points=494 min=0.00 max=1.00 avg=0.39
+11-04 10:15:47.759 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.14,0.00:4.60,0.00:6.85,0.00:8.52,0.00:9.00,0.00:4.28,0.00:2.05,0.00:2.00 in=494 out=494
+11-04 10:15:47.767 I/DecklySpike(15699): PEN_END x=1115 y=473 pressure=47.0 ts=1793808947727
+11-04 10:15:47.769 I/DecklySpike(15699): PEN_BEGIN x=1122 y=462 pressure=19.0 ts=1793808947742
+11-04 10:15:48.973 I/DecklySpike(15699): PEN_STROKE points=384 firstTs=1793808947742 lastTs=1793808948968 nowMs=1793808948973 uptimeMs=51659470
+11-04 10:15:48.990 I/DecklySpike(15699): PEN_PRESSURE points=384 min=0.00 max=0.98 avg=0.44
+11-04 10:15:49.003 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.04,0.00:2.09,0.00:2.08,0.00:2.10,0.00:2.56,0.00:3.03,0.00:4.93,0.00:7.43,0.00:8.33,0.00:8.65,0.00:2.93 in=384 out=387
+11-04 10:15:49.008 I/DecklySpike(15699): PEN_END x=1472 y=79 pressure=1493.0 ts=1793808948972
+11-04 10:15:49.760 I/DecklySpike(15699): PEN_BEGIN x=1100 y=1270 pressure=349.0 ts=1793808949759
+11-04 10:15:50.083 I/DecklySpike(15699): PEN_STROKE points=89 firstTs=1793808949759 lastTs=1793808950078 nowMs=1793808950083 uptimeMs=51660580
+11-04 10:15:50.096 I/DecklySpike(15699): PEN_PRESSURE points=89 min=0.00 max=0.11 avg=0.03
+11-04 10:15:50.100 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.05,0.00:2.03,0.00:2.00,0.00:2.00,0.00:2.01,0.00:2.01,0.00:2.01,0.00:2.01,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=89 out=89
+11-04 10:15:50.102 I/DecklySpike(15699): PEN_END x=1307 y=767 pressure=7.0 ts=1793808950083
+11-04 10:15:50.142 I/DecklySpike(15699): PEN_BEGIN x=1330 y=708 pressure=51.0 ts=1793808950099
+11-04 10:15:50.261 I/DecklySpike(15699): PEN_STROKE points=47 firstTs=1793808950099 lastTs=1793808950256 nowMs=1793808950261 uptimeMs=51660758
+11-04 10:15:50.276 I/DecklySpike(15699): PEN_PRESSURE points=47 min=0.01 max=0.02 avg=0.01
+11-04 10:15:50.279 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=47 out=47
+11-04 10:15:50.282 I/DecklySpike(15699): PEN_END x=1490 y=340 pressure=26.0 ts=1793808950260
+11-04 10:15:50.989 I/DecklySpike(15699): PEN_BEGIN x=1339 y=1359 pressure=497.0 ts=1793808950988
+11-04 10:15:51.829 I/DecklySpike(15699): PEN_STROKE points=241 firstTs=1793808950988 lastTs=1793808951825 nowMs=1793808951829 uptimeMs=51662326
+11-04 10:15:51.845 I/DecklySpike(15699): PEN_PRESSURE points=241 min=0.11 max=1.00 avg=0.85
+11-04 10:15:51.847 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.10,0.00:2.81,0.00:6.18,0.00:8.03,0.00:8.47,0.00:8.97,0.00:9.00,0.00:9.00,0.00:9.00,0.00:9.00,0.00:9.00,0.00:2.20 in=241 out=245
+11-04 10:15:51.849 I/DecklySpike(15699): PEN_END x=1606 y=456 pressure=689.0 ts=1793808951828
+11-04 10:15:53.424 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:15:53.777 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:15:55.528 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:15:55.881 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:16:00.317 I/DecklySpike(15699): PEN_BEGIN x=104 y=283 pressure=5.0 ts=1793808960304
+11-04 10:16:00.806 I/DecklySpike(15699): PEN_STROKE points=146 firstTs=1793808960304 lastTs=1793808960802 nowMs=1793808960806 uptimeMs=51671303
+11-04 10:16:00.821 I/DecklySpike(15699): PEN_PRESSURE points=146 min=0.00 max=0.05 avg=0.02
+11-04 10:16:00.824 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.01,0.00:2.01,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=146 out=146
+11-04 10:16:00.826 I/DecklySpike(15699): PEN_END x=487 y=201 pressure=17.0 ts=1793808960806
+11-04 10:16:01.228 I/DecklySpike(15699): PEN_BEGIN x=733 y=160 pressure=12.0 ts=1793808961226
+11-04 10:16:01.712 I/DecklySpike(15699): PEN_STROKE points=147 firstTs=1793808961226 lastTs=1793808961707 nowMs=1793808961712 uptimeMs=51672209
+11-04 10:16:01.728 I/DecklySpike(15699): PEN_PRESSURE points=147 min=0.00 max=0.01 avg=0.01
+11-04 10:16:01.733 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=147 out=147
+11-04 10:16:01.739 I/DecklySpike(15699): PEN_END x=943 y=141 pressure=9.0 ts=1793808961710
+11-04 10:16:01.742 I/DecklySpike(15699): PEN_BEGIN x=951 y=141 pressure=5.0 ts=1793808961727
+11-04 10:16:01.786 I/DecklySpike(15699): PEN_STROKE points=11 firstTs=1793808961727 lastTs=1793808961771 nowMs=1793808961786 uptimeMs=51672282
+11-04 10:16:01.798 I/DecklySpike(15699): PEN_PRESSURE points=11 min=0.00 max=0.00 avg=0.00
+11-04 10:16:01.799 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=11 out=11
+11-04 10:16:01.805 I/DecklySpike(15699): PEN_END x=964 y=139 pressure=6.0 ts=1793808961775
+11-04 10:16:01.840 I/DecklySpike(15699): PEN_BEGIN x=972 y=138 pressure=5.0 ts=1793808961791
+11-04 10:16:02.100 I/DecklySpike(15699): PEN_STROKE points=85 firstTs=1793808961791 lastTs=1793808962094 nowMs=1793808962100 uptimeMs=51672596
+11-04 10:16:02.113 I/DecklySpike(15699): PEN_PRESSURE points=85 min=0.00 max=0.01 avg=0.01
+11-04 10:16:02.115 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=85 out=85
+11-04 10:16:02.117 I/DecklySpike(15699): PEN_END x=1093 y=127 pressure=25.0 ts=1793808962099
+11-04 10:16:02.196 I/DecklySpike(15699): PEN_BEGIN x=1132 y=120 pressure=5.0 ts=1793808962195
+11-04 10:16:02.293 I/DecklySpike(15699): PEN_STROKE points=27 firstTs=1793808962195 lastTs=1793808962288 nowMs=1793808962293 uptimeMs=51672790
+11-04 10:16:02.307 I/DecklySpike(15699): PEN_PRESSURE points=27 min=0.00 max=0.01 avg=0.00
+11-04 10:16:02.308 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=27 out=27
+11-04 10:16:02.313 I/DecklySpike(15699): PEN_END x=1172 y=114 pressure=20.0 ts=1793808962292
+11-04 10:16:04.036 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:16:04.395 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:16:05.957 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:16:06.316 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:16:07.388 I/DecklySpike(15699): PEN_BEGIN x=1215 y=640 pressure=8.0 ts=1793808967381
+11-04 10:16:07.461 I/DecklySpike(15699): PEN_STROKE points=14 firstTs=1793808967381 lastTs=1793808967426 nowMs=1793808967460 uptimeMs=51677957
+11-04 10:16:07.473 I/DecklySpike(15699): PEN_PRESSURE points=14 min=0.00 max=0.00 avg=0.00
+11-04 10:16:07.474 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=14 out=14
+11-04 10:16:07.475 I/DecklySpike(15699): PEN_END x=1206 y=665 pressure=17.0 ts=1793808967430
+11-04 10:16:07.539 I/DecklySpike(15699): PEN_BEGIN x=1190 y=719 pressure=5.0 ts=1793808967527
+11-04 10:16:07.573 I/DecklySpike(15699): PEN_STROKE points=4 firstTs=1793808967527 lastTs=1793808967540 nowMs=1793808967573 uptimeMs=51678070
+11-04 10:16:07.583 I/DecklySpike(15699): PEN_PRESSURE points=4 min=0.00 max=0.00 avg=0.00
+11-04 10:16:07.584 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=4 out=4
+11-04 10:16:07.585 I/DecklySpike(15699): PEN_END x=1190 y=724 pressure=6.0 ts=1793808967543
+11-04 10:16:07.710 I/DecklySpike(15699): PEN_BEGIN x=1167 y=803 pressure=11.0 ts=1793808967705
+11-04 10:16:07.768 I/DecklySpike(15699): PEN_STROKE points=13 firstTs=1793808967705 lastTs=1793808967750 nowMs=1793808967768 uptimeMs=51678265
+11-04 10:16:07.776 I/DecklySpike(15699): PEN_PRESSURE points=13 min=0.00 max=0.00 avg=0.00
+11-04 10:16:07.777 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=13 out=13
+11-04 10:16:07.777 I/DecklySpike(15699): PEN_END x=1160 y=827 pressure=15.0 ts=1793808967754
+11-04 10:16:07.808 I/DecklySpike(15699): PEN_BEGIN x=1150 y=854 pressure=7.0 ts=1793808967803
+11-04 10:16:09.323 I/DecklySpike(15699): PEN_STROKE points=453 firstTs=1793808967803 lastTs=1793808969318 nowMs=1793808969323 uptimeMs=51679820
+11-04 10:16:09.342 I/DecklySpike(15699): PEN_PRESSURE points=453 min=0.00 max=0.83 avg=0.35
+11-04 10:16:09.345 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.01,0.00:2.73,0.00:4.70,0.00:6.13,0.00:6.52,0.00:5.47,0.00:2.80,0.00:2.41,0.00:2.00 in=453 out=453
+11-04 10:16:09.348 I/DecklySpike(15699): PEN_END x=896 y=1354 pressure=21.0 ts=1793808969322
+11-04 10:16:11.235 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:16:11.590 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:16:15.340 I/DecklySpike(15699): PEN_BEGIN x=370 y=1364 pressure=12.0 ts=1793808975338
+11-04 10:16:15.938 I/DecklySpike(15699): PEN_STROKE points=186 firstTs=1793808975338 lastTs=1793808975932 nowMs=1793808975938 uptimeMs=51686434
+11-04 10:16:15.950 I/DecklySpike(15699): PEN_PRESSURE points=186 min=0.00 max=0.01 avg=0.01
+11-04 10:16:15.958 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=186 out=186
+11-04 10:16:15.964 I/DecklySpike(15699): PEN_END x=525 y=1235 pressure=7.0 ts=1793808975936
+11-04 10:16:16.067 I/DecklySpike(15699): PEN_BEGIN x=547 y=1223 pressure=4.0 ts=1793808976065
+11-04 10:16:17.602 I/DecklySpike(15699): PEN_STROKE points=468 firstTs=1793808976065 lastTs=1793808977598 nowMs=1793808977602 uptimeMs=51688099
+11-04 10:16:17.618 I/DecklySpike(15699): PEN_PRESSURE points=468 min=0.00 max=0.63 avg=0.23
+11-04 10:16:17.622 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:3.05,0.00:4.20,0.00:4.73,0.00:4.28,0.00:2.20,0.00:2.05,0.00:2.02,0.00:2.00,0.00:2.00,0.00:2.00 in=468 out=468
+11-04 10:16:17.624 I/DecklySpike(15699): PEN_END x=758 y=1076 pressure=18.0 ts=1793808977602
+11-04 10:16:19.642 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:16:20.008 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:16:20.596 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:16:20.957 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:17:04.894 I/DecklySpike(15699): ERASE_BEGIN x=243 y=869 pressure=827.0 ts=1793809024889
+11-04 10:17:05.565 I/DecklySpike(15699): PEN_ERASE removed=7 rect=[217,255][1621,1373]
+11-04 10:17:05.605 I/DecklySpike(15699): ERASE_END x=1498 y=1113 pressure=947.0 ts=1793809025534
+11-04 10:17:05.796 I/DecklySpike(15699): PEN_GC api=refreshRegion rect=[217,255][1621,1373]
+11-04 10:17:06.609 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:17:06.612 I/DecklySpike(15699): ERASE_COMMIT rect=[217,255][1621,1373] gc=true api=refreshRegion resumeMs=800 track=true pausedMs=1032 resumed=true
+11-04 10:17:07.327 I/DecklySpike(15699): ERASE_BEGIN x=556 y=1147 pressure=1689.0 ts=1793809027320
+11-04 10:17:07.522 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[533,1062][772,1258]
+11-04 10:17:07.552 I/DecklySpike(15699): ERASE_END x=723 y=1235 pressure=25.0 ts=1793809027514
+11-04 10:17:07.750 I/DecklySpike(15699): PEN_GC api=refreshRegion rect=[533,1062][772,1258]
+11-04 10:17:08.565 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:17:08.568 I/DecklySpike(15699): ERASE_COMMIT rect=[533,1062][772,1258] gc=true api=refreshRegion resumeMs=800 track=true pausedMs=1029 resumed=true
+11-04 10:17:09.023 I/DecklySpike(15699): ERASE_BEGIN x=1175 y=247 pressure=1282.0 ts=1793809029011
+11-04 10:17:09.424 I/DecklySpike(15699): PEN_ERASE removed=2 rect=[1108,65][1544,722]
+11-04 10:17:09.452 I/DecklySpike(15699): ERASE_END x=1524 y=637 pressure=945.0 ts=1793809029417
+11-04 10:17:09.652 I/DecklySpike(15699): PEN_GC api=refreshRegion rect=[1108,65][1544,722]
+11-04 10:17:10.466 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:17:10.468 I/DecklySpike(15699): ERASE_COMMIT rect=[1108,65][1544,722] gc=true api=refreshRegion resumeMs=800 track=true pausedMs=1029 resumed=true
+11-04 10:17:10.885 I/DecklySpike(15699): ERASE_BEGIN x=1190 y=650 pressure=1323.0 ts=1793809030874
+11-04 10:17:11.037 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[1170,626][1290,694]
+11-04 10:17:11.068 I/DecklySpike(15699): ERASE_END x=1270 y=674 pressure=242.0 ts=1793809031036
+11-04 10:17:11.264 I/DecklySpike(15699): PEN_GC api=refreshRegion rect=[1170,626][1290,694]
+11-04 10:17:12.078 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:17:12.080 I/DecklySpike(15699): ERASE_COMMIT rect=[1170,626][1290,694] gc=true api=refreshRegion resumeMs=800 track=true pausedMs=1027 resumed=true
+11-04 10:17:13.070 I/DecklySpike(15699): ERASE_BEGIN x=242 y=139 pressure=1515.0 ts=1793809033068
+11-04 10:17:16.136 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[90,119][501,441]
+11-04 10:17:16.155 I/DecklySpike(15699): ERASE_END x=337 y=421 pressure=780.0 ts=1793809033311
+11-04 10:17:16.156 I/DecklySpike(15699): ERASE_BEGIN x=789 y=69 pressure=1279.0 ts=1793809033862
+11-04 10:17:16.158 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[719,49][957,360]
+11-04 10:17:16.585 I/DecklySpike(15699): ERASE_END x=854 y=340 pressure=2394.0 ts=1793809034056
+11-04 10:17:16.585 I/DecklySpike(15699): PEN_BEGIN x=318 y=956 pressure=1282.0 ts=1793809035429
+11-04 10:17:16.588 I/DecklySpike(15699): PEN_STROKE points=129 firstTs=1793809035429 lastTs=1793809035847 nowMs=1793809036588 uptimeMs=51747085
+11-04 10:17:16.632 I/DecklySpike(15699): PEN_PRESSURE points=129 min=0.26 max=0.79 avg=0.60
+11-04 10:17:16.634 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.69,0.00:3.88,0.00:4.18,0.00:3.62,0.00:3.84,0.00:5.75,0.00:4.94,0.00:4.40,0.00:5.00,0.00:6.40,0.00:6.28,0.00:2.46 in=129 out=131
+11-04 10:17:16.634 I/DecklySpike(15699): PEN_END x=830 y=700 pressure=1048.0 ts=1793809035850
+11-04 10:17:16.785 I/DecklySpike(15699): PEN_GC api=refreshRegion rect=[90,49][957,441]
+11-04 10:17:17.599 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:17:17.601 I/DecklySpike(15699): ERASE_COMMIT rect=[90,49][957,441] gc=true api=refreshRegion resumeMs=800 track=true pausedMs=1451 resumed=true
+11-04 10:17:18.920 I/DecklySpike(15699): ERASE_BEGIN x=591 y=557 pressure=1594.0 ts=1793809038915
+11-04 10:17:19.185 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[304,537][844,970]
+11-04 10:17:19.216 I/DecklySpike(15699): ERASE_END x=772 y=939 pressure=2270.0 ts=1793809039183
+11-04 10:17:19.411 I/DecklySpike(15699): PEN_GC api=refreshRegion rect=[304,537][844,970]
+11-04 10:17:20.225 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:17:20.230 I/DecklySpike(15699): ERASE_COMMIT rect=[304,537][844,970] gc=true api=refreshRegion resumeMs=800 track=true pausedMs=1027 resumed=true
+11-04 10:17:20.230 I/DecklySpike(15699): ERASE_BEGIN x=1165 y=825 pressure=2537.0 ts=1793809040223
+11-04 10:17:20.762 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[1105,764][1212,876]
+11-04 10:17:20.801 I/DecklySpike(15699): ERASE_END x=1180 y=800 pressure=756.0 ts=1793809040760
+11-04 10:17:20.994 I/DecklySpike(15699): PEN_GC api=refreshRegion rect=[1105,764][1212,876]
+11-04 10:17:21.808 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:17:21.810 I/DecklySpike(15699): ERASE_COMMIT rect=[1105,764][1212,876] gc=true api=refreshRegion resumeMs=800 track=true pausedMs=1032 resumed=true
+11-04 10:17:22.572 I/DecklySpike(15699): ERASE_BEGIN x=952 y=83 pressure=1644.0 ts=1793809042561
+11-04 10:17:23.487 I/DecklySpike(15699): PEN_ERASE removed=3 rect=[932,63][1192,216]
+11-04 10:17:23.516 I/DecklySpike(15699): ERASE_END x=1161 y=133 pressure=49.0 ts=1793809043483
+11-04 10:17:23.709 I/DecklySpike(15699): PEN_GC api=refreshRegion rect=[932,63][1192,216]
+11-04 10:17:24.524 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:17:24.528 I/DecklySpike(15699): ERASE_COMMIT rect=[932,63][1192,216] gc=true api=refreshRegion resumeMs=800 track=true pausedMs=1023 resumed=true
+11-04 10:17:24.796 I/DecklySpike(15699): ERASE_BEGIN x=363 y=1299 pressure=1824.0 ts=1793809044791
+11-04 10:17:25.183 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[342,1201][548,1378]
+11-04 10:17:25.207 I/DecklySpike(15699): ERASE_END x=528 y=1221 pressure=1238.0 ts=1793809045179
+11-04 10:17:25.408 I/DecklySpike(15699): PEN_GC api=refreshRegion rect=[342,1201][548,1378]
+11-04 10:17:26.223 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=свой
+11-04 10:17:26.226 I/DecklySpike(15699): ERASE_COMMIT rect=[342,1201][548,1378] gc=true api=refreshRegion resumeMs=800 track=true pausedMs=1026 resumed=true
+11-04 10:17:32.441 I/DecklySpike(15699): SETTING strokeRender=SDK
+11-04 10:17:32.457 I/DecklySpike(15699): PEN_RENDER_SDK call=first
+11-04 10:17:32.773 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:17:35.303 I/DecklySpike(15699): PEN_BEGIN x=305 y=1272 pressure=44.0 ts=1793809055297
+11-04 10:17:35.411 I/DecklySpike(15699): PEN_STROKE points=33 firstTs=1793809055297 lastTs=1793809055408 nowMs=1793809055411 uptimeMs=51765907
+11-04 10:17:35.425 I/DecklySpike(15699): PEN_PRESSURE points=33 min=0.00 max=0.01 avg=0.01
+11-04 10:17:35.426 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=33 out=33
+11-04 10:17:35.432 I/DecklySpike(15699): PEN_END x=318 y=1214 pressure=17.0 ts=1793809055410
+11-04 10:17:35.474 I/DecklySpike(15699): PEN_BEGIN x=328 y=1187 pressure=5.0 ts=1793809055443
+11-04 10:17:37.173 I/DecklySpike(15699): PEN_STROKE points=529 firstTs=1793809055443 lastTs=1793809057168 nowMs=1793809057173 uptimeMs=51767669
+11-04 10:17:37.195 I/DecklySpike(15699): PEN_PRESSURE points=529 min=0.00 max=0.95 avg=0.42
+11-04 10:17:37.200 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.02,0.00:2.05,0.00:2.70,0.00:5.41,0.00:6.11,0.00:7.68,0.00:8.25,0.00:5.03,0.00:2.26,0.00:2.01 in=529 out=529
+11-04 10:17:37.206 I/DecklySpike(15699): PEN_END x=996 y=392 pressure=141.0 ts=1793809057172
+11-04 10:17:37.288 I/DecklySpike(15699): PEN_BEGIN x=1051 y=350 pressure=8.0 ts=1793809057285
+11-04 10:17:37.433 I/DecklySpike(15699): PEN_STROKE points=43 firstTs=1793809057285 lastTs=1793809057427 nowMs=1793809057433 uptimeMs=51767929
+11-04 10:17:37.445 I/DecklySpike(15699): PEN_PRESSURE points=43 min=0.00 max=0.01 avg=0.01
+11-04 10:17:37.446 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=43 out=43
+11-04 10:17:37.452 I/DecklySpike(15699): PEN_END x=1113 y=310 pressure=21.0 ts=1793809057431
+11-04 10:17:37.579 I/DecklySpike(15699): PEN_BEGIN x=1194 y=261 pressure=9.0 ts=1793809057577
+11-04 10:17:37.667 I/DecklySpike(15699): PEN_STROKE points=20 firstTs=1793809057577 lastTs=1793809057654 nowMs=1793809057667 uptimeMs=51768164
+11-04 10:17:37.679 I/DecklySpike(15699): PEN_PRESSURE points=20 min=0.00 max=0.01 avg=0.00
+11-04 10:17:37.683 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00,0.00:2.00 in=20 out=20
+11-04 10:17:37.683 I/DecklySpike(15699): PEN_END x=1249 y=223 pressure=21.0 ts=1793809057658
+11-04 10:17:38.465 I/DecklySpike(15699): PEN_BEGIN x=692 y=1270 pressure=390.0 ts=1793809058459
+11-04 10:17:39.833 I/DecklySpike(15699): PEN_STROKE points=414 firstTs=1793809058459 lastTs=1793809059829 nowMs=1793809059833 uptimeMs=51770330
+11-04 10:17:39.857 I/DecklySpike(15699): PEN_PRESSURE points=414 min=0.01 max=1.00 avg=0.47
+11-04 10:17:39.859 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.06,0.00:2.03,0.00:2.01,0.00:2.00,0.00:2.00,0.00:2.13,0.00:4.64,0.00:7.37,0.00:8.87,0.00:9.00,0.00:9.00,0.00:3.04 in=414 out=417
+11-04 10:17:39.867 I/DecklySpike(15699): PEN_END x=1255 y=376 pressure=1582.0 ts=1793809059832
+11-04 10:17:41.416 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:17:41.764 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:17:42.916 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:17:43.263 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:17:44.028 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:17:44.376 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:17:45.403 I/DecklySpike(15699): ERASE_BEGIN x=623 y=481 pressure=1473.0 ts=1793809065398
+11-04 10:17:45.691 I/DecklySpike(15699): PEN_ERASE removed=2 rect=[314,362][1269,1284]
+11-04 10:17:45.727 I/DecklySpike(15699): ERASE_END x=1136 y=744 pressure=1664.0 ts=1793809065688
+11-04 10:17:45.920 I/DecklySpike(15699): PEN_GC api=refreshRegion rect=[314,362][1269,1284]
+11-04 10:17:46.734 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:17:46.736 I/DecklySpike(15699): ERASE_COMMIT rect=[314,362][1269,1284] gc=true api=refreshRegion resumeMs=800 track=true pausedMs=1029 resumed=true
+11-04 10:21:43.313 I/DecklySpike(15699): SETTING gcAfterErase=false
+11-04 10:21:48.267 I/DecklySpike(15699): SETTING eraserTrack=false
+11-04 10:21:48.268 I/DecklySpike(15699): STATUS_REFRESH reason=eraserTrack hasSheet=true
+11-04 10:21:48.601 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:21:54.319 I/DecklySpike(15699): SETTING eraseResumeMs=150
+11-04 10:22:02.963 I/DecklySpike(15699): PEN_BEGIN x=672 y=1208 pressure=1017.0 ts=1793809322955
+11-04 10:22:03.331 I/DecklySpike(15699): PEN_STROKE points=110 firstTs=1793809322955 lastTs=1793809323323 nowMs=1793809323329 uptimeMs=52033826
+11-04 10:22:03.345 I/DecklySpike(15699): PEN_PRESSURE points=110 min=0.19 max=0.60 avg=0.51
+11-04 10:22:03.346 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.43,0.00:2.97,0.00:3.34,0.00:3.64,0.00:4.21,0.00:4.47,0.00:4.46,0.00:4.45,0.00:4.18,0.00:4.33,0.00:4.33,0.00:2.25 in=110 out=111
+11-04 10:22:03.350 I/DecklySpike(15699): PEN_END x=927 y=428 pressure=773.0 ts=1793809323328
+11-04 10:22:03.734 I/DecklySpike(15699): PEN_BEGIN x=946 y=1181 pressure=21.0 ts=1793809323731
+11-04 10:22:04.040 I/DecklySpike(15699): PEN_STROKE points=89 firstTs=1793809323731 lastTs=1793809324035 nowMs=1793809324040 uptimeMs=52034537
+11-04 10:22:04.053 I/DecklySpike(15699): PEN_PRESSURE points=89 min=0.01 max=0.57 avg=0.41
+11-04 10:22:04.054 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.56,0.00:2.93,0.00:3.28,0.00:3.29,0.00:3.63,0.00:3.89,0.00:4.27,0.00:4.16,0.00:3.92,0.00:2.76,0.00:2.12 in=89 out=89
+11-04 10:22:04.056 I/DecklySpike(15699): PEN_END x=1138 y=431 pressure=541.0 ts=1793809324039
+11-04 10:22:04.509 I/DecklySpike(15699): PEN_BEGIN x=1195 y=1267 pressure=352.0 ts=1793809324507
+11-04 10:22:05.027 I/DecklySpike(15699): PEN_STROKE points=153 firstTs=1793809324507 lastTs=1793809325021 nowMs=1793809325027 uptimeMs=52035523
+11-04 10:22:05.038 I/DecklySpike(15699): PEN_PRESSURE points=153 min=0.09 max=0.26 avg=0.20
+11-04 10:22:05.041 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.05,0.00:2.09,0.00:2.08,0.00:2.18,0.00:2.33,0.00:2.36,0.00:2.31,0.00:2.38,0.00:2.40,0.00:2.46,0.00:2.46,0.00:2.11 in=153 out=153
+11-04 10:22:05.043 I/DecklySpike(15699): PEN_END x=1413 y=403 pressure=507.0 ts=1793809325026
+11-04 10:22:06.267 I/DecklySpike(15699): ERASE_BEGIN x=709 y=772 pressure=1051.0 ts=1793809326265
+11-04 10:22:06.458 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[658,414][941,1222]
+11-04 10:22:06.493 I/DecklySpike(15699): ERASE_END x=847 y=797 pressure=1271.0 ts=1793809326457
+11-04 10:22:06.855 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:22:06.857 I/DecklySpike(15699): ERASE_COMMIT rect=[658,414][941,1222] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=384 resumed=true
+11-04 10:22:07.384 I/DecklySpike(15699): ERASE_BEGIN x=924 y=888 pressure=1627.0 ts=1793809327382
+11-04 10:22:07.511 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[904,417][1152,1195]
+11-04 10:22:07.553 I/DecklySpike(15699): ERASE_END x=1094 y=900 pressure=1942.0 ts=1793809327511
+11-04 10:22:07.902 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:22:07.905 I/DecklySpike(15699): ERASE_COMMIT rect=[904,417][1152,1195] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=378 resumed=true
+11-04 10:22:08.434 I/DecklySpike(15699): ERASE_BEGIN x=1267 y=955 pressure=1834.0 ts=1793809328432
+11-04 10:22:08.564 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[1181,389][1462,1281]
+11-04 10:22:08.607 I/DecklySpike(15699): ERASE_END x=1442 y=1014 pressure=614.0 ts=1793809328562
+11-04 10:22:08.960 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:22:08.962 I/DecklySpike(15699): ERASE_COMMIT rect=[1181,389][1462,1281] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=381 resumed=true
+11-04 10:22:30.074 I/DecklySpike(15699): PEN_BEGIN x=552 y=1306 pressure=690.0 ts=1793809350065
+11-04 10:22:30.359 I/DecklySpike(15699): PEN_STROKE points=85 firstTs=1793809350065 lastTs=1793809350353 nowMs=1793809350359 uptimeMs=52060856
+11-04 10:22:30.382 I/DecklySpike(15699): PEN_PRESSURE points=85 min=0.12 max=0.39 avg=0.32
+11-04 10:22:30.387 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.20,0.00:2.91,0.00:2.80,0.00:2.78,0.00:2.75,0.00:2.76,0.00:2.78,0.00:2.79,0.00:2.81,0.00:2.81,0.00:2.78,0.00:2.10 in=85 out=85
+11-04 10:22:30.393 I/DecklySpike(15699): PEN_END x=823 y=389 pressure=498.0 ts=1793809350356
+11-04 10:22:30.714 I/DecklySpike(15699): PEN_BEGIN x=869 y=1326 pressure=699.0 ts=1793809350712
+11-04 10:22:31.182 I/DecklySpike(15699): PEN_STROKE points=142 firstTs=1793809350712 lastTs=1793809351177 nowMs=1793809351182 uptimeMs=52061678
+11-04 10:22:31.197 I/DecklySpike(15699): PEN_PRESSURE points=142 min=0.17 max=0.91 avg=0.69
+11-04 10:22:31.198 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.20,0.00:2.42,0.00:3.35,0.00:4.71,0.00:5.66,0.00:6.38,0.00:6.81,0.00:6.80,0.00:7.55,0.00:7.75,0.00:7.67,0.00:4.31 in=142 out=143
+11-04 10:22:31.200 I/DecklySpike(15699): PEN_END x=1070 y=455 pressure=2352.0 ts=1793809351181
+11-04 10:22:31.573 I/DecklySpike(15699): PEN_BEGIN x=1224 y=1314 pressure=421.0 ts=1793809351569
+11-04 10:22:31.926 I/DecklySpike(15699): PEN_STROKE points=109 firstTs=1793809351569 lastTs=1793809351921 nowMs=1793809351925 uptimeMs=52062422
+11-04 10:22:31.947 I/DecklySpike(15699): PEN_PRESSURE points=109 min=0.01 max=0.24 avg=0.17
+11-04 10:22:31.948 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.07,0.00:2.01,0.00:2.07,0.00:2.12,0.00:2.20,0.00:2.38,0.00:2.39,0.00:2.37,0.00:2.36,0.00:2.33,0.00:2.23,0.00:2.00 in=109 out=109
+11-04 10:22:31.954 I/DecklySpike(15699): PEN_END x=1389 y=457 pressure=50.0 ts=1793809351924
+11-04 10:22:34.041 I/DecklySpike(15699): ERASE_BEGIN x=635 y=800 pressure=1366.0 ts=1793809354039
+11-04 10:22:34.170 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[536,375][837,1322]
+11-04 10:22:34.210 I/DecklySpike(15699): ERASE_END x=755 y=826 pressure=1326.0 ts=1793809354169
+11-04 10:22:34.563 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:22:34.564 I/DecklySpike(15699): ERASE_COMMIT rect=[536,375][837,1322] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=379 resumed=true
+11-04 10:22:35.116 I/DecklySpike(15699): ERASE_BEGIN x=929 y=917 pressure=1560.0 ts=1793809355114
+11-04 10:22:35.277 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[855,441][1105,1340]
+11-04 10:22:35.306 I/DecklySpike(15699): ERASE_END x=1085 y=942 pressure=749.0 ts=1793809355276
+11-04 10:22:35.670 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:22:35.673 I/DecklySpike(15699): ERASE_COMMIT rect=[855,441][1105,1340] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=372 resumed=true
+11-04 10:22:36.128 I/DecklySpike(15699): ERASE_BEGIN x=1249 y=919 pressure=945.0 ts=1793809356127
+11-04 10:22:36.289 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[1210,443][1435,1328]
+11-04 10:22:36.318 I/DecklySpike(15699): ERASE_END x=1415 y=956 pressure=47.0 ts=1793809356289
+11-04 10:22:36.676 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:22:36.678 I/DecklySpike(15699): ERASE_COMMIT rect=[1210,443][1435,1328] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=374 resumed=true
+11-04 10:23:38.253 I/DecklySpike(15699): PEN_BEGIN x=695 y=1210 pressure=825.0 ts=1793809418251
+11-04 10:23:38.478 I/DecklySpike(15699): PEN_STROKE points=64 firstTs=1793809418251 lastTs=1793809418474 nowMs=1793809418478 uptimeMs=52128975
+11-04 10:23:38.486 I/DecklySpike(15699): PEN_PRESSURE points=64 min=0.20 max=0.50 avg=0.40
+11-04 10:23:38.488 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.28,0.00:2.63,0.00:2.92,0.00:3.09,0.00:3.05,0.00:3.06,0.00:3.06,0.00:3.10,0.00:3.66,0.00:3.72,0.00:3.63,0.00:2.73 in=64 out=64
+11-04 10:23:38.494 I/DecklySpike(15699): PEN_END x=938 y=734 pressure=1323.0 ts=1793809418477
+11-04 10:23:39.619 I/DecklySpike(15699): ERASE_BEGIN x=723 y=962 pressure=1447.0 ts=1793809419617
+11-04 10:23:39.813 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[681,720][952,1224]
+11-04 10:23:39.840 I/DecklySpike(15699): ERASE_END x=848 y=1012 pressure=1759.0 ts=1793809419812
+11-04 10:23:40.201 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:23:40.205 I/DecklySpike(15699): ERASE_COMMIT rect=[681,720][952,1224] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=373 resumed=true
+11-04 10:23:40.206 I/DecklySpike(15699): PEN_BEGIN x=897 y=1088 pressure=3007.0 ts=1793809420199
+11-04 10:23:40.733 I/DecklySpike(15699): PEN_STROKE points=163 firstTs=1793809420199 lastTs=1793809420729 nowMs=1793809420733 uptimeMs=52131230
+11-04 10:23:40.744 I/DecklySpike(15699): PEN_PRESSURE points=163 min=0.33 max=0.74 avg=0.70
+11-04 10:23:40.747 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:5.77,0.00:5.82,0.00:5.83,0.00:5.88,0.00:5.86,0.00:5.68,0.00:5.68,0.00:5.41,0.00:5.44,0.00:5.41,0.00:5.39,0.00:2.77 in=163 out=164
+11-04 10:23:40.751 I/DecklySpike(15699): PEN_END x=1182 y=693 pressure=1362.0 ts=1793809420733
+11-04 10:23:41.454 I/DecklySpike(15699): ERASE_BEGIN x=942 y=848 pressure=923.0 ts=1793809421450
+11-04 10:23:41.616 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[883,679][1196,1102]
+11-04 10:23:41.645 I/DecklySpike(15699): ERASE_END x=1108 y=975 pressure=1796.0 ts=1793809421614
+11-04 10:23:42.001 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:23:42.004 I/DecklySpike(15699): ERASE_COMMIT rect=[883,679][1196,1102] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=371 resumed=true
+11-04 10:23:42.032 I/DecklySpike(15699): PEN_BEGIN x=1108 y=1073 pressure=2784.0 ts=1793809421999
+11-04 10:23:42.504 I/DecklySpike(15699): PEN_STROKE points=150 firstTs=1793809421999 lastTs=1793809422500 nowMs=1793809422504 uptimeMs=52133001
+11-04 10:23:42.514 I/DecklySpike(15699): PEN_PRESSURE points=150 min=0.27 max=0.69 avg=0.66
+11-04 10:23:42.516 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:5.23,0.00:5.24,0.00:5.26,0.00:5.27,0.00:5.28,0.00:5.28,0.00:5.27,0.00:5.26,0.00:5.26,0.00:5.26,0.00:5.20,0.00:2.51 in=150 out=151
+11-04 10:23:42.516 I/DecklySpike(15699): PEN_END x=1436 y=667 pressure=1101.0 ts=1793809422504
+11-04 10:23:44.221 I/DecklySpike(15699): PEN_BEGIN x=573 y=997 pressure=760.0 ts=1793809424220
+11-04 10:23:44.673 I/DecklySpike(15699): PEN_STROKE points=135 firstTs=1793809424220 lastTs=1793809424668 nowMs=1793809424673 uptimeMs=52135169
+11-04 10:23:44.699 I/DecklySpike(15699): PEN_PRESSURE points=135 min=0.18 max=0.44 avg=0.37
+11-04 10:23:44.703 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.24,0.00:2.22,0.00:2.49,0.00:2.95,0.00:3.02,0.00:3.16,0.00:3.29,0.00:3.34,0.00:3.36,0.00:3.33,0.00:3.32,0.00:2.42 in=135 out=135
+11-04 10:23:44.708 I/DecklySpike(15699): PEN_END x=838 y=654 pressure=1009.0 ts=1793809424672
+11-04 10:23:45.353 I/DecklySpike(15699): ERASE_BEGIN x=660 y=788 pressure=1322.0 ts=1793809425351
+11-04 10:23:45.531 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[559,640][852,1011]
+11-04 10:23:45.565 I/DecklySpike(15699): ERASE_END x=725 y=857 pressure=1647.0 ts=1793809425529
+11-04 10:23:45.917 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:23:45.919 I/DecklySpike(15699): ERASE_COMMIT rect=[559,640][852,1011] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=374 resumed=true
+11-04 10:23:45.920 I/DecklySpike(15699): PEN_BEGIN x=822 y=988 pressure=2266.0 ts=1793809425917
+11-04 10:23:46.484 I/DecklySpike(15699): PEN_STROKE points=177 firstTs=1793809425917 lastTs=1793809426480 nowMs=1793809426484 uptimeMs=52136981
+11-04 10:23:46.507 I/DecklySpike(15699): PEN_PRESSURE points=177 min=0.06 max=0.60 avg=0.58
+11-04 10:23:46.509 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:4.14,0.00:4.42,0.00:4.55,0.00:4.53,0.00:4.52,0.00:4.54,0.00:4.54,0.00:4.54,0.00:4.53,0.00:4.55,0.00:4.50,0.00:2.03 in=177 out=178
+11-04 10:23:46.511 I/DecklySpike(15699): PEN_END x=1151 y=582 pressure=254.0 ts=1793809426483
+11-04 10:24:18.721 I/DecklySpike(15699): SETTING eraseResumeMs=450
+11-04 10:24:20.710 I/DecklySpike(15699): SETTING eraseResumeMs=800
+11-04 10:24:21.902 I/DecklySpike(15699): SETTING eraseResumeMs=150
+11-04 10:24:22.934 I/DecklySpike(15699): SETTING eraseResumeMs=450
+11-04 10:24:23.645 I/DecklySpike(15699): SETTING eraseResumeMs=800
+11-04 10:24:24.147 I/DecklySpike(15699): SETTING eraseResumeMs=150
+11-04 10:24:24.516 I/DecklySpike(15699): SETTING eraseResumeMs=450
+11-04 10:24:24.959 I/DecklySpike(15699): SETTING eraseResumeMs=800
+11-04 10:24:25.928 I/DecklySpike(15699): SETTING eraserTrack=true
+11-04 10:24:25.929 I/DecklySpike(15699): STATUS_REFRESH reason=eraserTrack hasSheet=true
+11-04 10:24:26.268 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:24:27.258 I/DecklySpike(15699): SETTING eraseResumeMs=150
+11-04 10:24:28.002 I/DecklySpike(15699): SETTING eraserTrack=false
+11-04 10:24:28.003 I/DecklySpike(15699): STATUS_REFRESH reason=eraserTrack hasSheet=true
+11-04 10:24:28.340 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:24:28.520 I/DecklySpike(15699): SETTING eraseResumeMs=450
+11-04 10:24:30.889 I/DecklySpike(15699): PEN_BEGIN x=313 y=916 pressure=274.0 ts=1793809470883
+11-04 10:24:31.155 I/DecklySpike(15699): PEN_STROKE points=83 firstTs=1793809470883 lastTs=1793809471149 nowMs=1793809471155 uptimeMs=52181651
+11-04 10:24:31.178 I/DecklySpike(15699): PEN_PRESSURE points=83 min=0.07 max=0.47 avg=0.30
+11-04 10:24:31.180 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.03,0.00:2.18,0.00:2.14,0.00:2.28,0.00:2.50,0.00:2.59,0.00:2.71,0.00:3.00,0.00:3.22,0.00:3.37,0.00:3.56,0.00:2.70 in=83 out=83
+11-04 10:24:31.184 I/DecklySpike(15699): PEN_END x=587 y=451 pressure=1291.0 ts=1793809471154
+11-04 10:24:32.478 I/DecklySpike(15699): ERASE_BEGIN x=390 y=625 pressure=1965.0 ts=1793809472477
+11-04 10:24:32.642 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[299,437][601,930]
+11-04 10:24:32.673 I/DecklySpike(15699): ERASE_END x=533 y=695 pressure=736.0 ts=1793809472639
+11-04 10:24:33.335 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:24:33.337 I/DecklySpike(15699): ERASE_COMMIT rect=[299,437][601,930] gc=false api=refreshRegion resumeMs=450 track=false pausedMs=680 resumed=true
+11-04 10:24:34.483 I/DecklySpike(15699): SETTING eraseResumeMs=800
+11-04 10:24:35.395 I/DecklySpike(15699): PEN_BEGIN x=394 y=1131 pressure=1051.0 ts=1793809475385
+11-04 10:24:35.693 I/DecklySpike(15699): PEN_STROKE points=94 firstTs=1793809475385 lastTs=1793809475688 nowMs=1793809475693 uptimeMs=52186190
+11-04 10:24:35.706 I/DecklySpike(15699): PEN_PRESSURE points=94 min=0.26 max=0.81 avg=0.62
+11-04 10:24:35.707 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.46,0.00:3.54,0.00:3.49,0.00:3.77,0.00:4.82,0.00:5.39,0.00:6.22,0.00:6.58,0.00:6.63,0.00:6.58,0.00:4.84,0.00:2.52 in=94 out=96
+11-04 10:24:35.709 I/DecklySpike(15699): PEN_END x=742 y=561 pressure=1112.0 ts=1793809475692
+11-04 10:24:36.530 I/DecklySpike(15699): ERASE_BEGIN x=454 y=746 pressure=1769.0 ts=1793809476529
+11-04 10:24:36.709 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[368,547][756,1151]
+11-04 10:24:36.750 I/DecklySpike(15699): ERASE_END x=619 y=881 pressure=2085.0 ts=1793809476708
+11-04 10:24:37.760 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:24:37.763 I/DecklySpike(15699): ERASE_COMMIT rect=[368,547][756,1151] gc=false api=refreshRegion resumeMs=800 track=false pausedMs=1037 resumed=true
+11-04 10:24:38.498 I/DecklySpike(15699): PEN_BEGIN x=992 y=1273 pressure=1318.0 ts=1793809478491
+11-04 10:24:38.719 I/DecklySpike(15699): PEN_STROKE points=66 firstTs=1793809478491 lastTs=1793809478714 nowMs=1793809478719 uptimeMs=52189215
+11-04 10:24:38.729 I/DecklySpike(15699): PEN_PRESSURE points=66 min=0.32 max=0.66 avg=0.52
+11-04 10:24:38.737 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.72,0.00:3.25,0.00:3.21,0.00:3.61,0.00:3.99,0.00:4.08,0.00:4.08,0.00:4.48,0.00:5.02,0.00:5.06,0.00:4.42,0.00:3.02 in=66 out=67
+11-04 10:24:38.739 I/DecklySpike(15699): PEN_END x=1424 y=1179 pressure=1566.0 ts=1793809478718
+11-04 10:24:39.156 I/DecklySpike(15699): ERASE_BEGIN x=1244 y=1132 pressure=1851.0 ts=1793809479155
+11-04 10:24:39.351 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[978,1112][1438,1347]
+11-04 10:24:39.380 I/DecklySpike(15699): ERASE_END x=1242 y=1327 pressure=510.0 ts=1793809479349
+11-04 10:24:40.389 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:24:40.391 I/DecklySpike(15699): ERASE_COMMIT rect=[978,1112][1438,1347] gc=false api=refreshRegion resumeMs=800 track=false pausedMs=1024 resumed=true
+11-04 10:24:40.722 I/DecklySpike(15699): SETTING eraseResumeMs=150
+11-04 10:25:42.108 I/DecklySpike(15699): ERASE_BEGIN x=922 y=795 pressure=1947.0 ts=1793809542107
+11-04 10:25:42.353 I/DecklySpike(15699): PEN_ERASE removed=2 rect=[808,568][1450,1087]
+11-04 10:25:42.399 I/DecklySpike(15699): ERASE_END x=1285 y=1026 pressure=1586.0 ts=1793809542350
+11-04 10:25:42.749 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:25:42.751 I/DecklySpike(15699): ERASE_COMMIT rect=[808,568][1450,1087] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=383 resumed=true
+11-04 10:25:42.798 I/DecklySpike(15699): ERASE_BEGIN x=1079 y=252 pressure=703.0 ts=1793809542786
+11-04 10:25:42.937 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[1037,232][1144,419]
+11-04 10:25:42.971 I/DecklySpike(15699): ERASE_END x=1124 y=384 pressure=446.0 ts=1793809542934
+11-04 10:25:43.330 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:25:43.332 I/DecklySpike(15699): ERASE_COMMIT rect=[1037,232][1144,419] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=380 resumed=true
+11-04 10:25:44.276 I/DecklySpike(15699): ERASE_BEGIN x=1205 y=180 pressure=1534.0 ts=1793809544275
+11-04 10:25:44.437 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[1177,160][1265,337]
+11-04 10:25:44.466 I/DecklySpike(15699): ERASE_END x=1245 y=317 pressure=1325.0 ts=1793809544436
+11-04 10:25:44.825 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:25:44.828 I/DecklySpike(15699): ERASE_COMMIT rect=[1177,160][1265,337] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=374 resumed=true
+11-04 10:25:45.145 I/DecklySpike(15699): ERASE_BEGIN x=267 y=1253 pressure=1880.0 ts=1793809545140
+11-04 10:25:45.226 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[247,1200][339,1286]
+11-04 10:25:45.252 I/DecklySpike(15699): ERASE_END x=319 y=1235 pressure=2206.0 ts=1793809545225
+11-04 10:25:45.611 I/DecklySpike(15699): PEN_STYLE style=ручка width=6.0 render=SDK
+11-04 10:25:45.613 I/DecklySpike(15699): ERASE_COMMIT rect=[247,1200][339,1286] gc=false api=refreshRegion resumeMs=150 track=false pausedMs=373 resumed=true
+11-04 10:25:48.348 I/DecklySpike(15699): MOTION tool=STYLUS buttons=0x0
+11-04 10:25:48.887 I/DecklySpike(15699): PEN_STROKE points=170
+11-04 10:25:48.888 I/DecklySpike(15699): PEN_PRESSURE points=170 min=0.01 max=0.67 avg=0.55
+11-04 10:25:48.894 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.74,0.00:3.61,0.00:4.58,0.00:3.92,0.00:4.05,0.00:4.47,0.00:4.44,0.00:4.40,0.00:5.09,0.00:5.11,0.00:4.13,0.00:2.00 in=170 out=170
+11-04 10:25:49.714 I/DecklySpike(15699): MOTION tool=ERASER buttons=0x0
+11-04 10:25:50.101 I/DecklySpike(15699): PEN_ERASE removed=0 rect=null
+11-04 10:25:51.456 I/DecklySpike(15699): MOTION tool=STYLUS buttons=0x0
+11-04 10:25:52.212 I/DecklySpike(15699): PEN_STROKE points=232
+11-04 10:25:52.212 I/DecklySpike(15699): PEN_PRESSURE points=232 min=0.40 max=0.97 avg=0.84
+11-04 10:25:52.214 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:3.14,0.00:3.68,0.00:5.93,0.00:7.20,0.00:7.36,0.00:7.78,0.00:8.15,0.00:8.16,0.00:8.53,0.00:8.50,0.00:8.47,0.00:4.00 in=232 out=233
+11-04 10:25:52.804 I/DecklySpike(15699): MOTION tool=STYLUS buttons=0x0
+11-04 10:25:52.890 I/DecklySpike(15699): PEN_STROKE points=27
+11-04 10:25:52.891 I/DecklySpike(15699): PEN_PRESSURE points=27 min=0.00 max=0.32 avg=0.20
+11-04 10:25:52.895 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.18,0.00:2.63,0.00:2.71,0.00:2.61,0.00:2.60,0.00:2.40,0.00:2.36,0.00:2.17,0.00:2.14,0.00:2.13,0.00:2.00,0.00:2.00 in=27 out=27
+11-04 10:25:52.936 I/DecklySpike(15699): MOTION tool=STYLUS buttons=0x0
+11-04 10:25:53.537 I/DecklySpike(15699): PEN_STROKE points=182
+11-04 10:25:53.539 I/DecklySpike(15699): PEN_PRESSURE points=182 min=0.01 max=0.37 avg=0.25
+11-04 10:25:53.546 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.00:2.64,0.00:2.96,0.00:2.72,0.00:2.61,0.00:2.61,0.00:2.60,0.00:2.48,0.00:2.41,0.00:2.37,0.00:2.24,0.00:2.01 in=182 out=182
+11-04 10:25:54.505 I/DecklySpike(15699): MOTION tool=ERASER buttons=0x0
+11-04 10:25:54.680 I/DecklySpike(15699): PEN_ERASE removed=1 rect=[805,440][1358,1218]
+11-04 10:25:55.535 I/DecklySpike(15699): MOTION tool=STYLUS buttons=0x0
+11-04 10:25:57.260 I/DecklySpike(15699): PEN_STROKE points=511
+11-04 10:25:57.261 I/DecklySpike(15699): PEN_PRESSURE points=511 min=0.00 max=0.98 avg=0.43
+11-04 10:25:57.272 I/DecklySpike(15699): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.22,0.00:2.97,0.00:6.23,0.00:7.64,0.00:8.61,0.00:7.14,0.00:3.91,0.00:2.31,0.00:2.07,0.00:2.00,0.00:2.02,0.00:2.00 in=511 out=511
+11-04 10:25:59.407 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:26:00.239 I/DecklySpike(15699): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:28:03.084 I/DecklySpike(17184): SDK onyx=true init=ok device=SDMDevice
+11-04 10:28:03.090 I/DecklySpike(17184): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:28:03.093 I/DecklySpike(17184): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:28:03.093 I/DecklySpike(17184): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:28:03.094 I/DecklySpike(17184): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:28:03.095 I/DecklySpike(17184): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:28:03.096 I/DecklySpike(17184): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:28:03.096 I/DecklySpike(17184): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:28:03.097 I/DecklySpike(17184): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:28:03.098 I/DecklySpike(17184): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:28:03.384 I/DecklySpike(17184): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=3230 entries=3230 consistent=true
+11-04 10:28:03.851 I/DecklySpike(17184): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:28:03.998 I/DecklySpike(17184): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:28:04.001 I/DecklySpike(17184): PEN_SESSION ms=143 steps=disable:0,close:110,limit:2,open:15,enable:13,eraser:1,style:2 limit=[0,0][1830,1474]
+11-04 10:28:04.253 I/DecklySpike(17184): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:28:04.261 I/DecklySpike(17184): PEN_SESSION ms=86 steps=disable:16,close:26,limit:4,open:14,enable:16,eraser:3,style:7 limit=[0,0][1830,1454]
+11-04 10:28:04.329 I/DecklySpike(17184): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:30:13.080 I/DecklySpike(17184): SETTING penStyle=ручка
+11-04 10:30:13.417 I/DecklySpike(17184): PEN_STYLE style=ручка width=3.0 render=ровно
+11-04 10:30:17.053 I/DecklySpike(17184): SETTING strokeWidth=6.0
+11-04 10:30:17.386 I/DecklySpike(17184): PEN_STYLE style=ручка width=6.0 render=ровно
+11-04 10:30:41.012 I/DecklySpike(17184): PEN_BEGIN x=148 y=1307 pressure=51.0 ts=1793809841001
+11-04 10:30:41.762 I/DecklySpike(17184): PEN_STROKE points=215 firstTs=1793809841001 lastTs=1793809841757 nowMs=1793809841762 uptimeMs=52552259
+11-04 10:30:41.773 I/DecklySpike(17184): PEN_PRESSURE points=215 min=0.00 max=0.04 avg=0.02
+11-04 10:30:41.807 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.01:2.00,0.01:2.00,0.01:2.00,0.03:2.01,0.02:2.00,0.02:2.00,0.02:2.00,0.03:2.01,0.02:2.00,0.01:2.00,0.01:2.00,0.00:2.00 in=215 out=215
+11-04 10:30:41.815 I/DecklySpike(17184): PEN_END x=157 y=473 pressure=7.0 ts=1793809841761
+11-04 10:30:43.224 I/DecklySpike(17184): PEN_BEGIN x=223 y=1312 pressure=10.0 ts=1793809843221
+11-04 10:30:44.225 I/DecklySpike(17184): PEN_STROKE points=291 firstTs=1793809843221 lastTs=1793809844220 nowMs=1793809844225 uptimeMs=52554722
+11-04 10:30:44.235 I/DecklySpike(17184): PEN_PRESSURE points=291 min=0.00 max=0.27 avg=0.18
+11-04 10:30:44.247 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.00:2.00,0.02:2.00,0.12:2.10,0.14:2.13,0.15:2.17,0.19:2.26,0.23:2.38,0.24:2.42,0.25:2.45,0.26:2.49,0.27:2.50,0.02:2.00 in=291 out=291
+11-04 10:30:44.250 I/DecklySpike(17184): PEN_END x=252 y=223 pressure=90.0 ts=1793809844224
+11-04 10:30:45.059 I/DecklySpike(17184): PEN_BEGIN x=356 y=1306 pressure=248.0 ts=1793809845057
+11-04 10:30:46.336 I/DecklySpike(17184): PEN_STROKE points=382 firstTs=1793809845057 lastTs=1793809846330 nowMs=1793809846336 uptimeMs=52556832
+11-04 10:30:46.348 I/DecklySpike(17184): PEN_PRESSURE points=382 min=0.01 max=0.59 avg=0.43
+11-04 10:30:46.355 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.06:2.03,0.20:2.28,0.34:2.83,0.34:2.83,0.39:3.09,0.46:3.48,0.51:3.85,0.53:4.00,0.55:4.15,0.58:4.39,0.59:4.41,0.01:2.00 in=382 out=383
+11-04 10:30:46.358 I/DecklySpike(17184): PEN_END x=340 y=155 pressure=58.0 ts=1793809846334
+11-04 10:30:47.121 I/DecklySpike(17184): PEN_BEGIN x=490 y=1302 pressure=333.0 ts=1793809847118
+11-04 10:30:48.541 I/DecklySpike(17184): PEN_STROKE points=407 firstTs=1793809847118 lastTs=1793809848536 nowMs=1793809848541 uptimeMs=52559037
+11-04 10:30:48.550 I/DecklySpike(17184): PEN_PRESSURE points=407 min=0.04 max=1.00 avg=0.67
+11-04 10:30:48.557 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.08:2.05,0.24:2.42,0.50:3.73,0.57:4.30,0.63:4.79,0.70:5.52,0.77:6.17,0.82:6.72,0.88:7.47,0.94:8.18,1.00:8.93,0.25:2.43 in=407 out=410
+11-04 10:30:48.563 I/DecklySpike(17184): PEN_END x=480 y=179 pressure=1021.0 ts=1793809848540
+11-04 10:30:49.212 I/DecklySpike(17184): PEN_BEGIN x=613 y=1332 pressure=1403.0 ts=1793809849210
+11-04 10:30:51.459 I/DecklySpike(17184): PEN_STROKE points=647 firstTs=1793809849210 lastTs=1793809851454 nowMs=1793809851458 uptimeMs=52561955
+11-04 10:30:51.473 I/DecklySpike(17184): PEN_PRESSURE points=647 min=0.16 max=1.00 avg=0.95
+11-04 10:30:51.479 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.34:2.82,0.88:7.48,1.00:9.00,1.00:9.00,1.00:9.00,1.00:9.00,1.00:9.00,1.00:9.00,1.00:9.00,1.00:9.00,1.00:9.00,0.16:2.18 in=647 out=652
+11-04 10:30:51.483 I/DecklySpike(17184): PEN_END x=581 y=97 pressure=653.0 ts=1793809851458
+11-04 10:30:52.442 I/DecklySpike(17184): PEN_BEGIN x=762 y=1342 pressure=30.0 ts=1793809852441
+11-04 10:30:52.492 I/DecklySpike(17184): PEN_STROKE points=4 firstTs=1793809852441 lastTs=1793809852453 nowMs=1793809852492 uptimeMs=52562989
+11-04 10:30:52.499 I/DecklySpike(17184): PEN_PRESSURE points=4 min=0.01 max=0.01 avg=0.01
+11-04 10:30:52.500 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.01:2.00,0.01:2.00,0.01:2.00,0.01:2.00 in=4 out=4
+11-04 10:30:52.501 I/DecklySpike(17184): PEN_END x=762 y=1342 pressure=40.0 ts=1793809852457
+11-04 10:30:52.501 I/DecklySpike(17184): PEN_BEGIN x=758 y=1349 pressure=35.0 ts=1793809852473
+11-04 10:30:58.199 I/DecklySpike(17184): PEN_STROKE points=1630 firstTs=1793809852473 lastTs=1793809858193 nowMs=1793809858199 uptimeMs=52568696
+11-04 10:30:58.216 I/DecklySpike(17184): PEN_PRESSURE points=1630 min=0.01 max=1.00 avg=0.49
+11-04 10:30:58.228 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.01:2.00,0.09:2.06,0.98:8.66,0.97:8.52,0.04:2.01,0.21:2.31,1.00:9.00,0.21:2.32,0.25:2.44,0.30:2.61,0.89:7.87,0.66:5.05 in=1630 out=1632
+11-04 10:30:58.233 I/DecklySpike(17184): PEN_END x=706 y=73 pressure=2704.0 ts=1793809858198
+11-04 10:31:01.500 I/DecklySpike(17184): PEN_BEGIN x=858 y=1354 pressure=34.0 ts=1793809861493
+11-04 10:31:05.989 I/DecklySpike(17184): PEN_STROKE points=1313 firstTs=1793809861493 lastTs=1793809865984 nowMs=1793809865989 uptimeMs=52576486
+11-04 10:31:06.009 I/DecklySpike(17184): PEN_PRESSURE points=1313 min=0.00 max=1.00 avg=0.56
+11-04 10:31:06.019 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=6.0 pairs=0.01:2.00,0.02:2.00,0.26:2.46,0.58:4.36,0.79:6.37,0.94:8.12,1.00:9.00,0.98:8.70,0.59:4.44,0.47:3.54,0.42:3.21,0.09:2.06 in=1313 out=1313
+11-04 10:31:06.021 I/DecklySpike(17184): PEN_END x=864 y=105 pressure=364.0 ts=1793809865988
+11-04 10:31:07.176 I/DecklySpike(17184): SETTING strokeWidth=10.0
+11-04 10:31:07.526 I/DecklySpike(17184): PEN_STYLE style=ручка width=10.0 render=ровно
+11-04 10:31:09.179 I/DecklySpike(17184): PEN_BEGIN x=1073 y=1414 pressure=48.0 ts=1793809869173
+11-04 10:31:09.214 I/DecklySpike(17184): PEN_STROKE points=4 firstTs=1793809869173 lastTs=1793809869194 nowMs=1793809869214 uptimeMs=52579710
+11-04 10:31:09.221 I/DecklySpike(17184): PEN_PRESSURE points=4 min=0.01 max=0.02 avg=0.01
+11-04 10:31:09.221 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=10.0 pairs=0.01:2.00,0.01:2.00,0.02:2.00,0.01:2.00 in=4 out=4
+11-04 10:31:09.222 I/DecklySpike(17184): PEN_END x=1073 y=1414 pressure=43.0 ts=1793809869206
+11-04 10:31:09.337 I/DecklySpike(17184): PEN_BEGIN x=1075 y=1402 pressure=9.0 ts=1793809869335
+11-04 10:31:18.786 I/DecklySpike(17184): PEN_STROKE points=2609 firstTs=1793809869335 lastTs=1793809878773 nowMs=1793809878786 uptimeMs=52589282
+11-04 10:31:18.798 I/DecklySpike(17184): PEN_PRESSURE points=2609 min=0.00 max=1.00 avg=0.54
+11-04 10:31:18.806 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=10.0 pairs=0.00:2.00,0.02:2.00,0.47:4.40,0.90:10.89,1.00:12.99,0.91:11.07,0.33:3.15,0.23:2.55,0.12:2.17,0.47:4.37,0.94:11.71,0.71:7.54 in=2609 out=2613
+11-04 10:31:18.807 I/DecklySpike(17184): PEN_END x=1174 y=103 pressure=2906.0 ts=1793809878777
+11-04 10:31:19.618 I/DecklySpike(17184): PEN_BEGIN x=1365 y=1335 pressure=1781.0 ts=1793809879616
+11-04 10:31:20.877 I/DecklySpike(17184): PEN_STROKE points=373 firstTs=1793809879616 lastTs=1793809880872 nowMs=1793809880877 uptimeMs=52591373
+11-04 10:31:20.886 I/DecklySpike(17184): PEN_PRESSURE points=373 min=0.26 max=1.00 avg=0.96
+11-04 10:31:20.888 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=10.0 pairs=0.43:4.08,0.90:10.85,1.00:12.99,1.00:12.99,1.00:12.99,1.00:12.99,1.00:12.99,1.00:12.99,1.00:12.99,1.00:12.99,1.00:12.99,0.26:2.73 in=373 out=381
+11-04 10:31:20.896 I/DecklySpike(17184): PEN_END x=1403 y=99 pressure=1056.0 ts=1793809880876
+11-04 10:31:22.927 I/DecklySpike(17184): PEN_BEGIN x=1528 y=1391 pressure=253.0 ts=1793809882925
+11-04 10:31:26.953 I/DecklySpike(17184): PEN_STROKE points=1206 firstTs=1793809882925 lastTs=1793809886946 nowMs=1793809886953 uptimeMs=52597450
+11-04 10:31:26.971 I/DecklySpike(17184): PEN_PRESSURE points=1206 min=0.00 max=1.00 avg=0.48
+11-04 10:31:26.978 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=10.0 pairs=0.06:2.04,0.05:2.03,0.19:2.41,0.75:8.13,1.00:12.99,1.00:12.99,1.00:12.99,0.64:6.44,0.26:2.75,0.12:2.17,0.15:2.24,0.00:2.00 in=1206 out=1207
+11-04 10:31:26.981 I/DecklySpike(17184): PEN_END x=1717 y=98 pressure=17.0 ts=1793809886951
+11-04 10:31:27.021 I/DecklySpike(17184): PEN_BEGIN x=1720 y=107 pressure=17.0 ts=1793809886982
+11-04 10:31:27.081 I/DecklySpike(17184): PEN_STROKE points=24 firstTs=1793809886982 lastTs=1793809887076 nowMs=1793809887081 uptimeMs=52597578
+11-04 10:31:27.094 I/DecklySpike(17184): PEN_PRESSURE points=24 min=0.00 max=0.02 avg=0.01
+11-04 10:31:27.095 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=10.0 pairs=0.00:2.00,0.01:2.00,0.01:2.00,0.01:2.00,0.01:2.00,0.01:2.00,0.01:2.00,0.01:2.00,0.02:2.00,0.02:2.00,0.01:2.00,0.01:2.00 in=24 out=24
+11-04 10:31:27.098 I/DecklySpike(17184): PEN_END x=1727 y=122 pressure=61.0 ts=1793809887081
+11-04 10:31:27.141 I/DecklySpike(17184): PEN_BEGIN x=1730 y=136 pressure=138.0 ts=1793809887128
+11-04 10:31:28.376 I/DecklySpike(17184): PEN_STROKE points=359 firstTs=1793809887128 lastTs=1793809888369 nowMs=1793809888376 uptimeMs=52598873
+11-04 10:31:28.397 I/DecklySpike(17184): PEN_PRESSURE points=359 min=0.01 max=1.00 avg=0.67
+11-04 10:31:28.400 I/DecklySpike(17184): PEN_FOUNTAIN_CURVE width=10.0 pairs=0.03:2.01,0.04:2.01,0.28:2.94,0.51:4.86,0.67:6.99,0.74:8.07,0.80:9.28,0.91:11.29,1.00:12.99,1.00:12.99,1.00:12.99,0.70:7.37 in=359 out=363
+11-04 10:31:28.403 I/DecklySpike(17184): PEN_END x=1707 y=589 pressure=2861.0 ts=1793809888373
+11-04 10:33:02.112 I/DecklySpike(17713): SDK onyx=true init=ok device=SDMDevice
+11-04 10:33:02.118 I/DecklySpike(17713): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:33:02.121 I/DecklySpike(17713): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:33:02.122 I/DecklySpike(17713): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:33:02.123 I/DecklySpike(17713): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:33:02.124 I/DecklySpike(17713): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:33:02.125 I/DecklySpike(17713): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:33:02.125 I/DecklySpike(17713): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:33:02.126 I/DecklySpike(17713): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:33:02.127 I/DecklySpike(17713): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:33:02.168 I/DecklySpike(17713): SDK onyx=true init="java.lang.IllegalStateException: noSdk" device=SDMDevice
+11-04 10:33:02.383 I/DecklySpike(17713): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=3230 entries=3230 consistent=true
+11-04 10:34:49.849 I/DecklySpike(17713): MOTION tool=STYLUS buttons=0x0
+11-04 10:34:51.437 I/DecklySpike(17713): PEN_STROKE points=489
+11-04 10:34:51.439 I/DecklySpike(17713): PEN_PRESSURE points=489 min=0.01 max=0.91 avg=0.50
+11-04 10:34:51.913 I/DecklySpike(17713): MOTION tool=STYLUS buttons=0x0
+11-04 10:34:55.242 I/DecklySpike(17713): PEN_STROKE points=1009
+11-04 10:34:55.248 I/DecklySpike(17713): PEN_PRESSURE points=1009 min=0.04 max=0.95 avg=0.35
+11-04 10:34:56.214 I/DecklySpike(17713): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:36:32.863 I/DecklySpike(17713): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:36:36.087 I/DecklySpike(17713): PROBE_SERIES n=2000 avgMs=8.56 maxMs=33.05 totalMs=17111.66
+11-04 10:36:36.149 I/DecklySpike(17713): PROBE_SCAN path=/storage/emulated/0/Deckly/spike/probe.db uri=content://media/external_primary/file/1000000120
+11-04 10:36:36.233 I/DecklySpike(17713): STATUS_REFRESH reason=status hasSheet=true
+11-04 10:40:57.682 I/DecklySpike(18107): SDK onyx=true init=ok device=SDMDevice
+11-04 10:40:57.695 I/DecklySpike(18107): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:40:57.698 I/DecklySpike(18107): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:40:57.699 I/DecklySpike(18107): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:40:57.701 I/DecklySpike(18107): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:40:57.701 I/DecklySpike(18107): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:40:57.702 I/DecklySpike(18107): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:40:57.703 I/DecklySpike(18107): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:40:57.704 I/DecklySpike(18107): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:40:57.705 I/DecklySpike(18107): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:40:57.939 I/DecklySpike(18107): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=5230 entries=5230 consistent=true
+11-04 10:40:59.366 I/DecklySpike(18170): SDK onyx=true init=ok device=SDMDevice
+11-04 10:40:59.373 I/DecklySpike(18170): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:40:59.376 I/DecklySpike(18170): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:40:59.377 I/DecklySpike(18170): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:40:59.377 I/DecklySpike(18170): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:40:59.378 I/DecklySpike(18170): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:40:59.379 I/DecklySpike(18170): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:40:59.380 I/DecklySpike(18170): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:40:59.380 I/DecklySpike(18170): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:40:59.381 I/DecklySpike(18170): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:40:59.624 I/DecklySpike(18170): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=5230 entries=5230 consistent=true
+11-04 10:41:00.138 I/DecklySpike(18170): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:41:00.290 I/DecklySpike(18170): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:00.292 I/DecklySpike(18170): PEN_SESSION ms=144 steps=disable:0,close:109,limit:3,open:17,enable:12,eraser:1,style:2 limit=[0,0][1830,1474]
+11-04 10:41:00.537 I/DecklySpike(18170): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:00.539 I/DecklySpike(18170): PEN_SESSION ms=76 steps=disable:15,close:28,limit:6,open:13,enable:12,eraser:0,style:2 limit=[0,0][1830,1454]
+11-04 10:41:00.675 I/DecklySpike(18170): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:04.056 I/DecklySpike(18242): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:04.062 I/DecklySpike(18242): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:04.065 I/DecklySpike(18242): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:04.067 I/DecklySpike(18242): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:04.068 I/DecklySpike(18242): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:04.069 I/DecklySpike(18242): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:04.069 I/DecklySpike(18242): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:04.070 I/DecklySpike(18242): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:04.072 I/DecklySpike(18242): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:04.073 I/DecklySpike(18242): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:04.361 I/DecklySpike(18242): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=5443 entries=5443 consistent=true
+11-04 10:41:05.495 I/DecklySpike(18298): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:05.502 I/DecklySpike(18298): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:05.503 I/DecklySpike(18298): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:05.505 I/DecklySpike(18298): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:05.509 I/DecklySpike(18298): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:05.510 I/DecklySpike(18298): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:05.510 I/DecklySpike(18298): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:05.511 I/DecklySpike(18298): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:05.511 I/DecklySpike(18298): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:05.512 I/DecklySpike(18298): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:05.738 I/DecklySpike(18298): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=5443 entries=5443 consistent=true
+11-04 10:41:06.281 I/DecklySpike(18298): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:41:06.426 I/DecklySpike(18298): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:06.429 I/DecklySpike(18298): PEN_SESSION ms=143 steps=disable:0,close:110,limit:2,open:14,enable:13,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:41:06.665 I/DecklySpike(18298): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:06.670 I/DecklySpike(18298): PEN_SESSION ms=76 steps=disable:15,close:24,limit:2,open:13,enable:14,eraser:3,style:5 limit=[0,0][1830,1454]
+11-04 10:41:06.841 I/DecklySpike(18298): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:09.966 I/DecklySpike(18364): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:09.974 I/DecklySpike(18364): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:09.976 I/DecklySpike(18364): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:09.977 I/DecklySpike(18364): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:09.978 I/DecklySpike(18364): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:09.979 I/DecklySpike(18364): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:09.980 I/DecklySpike(18364): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:09.981 I/DecklySpike(18364): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:09.982 I/DecklySpike(18364): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:09.984 I/DecklySpike(18364): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:10.207 I/DecklySpike(18364): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=5624 entries=5624 consistent=true
+11-04 10:41:11.352 I/DecklySpike(18422): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:11.361 I/DecklySpike(18422): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:11.366 I/DecklySpike(18422): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:11.369 I/DecklySpike(18422): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:11.371 I/DecklySpike(18422): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:11.372 I/DecklySpike(18422): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:11.373 I/DecklySpike(18422): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:11.375 I/DecklySpike(18422): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:11.376 I/DecklySpike(18422): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:11.378 I/DecklySpike(18422): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:11.676 I/DecklySpike(18422): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=5624 entries=5624 consistent=true
+11-04 10:41:12.180 I/DecklySpike(18422): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:41:12.321 I/DecklySpike(18422): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:12.325 I/DecklySpike(18422): PEN_SESSION ms=139 steps=disable:1,close:104,limit:3,open:14,enable:13,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:41:12.564 I/DecklySpike(18422): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:12.567 I/DecklySpike(18422): PEN_SESSION ms=73 steps=disable:13,close:27,limit:3,open:12,enable:13,eraser:1,style:4 limit=[0,0][1830,1454]
+11-04 10:41:12.701 I/DecklySpike(18422): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:17.057 I/DecklySpike(18497): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:17.065 I/DecklySpike(18497): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:17.067 I/DecklySpike(18497): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:17.068 I/DecklySpike(18497): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:17.069 I/DecklySpike(18497): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:17.070 I/DecklySpike(18497): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:17.070 I/DecklySpike(18497): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:17.071 I/DecklySpike(18497): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:17.073 I/DecklySpike(18497): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:17.074 I/DecklySpike(18497): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:17.403 I/DecklySpike(18497): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=5939 entries=5939 consistent=true
+11-04 10:41:18.589 I/DecklySpike(18552): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:18.597 I/DecklySpike(18552): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:18.600 I/DecklySpike(18552): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:18.601 I/DecklySpike(18552): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:18.601 I/DecklySpike(18552): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:18.602 I/DecklySpike(18552): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:18.603 I/DecklySpike(18552): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:18.604 I/DecklySpike(18552): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:18.605 I/DecklySpike(18552): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:18.605 I/DecklySpike(18552): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:18.889 I/DecklySpike(18552): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=5939 entries=5939 consistent=true
+11-04 10:41:19.336 I/DecklySpike(18552): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:41:19.479 I/DecklySpike(18552): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:19.481 I/DecklySpike(18552): PEN_SESSION ms=139 steps=disable:0,close:105,limit:3,open:16,enable:11,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:41:19.709 I/DecklySpike(18552): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:19.715 I/DecklySpike(18552): PEN_SESSION ms=72 steps=disable:14,close:24,limit:4,open:12,enable:3,eraser:9,style:6 limit=[0,0][1830,1454]
+11-04 10:41:19.854 I/DecklySpike(18552): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:24.054 I/DecklySpike(18627): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:24.062 I/DecklySpike(18627): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:24.065 I/DecklySpike(18627): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:24.066 I/DecklySpike(18627): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:24.067 I/DecklySpike(18627): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:24.068 I/DecklySpike(18627): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:24.069 I/DecklySpike(18627): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:24.069 I/DecklySpike(18627): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:24.070 I/DecklySpike(18627): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:24.071 I/DecklySpike(18627): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:24.299 I/DecklySpike(18627): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=6239 entries=6239 consistent=true
+11-04 10:41:25.541 I/DecklySpike(18681): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:25.548 I/DecklySpike(18681): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:25.551 I/DecklySpike(18681): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:25.552 I/DecklySpike(18681): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:25.553 I/DecklySpike(18681): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:25.553 I/DecklySpike(18681): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:25.554 I/DecklySpike(18681): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:25.555 I/DecklySpike(18681): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:25.556 I/DecklySpike(18681): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:25.557 I/DecklySpike(18681): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:25.842 I/DecklySpike(18681): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=6239 entries=6239 consistent=true
+11-04 10:41:26.333 I/DecklySpike(18681): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:41:26.475 I/DecklySpike(18681): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:26.478 I/DecklySpike(18681): PEN_SESSION ms=138 steps=disable:0,close:105,limit:2,open:15,enable:12,eraser:2,style:2 limit=[0,0][1830,1474]
+11-04 10:41:26.720 I/DecklySpike(18681): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:26.723 I/DecklySpike(18681): PEN_SESSION ms=81 steps=disable:23,close:26,limit:5,open:11,enable:13,eraser:1,style:2 limit=[0,0][1830,1454]
+11-04 10:41:26.854 I/DecklySpike(18681): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:34.367 I/DecklySpike(18761): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:34.376 I/DecklySpike(18761): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:34.378 I/DecklySpike(18761): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:34.379 I/DecklySpike(18761): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:34.380 I/DecklySpike(18761): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:34.381 I/DecklySpike(18761): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:34.382 I/DecklySpike(18761): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:34.382 I/DecklySpike(18761): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:34.383 I/DecklySpike(18761): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:34.384 I/DecklySpike(18761): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:34.597 I/DecklySpike(18761): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=6911 entries=6911 consistent=true
+11-04 10:41:35.856 I/DecklySpike(18815): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:35.864 I/DecklySpike(18815): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:35.867 I/DecklySpike(18815): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:35.868 I/DecklySpike(18815): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:35.869 I/DecklySpike(18815): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:35.870 I/DecklySpike(18815): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:35.870 I/DecklySpike(18815): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:35.871 I/DecklySpike(18815): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:35.872 I/DecklySpike(18815): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:35.873 I/DecklySpike(18815): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:36.166 I/DecklySpike(18815): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=6911 entries=6911 consistent=true
+11-04 10:41:36.648 I/DecklySpike(18815): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:41:36.796 I/DecklySpike(18815): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:36.800 I/DecklySpike(18815): PEN_SESSION ms=144 steps=disable:0,close:109,limit:4,open:14,enable:13,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:41:37.049 I/DecklySpike(18815): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:37.051 I/DecklySpike(18815): PEN_SESSION ms=83 steps=disable:15,close:29,limit:9,open:15,enable:12,eraser:1,style:2 limit=[0,0][1830,1454]
+11-04 10:41:37.182 I/DecklySpike(18815): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:39.728 I/DecklySpike(18882): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:39.735 I/DecklySpike(18882): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:39.737 I/DecklySpike(18882): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:39.738 I/DecklySpike(18882): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:39.739 I/DecklySpike(18882): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:39.740 I/DecklySpike(18882): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:39.741 I/DecklySpike(18882): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:39.742 I/DecklySpike(18882): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:39.742 I/DecklySpike(18882): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:39.743 I/DecklySpike(18882): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:39.974 I/DecklySpike(18882): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=7033 entries=7033 consistent=true
+11-04 10:41:41.183 I/DecklySpike(18938): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:41.190 I/DecklySpike(18938): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:41.192 I/DecklySpike(18938): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:41.194 I/DecklySpike(18938): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:41.195 I/DecklySpike(18938): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:41.196 I/DecklySpike(18938): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:41.197 I/DecklySpike(18938): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:41.198 I/DecklySpike(18938): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:41.199 I/DecklySpike(18938): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:41.199 I/DecklySpike(18938): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:41.448 I/DecklySpike(18938): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=7033 entries=7033 consistent=true
+11-04 10:41:41.957 I/DecklySpike(18938): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:41:42.100 I/DecklySpike(18938): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:42.102 I/DecklySpike(18938): PEN_SESSION ms=138 steps=disable:0,close:106,limit:2,open:15,enable:12,eraser:1,style:2 limit=[0,0][1830,1474]
+11-04 10:41:42.338 I/DecklySpike(18938): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:42.341 I/DecklySpike(18938): PEN_SESSION ms=75 steps=disable:16,close:28,limit:3,open:12,enable:12,eraser:1,style:3 limit=[0,0][1830,1454]
+11-04 10:41:42.474 I/DecklySpike(18938): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:48.943 I/DecklySpike(19017): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:48.954 I/DecklySpike(19017): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:48.956 I/DecklySpike(19017): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:48.957 I/DecklySpike(19017): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:48.958 I/DecklySpike(19017): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:48.958 I/DecklySpike(19017): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:48.959 I/DecklySpike(19017): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:48.960 I/DecklySpike(19017): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:48.960 I/DecklySpike(19017): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:48.961 I/DecklySpike(19017): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:49.210 I/DecklySpike(19017): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=7581 entries=7581 consistent=true
+11-04 10:41:50.492 I/DecklySpike(19074): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:50.500 I/DecklySpike(19074): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:50.503 I/DecklySpike(19074): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:50.504 I/DecklySpike(19074): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:50.504 I/DecklySpike(19074): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:50.505 I/DecklySpike(19074): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:50.506 I/DecklySpike(19074): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:50.511 I/DecklySpike(19074): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:50.511 I/DecklySpike(19074): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:50.512 I/DecklySpike(19074): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:50.779 I/DecklySpike(19074): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=7581 entries=7581 consistent=true
+11-04 10:41:51.284 I/DecklySpike(19074): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:41:51.431 I/DecklySpike(19074): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:51.433 I/DecklySpike(19074): PEN_SESSION ms=140 steps=disable:0,close:107,limit:3,open:15,enable:12,eraser:1,style:2 limit=[0,0][1830,1474]
+11-04 10:41:51.673 I/DecklySpike(19074): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:51.675 I/DecklySpike(19074): PEN_SESSION ms=75 steps=disable:14,close:23,limit:6,open:14,enable:15,eraser:1,style:2 limit=[0,0][1830,1454]
+11-04 10:41:51.807 I/DecklySpike(19074): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:41:58.887 I/DecklySpike(19157): SDK onyx=true init=ok device=SDMDevice
+11-04 10:41:58.898 I/DecklySpike(19157): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:41:58.901 I/DecklySpike(19157): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:41:58.902 I/DecklySpike(19157): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:41:58.903 I/DecklySpike(19157): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:41:58.903 I/DecklySpike(19157): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:41:58.904 I/DecklySpike(19157): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:41:58.905 I/DecklySpike(19157): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:41:58.905 I/DecklySpike(19157): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:41:58.906 I/DecklySpike(19157): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:41:59.102 I/DecklySpike(19157): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=8193 entries=8193 consistent=true
+11-04 10:42:00.273 I/DecklySpike(19213): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:00.282 I/DecklySpike(19213): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:00.284 I/DecklySpike(19213): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:00.285 I/DecklySpike(19213): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:00.286 I/DecklySpike(19213): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:00.287 I/DecklySpike(19213): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:00.288 I/DecklySpike(19213): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:00.288 I/DecklySpike(19213): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:00.289 I/DecklySpike(19213): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:00.290 I/DecklySpike(19213): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:00.598 I/DecklySpike(19213): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=8193 entries=8193 consistent=true
+11-04 10:42:01.077 I/DecklySpike(19213): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:42:01.218 I/DecklySpike(19213): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:01.220 I/DecklySpike(19213): PEN_SESSION ms=137 steps=disable:0,close:104,limit:2,open:14,enable:13,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:42:01.465 I/DecklySpike(19213): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:01.467 I/DecklySpike(19213): PEN_SESSION ms=77 steps=disable:16,close:28,limit:6,open:12,enable:12,eraser:1,style:2 limit=[0,0][1830,1454]
+11-04 10:42:01.604 I/DecklySpike(19213): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:09.509 I/DecklySpike(19296): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:09.517 I/DecklySpike(19296): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:09.519 I/DecklySpike(19296): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:09.520 I/DecklySpike(19296): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:09.521 I/DecklySpike(19296): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:09.522 I/DecklySpike(19296): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:09.523 I/DecklySpike(19296): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:09.524 I/DecklySpike(19296): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:09.525 I/DecklySpike(19296): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:09.526 I/DecklySpike(19296): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:09.997 I/DecklySpike(19296): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=8918 entries=8918 consistent=true
+11-04 10:42:10.281 I/DecklySpike(19296): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:42:10.425 I/DecklySpike(19296): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:10.427 I/DecklySpike(19296): PEN_SESSION ms=140 steps=disable:0,close:106,limit:2,open:16,enable:13,eraser:0,style:3 limit=[0,0][1830,1494]
+11-04 10:42:11.506 I/DecklySpike(19360): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:11.512 I/DecklySpike(19360): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:11.514 I/DecklySpike(19360): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:11.515 I/DecklySpike(19360): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:11.516 I/DecklySpike(19360): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:11.517 I/DecklySpike(19360): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:11.517 I/DecklySpike(19360): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:11.518 I/DecklySpike(19360): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:11.519 I/DecklySpike(19360): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:11.519 I/DecklySpike(19360): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:11.851 I/DecklySpike(19360): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=8918 entries=8918 consistent=true
+11-04 10:42:12.343 I/DecklySpike(19360): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:42:12.488 I/DecklySpike(19360): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:12.491 I/DecklySpike(19360): PEN_SESSION ms=139 steps=disable:0,close:106,limit:2,open:15,enable:12,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:42:12.738 I/DecklySpike(19360): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:12.746 I/DecklySpike(19360): PEN_SESSION ms=75 steps=disable:16,close:24,limit:2,open:12,enable:13,eraser:2,style:6 limit=[0,0][1830,1454]
+11-04 10:42:12.891 I/DecklySpike(19360): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:17.177 I/DecklySpike(19441): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:17.184 I/DecklySpike(19441): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:17.187 I/DecklySpike(19441): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:17.188 I/DecklySpike(19441): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:17.189 I/DecklySpike(19441): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:17.190 I/DecklySpike(19441): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:17.191 I/DecklySpike(19441): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:17.192 I/DecklySpike(19441): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:17.192 I/DecklySpike(19441): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:17.193 I/DecklySpike(19441): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:17.479 I/DecklySpike(19441): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=9230 entries=9230 consistent=true
+11-04 10:42:18.588 I/DecklySpike(19494): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:18.595 I/DecklySpike(19494): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:18.597 I/DecklySpike(19494): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:18.598 I/DecklySpike(19494): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:18.599 I/DecklySpike(19494): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:18.600 I/DecklySpike(19494): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:18.600 I/DecklySpike(19494): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:18.601 I/DecklySpike(19494): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:18.601 I/DecklySpike(19494): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:18.602 I/DecklySpike(19494): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:18.921 I/DecklySpike(19494): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=9230 entries=9230 consistent=true
+11-04 10:42:19.461 I/DecklySpike(19494): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:42:19.604 I/DecklySpike(19494): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:19.606 I/DecklySpike(19494): PEN_SESSION ms=140 steps=disable:0,close:106,limit:2,open:16,enable:12,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:42:19.860 I/DecklySpike(19494): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:19.863 I/DecklySpike(19494): PEN_SESSION ms=70 steps=disable:15,close:24,limit:3,open:11,enable:13,eraser:2,style:2 limit=[0,0][1830,1454]
+11-04 10:42:19.934 I/DecklySpike(19494): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:26.524 I/DecklySpike(19578): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:26.531 I/DecklySpike(19578): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:26.533 I/DecklySpike(19578): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:26.534 I/DecklySpike(19578): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:26.535 I/DecklySpike(19578): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:26.536 I/DecklySpike(19578): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:26.536 I/DecklySpike(19578): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:26.537 I/DecklySpike(19578): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:26.537 I/DecklySpike(19578): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:26.538 I/DecklySpike(19578): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:26.736 I/DecklySpike(19578): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=9796 entries=9796 consistent=true
+11-04 10:42:28.002 I/DecklySpike(19634): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:28.011 I/DecklySpike(19634): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:28.013 I/DecklySpike(19634): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:28.014 I/DecklySpike(19634): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:28.015 I/DecklySpike(19634): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:28.016 I/DecklySpike(19634): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:28.017 I/DecklySpike(19634): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:28.018 I/DecklySpike(19634): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:28.019 I/DecklySpike(19634): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:28.020 I/DecklySpike(19634): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:28.254 I/DecklySpike(19634): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=9796 entries=9796 consistent=true
+11-04 10:42:28.778 I/DecklySpike(19634): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:42:28.922 I/DecklySpike(19634): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:28.925 I/DecklySpike(19634): PEN_SESSION ms=139 steps=disable:0,close:105,limit:2,open:16,enable:12,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:42:29.169 I/DecklySpike(19634): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:29.171 I/DecklySpike(19634): PEN_SESSION ms=70 steps=disable:13,close:23,limit:3,open:15,enable:14,eraser:1,style:1 limit=[0,0][1830,1454]
+11-04 10:42:29.298 I/DecklySpike(19634): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:33.410 I/DecklySpike(19710): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:33.417 I/DecklySpike(19710): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:33.423 I/DecklySpike(19710): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:33.423 I/DecklySpike(19710): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:33.424 I/DecklySpike(19710): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:33.425 I/DecklySpike(19710): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:33.425 I/DecklySpike(19710): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:33.426 I/DecklySpike(19710): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:33.427 I/DecklySpike(19710): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:33.428 I/DecklySpike(19710): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:33.758 I/DecklySpike(19710): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=10066 entries=10066 consistent=true
+11-04 10:42:34.986 I/DecklySpike(19767): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:34.993 I/DecklySpike(19767): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:34.995 I/DecklySpike(19767): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:34.996 I/DecklySpike(19767): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:34.997 I/DecklySpike(19767): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:34.998 I/DecklySpike(19767): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:34.999 I/DecklySpike(19767): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:34.999 I/DecklySpike(19767): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:35.000 I/DecklySpike(19767): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:35.001 I/DecklySpike(19767): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:35.289 I/DecklySpike(19767): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=10066 entries=10066 consistent=true
+11-04 10:42:35.769 I/DecklySpike(19767): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:42:35.913 I/DecklySpike(19767): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:35.916 I/DecklySpike(19767): PEN_SESSION ms=140 steps=disable:0,close:106,limit:2,open:16,enable:12,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:42:36.163 I/DecklySpike(19767): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:36.165 I/DecklySpike(19767): PEN_SESSION ms=68 steps=disable:12,close:25,limit:4,open:12,enable:12,eraser:1,style:2 limit=[0,0][1830,1454]
+11-04 10:42:36.233 I/DecklySpike(19767): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:42.432 I/DecklySpike(19850): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:42.439 I/DecklySpike(19850): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:42.442 I/DecklySpike(19850): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:42.443 I/DecklySpike(19850): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:42.444 I/DecklySpike(19850): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:42.445 I/DecklySpike(19850): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:42.446 I/DecklySpike(19850): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:42.446 I/DecklySpike(19850): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:42.447 I/DecklySpike(19850): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:42.448 I/DecklySpike(19850): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:42.662 I/DecklySpike(19850): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=10591 entries=10591 consistent=true
+11-04 10:42:43.818 I/DecklySpike(19903): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:43.826 I/DecklySpike(19903): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:43.829 I/DecklySpike(19903): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:43.829 I/DecklySpike(19903): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:43.830 I/DecklySpike(19903): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:43.831 I/DecklySpike(19903): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:43.832 I/DecklySpike(19903): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:43.832 I/DecklySpike(19903): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:43.833 I/DecklySpike(19903): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:43.835 I/DecklySpike(19903): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:44.159 I/DecklySpike(19903): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=10591 entries=10591 consistent=true
+11-04 10:42:44.651 I/DecklySpike(19903): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:42:44.796 I/DecklySpike(19903): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:44.798 I/DecklySpike(19903): PEN_SESSION ms=139 steps=disable:0,close:105,limit:4,open:15,enable:13,eraser:1,style:1 limit=[0,0][1830,1474]
+11-04 10:42:45.071 I/DecklySpike(19903): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:45.074 I/DecklySpike(19903): PEN_SESSION ms=74 steps=disable:13,close:24,limit:6,open:13,enable:12,eraser:2,style:4 limit=[0,0][1830,1454]
+11-04 10:42:45.217 I/DecklySpike(19903): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:49.190 I/DecklySpike(19978): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:49.201 I/DecklySpike(19978): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:49.204 I/DecklySpike(19978): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:49.205 I/DecklySpike(19978): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:49.206 I/DecklySpike(19978): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:49.206 I/DecklySpike(19978): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:49.207 I/DecklySpike(19978): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:49.208 I/DecklySpike(19978): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:49.208 I/DecklySpike(19978): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:49.213 I/DecklySpike(19978): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:49.467 I/DecklySpike(19978): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=10850 entries=10850 consistent=true
+11-04 10:42:50.508 I/DecklySpike(20035): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:50.517 I/DecklySpike(20035): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:50.519 I/DecklySpike(20035): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:50.520 I/DecklySpike(20035): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:50.521 I/DecklySpike(20035): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:50.521 I/DecklySpike(20035): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:50.522 I/DecklySpike(20035): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:50.523 I/DecklySpike(20035): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:50.524 I/DecklySpike(20035): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:50.525 I/DecklySpike(20035): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:50.801 I/DecklySpike(20035): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=10850 entries=10850 consistent=true
+11-04 10:42:51.301 I/DecklySpike(20035): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:42:51.448 I/DecklySpike(20035): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:51.451 I/DecklySpike(20035): PEN_SESSION ms=141 steps=disable:0,close:109,limit:1,open:15,enable:12,eraser:2,style:2 limit=[0,0][1830,1474]
+11-04 10:42:51.684 I/DecklySpike(20035): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:51.686 I/DecklySpike(20035): PEN_SESSION ms=70 steps=disable:13,close:24,limit:3,open:13,enable:13,eraser:1,style:3 limit=[0,0][1830,1454]
+11-04 10:42:51.820 I/DecklySpike(20035): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:42:58.676 I/DecklySpike(20116): SDK onyx=true init=ok device=SDMDevice
+11-04 10:42:58.684 I/DecklySpike(20116): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:42:58.686 I/DecklySpike(20116): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:42:58.688 I/DecklySpike(20116): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:42:58.688 I/DecklySpike(20116): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:42:58.689 I/DecklySpike(20116): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:42:58.690 I/DecklySpike(20116): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:42:58.691 I/DecklySpike(20116): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:42:58.691 I/DecklySpike(20116): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:42:58.692 I/DecklySpike(20116): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:42:58.922 I/DecklySpike(20116): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=11441 entries=11441 consistent=true
+11-04 10:43:00.178 I/DecklySpike(20173): SDK onyx=true init=ok device=SDMDevice
+11-04 10:43:00.187 I/DecklySpike(20173): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:43:00.190 I/DecklySpike(20173): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:43:00.191 I/DecklySpike(20173): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:43:00.192 I/DecklySpike(20173): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:43:00.192 I/DecklySpike(20173): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:43:00.193 I/DecklySpike(20173): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:43:00.195 I/DecklySpike(20173): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:43:00.195 I/DecklySpike(20173): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:43:00.196 I/DecklySpike(20173): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:43:00.446 I/DecklySpike(20173): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=11441 entries=11441 consistent=true
+11-04 10:43:00.941 I/DecklySpike(20173): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:43:01.073 I/DecklySpike(20173): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:01.077 I/DecklySpike(20173): PEN_SESSION ms=130 steps=disable:0,close:106,limit:1,open:16,enable:3,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:43:01.312 I/DecklySpike(20173): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:01.315 I/DecklySpike(20173): PEN_SESSION ms=72 steps=disable:13,close:26,limit:3,open:12,enable:15,eraser:1,style:2 limit=[0,0][1830,1454]
+11-04 10:43:01.382 I/DecklySpike(20173): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:04.864 I/DecklySpike(20239): SDK onyx=true init=ok device=SDMDevice
+11-04 10:43:04.871 I/DecklySpike(20239): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:43:04.873 I/DecklySpike(20239): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:43:04.874 I/DecklySpike(20239): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:43:04.875 I/DecklySpike(20239): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:43:04.875 I/DecklySpike(20239): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:43:04.877 I/DecklySpike(20239): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:43:04.877 I/DecklySpike(20239): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:43:04.878 I/DecklySpike(20239): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:43:04.879 I/DecklySpike(20239): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:43:05.129 I/DecklySpike(20239): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=11652 entries=11652 consistent=true
+11-04 10:43:06.370 I/DecklySpike(20298): SDK onyx=true init=ok device=SDMDevice
+11-04 10:43:06.378 I/DecklySpike(20298): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:43:06.380 I/DecklySpike(20298): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:43:06.382 I/DecklySpike(20298): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:43:06.383 I/DecklySpike(20298): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:43:06.384 I/DecklySpike(20298): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:43:06.385 I/DecklySpike(20298): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:43:06.386 I/DecklySpike(20298): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:43:06.387 I/DecklySpike(20298): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:43:06.388 I/DecklySpike(20298): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:43:06.690 I/DecklySpike(20298): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=11652 entries=11652 consistent=true
+11-04 10:43:07.191 I/DecklySpike(20298): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:43:07.330 I/DecklySpike(20298): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:07.333 I/DecklySpike(20298): PEN_SESSION ms=136 steps=disable:0,close:104,limit:2,open:15,enable:12,eraser:1,style:2 limit=[0,0][1830,1474]
+11-04 10:43:07.571 I/DecklySpike(20298): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:07.573 I/DecklySpike(20298): PEN_SESSION ms=71 steps=disable:17,close:25,limit:4,open:11,enable:12,eraser:0,style:2 limit=[0,0][1830,1454]
+11-04 10:43:07.645 I/DecklySpike(20298): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:12.372 I/DecklySpike(20375): SDK onyx=true init=ok device=SDMDevice
+11-04 10:43:12.383 I/DecklySpike(20375): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:43:12.385 I/DecklySpike(20375): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:43:12.386 I/DecklySpike(20375): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:43:12.387 I/DecklySpike(20375): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:43:12.387 I/DecklySpike(20375): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:43:12.388 I/DecklySpike(20375): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:43:12.389 I/DecklySpike(20375): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:43:12.394 I/DecklySpike(20375): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:43:12.395 I/DecklySpike(20375): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:43:12.698 I/DecklySpike(20375): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=11979 entries=11979 consistent=true
+11-04 10:43:13.848 I/DecklySpike(20430): SDK onyx=true init=ok device=SDMDevice
+11-04 10:43:13.858 I/DecklySpike(20430): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:43:13.861 I/DecklySpike(20430): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:43:13.861 I/DecklySpike(20430): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:43:13.862 I/DecklySpike(20430): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:43:13.863 I/DecklySpike(20430): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:43:13.863 I/DecklySpike(20430): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:43:13.864 I/DecklySpike(20430): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:43:13.865 I/DecklySpike(20430): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:43:13.865 I/DecklySpike(20430): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:43:14.156 I/DecklySpike(20430): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=11979 entries=11979 consistent=true
+11-04 10:43:14.662 I/DecklySpike(20430): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:43:14.808 I/DecklySpike(20430): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:14.810 I/DecklySpike(20430): PEN_SESSION ms=141 steps=disable:0,close:104,limit:2,open:21,enable:11,eraser:1,style:2 limit=[0,0][1830,1474]
+11-04 10:43:15.048 I/DecklySpike(20430): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:15.050 I/DecklySpike(20430): PEN_SESSION ms=71 steps=disable:15,close:25,limit:3,open:12,enable:13,eraser:1,style:2 limit=[0,0][1830,1454]
+11-04 10:43:15.182 I/DecklySpike(20430): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:21.715 I/DecklySpike(20511): SDK onyx=true init=ok device=SDMDevice
+11-04 10:43:21.722 I/DecklySpike(20511): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:43:21.724 I/DecklySpike(20511): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:43:21.725 I/DecklySpike(20511): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:43:21.725 I/DecklySpike(20511): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:43:21.726 I/DecklySpike(20511): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:43:21.727 I/DecklySpike(20511): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:43:21.728 I/DecklySpike(20511): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:43:21.729 I/DecklySpike(20511): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:43:21.729 I/DecklySpike(20511): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:43:21.958 I/DecklySpike(20511): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=12535 entries=12535 consistent=true
+11-04 10:43:23.266 I/DecklySpike(20567): SDK onyx=true init=ok device=SDMDevice
+11-04 10:43:23.278 I/DecklySpike(20567): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:43:23.280 I/DecklySpike(20567): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:43:23.281 I/DecklySpike(20567): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:43:23.282 I/DecklySpike(20567): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:43:23.283 I/DecklySpike(20567): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:43:23.284 I/DecklySpike(20567): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:43:23.286 I/DecklySpike(20567): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:43:23.287 I/DecklySpike(20567): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:43:23.288 I/DecklySpike(20567): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:43:23.597 I/DecklySpike(20567): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=12535 entries=12535 consistent=true
+11-04 10:43:24.049 I/DecklySpike(20567): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:43:24.192 I/DecklySpike(20567): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:24.195 I/DecklySpike(20567): PEN_SESSION ms=139 steps=disable:0,close:106,limit:4,open:14,enable:12,eraser:1,style:2 limit=[0,0][1830,1474]
+11-04 10:43:24.428 I/DecklySpike(20567): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:24.436 I/DecklySpike(20567): PEN_SESSION ms=71 steps=disable:13,close:24,limit:2,open:12,enable:12,eraser:1,style:7 limit=[0,0][1830,1454]
+11-04 10:43:24.517 I/DecklySpike(20567): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:31.340 I/DecklySpike(20648): SDK onyx=true init=ok device=SDMDevice
+11-04 10:43:31.348 I/DecklySpike(20648): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:43:31.350 I/DecklySpike(20648): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:43:31.351 I/DecklySpike(20648): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:43:31.352 I/DecklySpike(20648): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:43:31.356 I/DecklySpike(20648): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:43:31.357 I/DecklySpike(20648): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:43:31.358 I/DecklySpike(20648): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:43:31.358 I/DecklySpike(20648): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:43:31.359 I/DecklySpike(20648): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:43:31.709 I/DecklySpike(20648): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=13121 entries=13121 consistent=true
+11-04 10:43:32.795 I/DecklySpike(20705): SDK onyx=true init=ok device=SDMDevice
+11-04 10:43:32.802 I/DecklySpike(20705): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:43:32.804 I/DecklySpike(20705): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:43:32.805 I/DecklySpike(20705): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:43:32.806 I/DecklySpike(20705): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:43:32.807 I/DecklySpike(20705): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:43:32.808 I/DecklySpike(20705): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:43:32.808 I/DecklySpike(20705): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:43:32.809 I/DecklySpike(20705): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:43:32.810 I/DecklySpike(20705): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:43:33.171 I/DecklySpike(20705): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=13121 entries=13121 consistent=true
+11-04 10:43:33.606 I/DecklySpike(20705): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:43:33.770 I/DecklySpike(20705): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:33.772 I/DecklySpike(20705): PEN_SESSION ms=160 steps=disable:0,close:105,limit:3,open:24,enable:24,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 10:43:33.997 I/DecklySpike(20705): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:33.999 I/DecklySpike(20705): PEN_SESSION ms=68 steps=disable:14,close:26,limit:2,open:11,enable:12,eraser:1,style:2 limit=[0,0][1830,1454]
+11-04 10:43:34.132 I/DecklySpike(20705): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:36.278 I/DecklySpike(20768): SDK onyx=true init=ok device=SDMDevice
+11-04 10:43:36.287 I/DecklySpike(20768): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 10:43:36.289 I/DecklySpike(20768): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 10:43:36.290 I/DecklySpike(20768): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 10:43:36.291 I/DecklySpike(20768): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 10:43:36.292 I/DecklySpike(20768): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 10:43:36.293 I/DecklySpike(20768): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 10:43:36.294 I/DecklySpike(20768): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 10:43:36.295 I/DecklySpike(20768): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 10:43:36.295 I/DecklySpike(20768): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 10:43:36.447 I/DecklySpike(20768): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=13209 entries=13209 consistent=true
+11-04 10:43:37.004 I/DecklySpike(20768): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 10:43:37.150 I/DecklySpike(20768): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:37.153 I/DecklySpike(20768): PEN_SESSION ms=140 steps=disable:0,close:107,limit:3,open:14,enable:13,eraser:1,style:2 limit=[0,0][1830,1474]
+11-04 10:43:37.395 I/DecklySpike(20768): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 10:43:37.398 I/DecklySpike(20768): PEN_SESSION ms=80 steps=disable:22,close:27,limit:2,open:12,enable:13,eraser:2,style:2 limit=[0,0][1830,1454]
+11-04 10:43:37.529 I/DecklySpike(20768): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 11:22:19.076 I/DecklySpike(20768): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 11:22:19.521 I/DecklySpike(20768): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 11:22:19.536 I/DecklySpike(20768): PEN_SESSION ms=449 steps=disable:0,close:408,limit:1,open:12,enable:12,eraser:1,style:2,paused:13 limit=[0,0][1830,1454]
+11-04 11:22:19.810 I/DecklySpike(20768): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 11:28:59.965 I/DecklySpike(21613): SDK onyx=true init=ok device=SDMDevice
+11-04 11:28:59.972 I/DecklySpike(21613): PEN_MAX_PRESSURE value=4096.0 source=sdk
+11-04 11:28:59.974 I/DecklySpike(21613): INPUT_DEVICE id=-1 name=Virtual sources=0x301 isStylus=false
+11-04 11:28:59.975 I/DecklySpike(21613): INPUT_DEVICE id=2 name=onyx_emp_istaric_pen sources=0x5103 isStylus=true
+11-04 11:28:59.976 I/DecklySpike(21613): INPUT_DEVICE id=3 name=onyx-hall sources=0x101 isStylus=false
+11-04 11:28:59.976 I/DecklySpike(21613): INPUT_DEVICE id=4 name=onyx_ts_istaric sources=0x1002 isStylus=false
+11-04 11:28:59.977 I/DecklySpike(21613): INPUT_DEVICE id=5 name=sf-keys sources=0x101 isStylus=false
+11-04 11:28:59.978 I/DecklySpike(21613): INPUT_DEVICE id=6 name=gpio-keys sources=0x101 isStylus=false
+11-04 11:28:59.979 I/DecklySpike(21613): INPUT_DEVICE id=7 name=qpnp_pon sources=0x101 isStylus=false
+11-04 11:28:59.980 I/DecklySpike(21613): INPUT_DEVICE id=8 name="lito-lagoonqrd-snd-card Headset Jack" sources=0x80000101 isStylus=false
+11-04 11:29:00.264 I/DecklySpike(21613): PROBE_CHECK file=/storage/emulated/0/Deckly/spike/probe.db journal=truncate integrity=ok counter=13209 entries=13209 consistent=true
+11-04 11:29:00.734 I/DecklySpike(21613): PEN_RENDER class=SFTouchRender requestedSf=false
+11-04 11:29:00.880 I/DecklySpike(21613): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 11:29:00.882 I/DecklySpike(21613): PEN_SESSION ms=140 steps=disable:0,close:117,limit:2,open:15,enable:2,eraser:1,style:3 limit=[0,0][1830,1474]
+11-04 11:29:01.111 I/DecklySpike(21613): PEN_STYLE style=карандаш width=3.0 render=ровно
+11-04 11:29:01.119 I/DecklySpike(21613): PEN_SESSION ms=78 steps=disable:12,close:23,limit:2,open:13,enable:14,eraser:7,style:7 limit=[0,0][1830,1454]
+11-04 11:29:01.261 I/DecklySpike(21613): PEN_STYLE style=карандаш width=3.0 render=ровно
