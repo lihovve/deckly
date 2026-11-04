@@ -31,26 +31,39 @@ write_stub_adb() {
   cat > "$WORK/stub-adb.sh" <<'STUB'
 #!/usr/bin/env bash
 # Заглушка adb. Настройка: STUB_ROOT, STUB_NO_DEVICE=1, STUB_FAIL_FIRST_SERIES_START=1.
+# Как настоящий Android: am start при уже запущенном приложении не создаёт его заново, а отдаёт
+# intent работающему экземпляру (проверка не выполняется); am force-stop приложение останавливает.
 set -u
 echo "$*" >> "$STUB_ROOT/calls"
+is_app_running() { [[ -e "$STUB_ROOT/running" ]]; }
 case "$1" in
   wait-for-device)
     if [[ "${STUB_NO_DEVICE:-0}" == 1 ]]; then exec sleep 3600; fi
     ;;
   shell)
     case "$*" in
-      *"am start"*"--es probe series"*)
-        if [[ "${STUB_FAIL_FIRST_SERIES_START:-0}" == 1 && ! -e "$STUB_ROOT/failed-once" ]]; then
+      *"am force-stop"*)
+        rm -f "$STUB_ROOT/running"
+        ;;
+      *"am start"*)
+        if [[ "$*" == *"--es probe series"* && "${STUB_FAIL_FIRST_SERIES_START:-0}" == 1 && ! -e "$STUB_ROOT/failed-once" ]]; then
           touch "$STUB_ROOT/failed-once"
           echo "error: device offline"
           exit 1
         fi
-        ;;
-      *"am start"*"--es probe check"*)
-        number=$(grep -c -- '--es probe check' "$STUB_ROOT/calls")
-        line=$(sed -n "${number}p" "$STUB_ROOT/check-lines")
-        [[ -n "$line" ]] || line=$(tail -n 1 "$STUB_ROOT/check-lines")
-        printf '%s\n' "$line" > "$STUB_ROOT/pending"
+        if is_app_running; then
+          # Настоящий Android не создаёт приложение заново; серия или проверка при этом не выполняются.
+          touch "$STUB_ROOT/ignored-start"
+          echo "Warning: Activity not started, intent has been delivered to currently running top-most instance."
+          exit 0
+        fi
+        touch "$STUB_ROOT/running"
+        if [[ "$*" == *"--es probe check"* ]]; then
+          number=$(grep -c -- '--es probe check' "$STUB_ROOT/calls")
+          line=$(sed -n "${number}p" "$STUB_ROOT/check-lines")
+          [[ -n "$line" ]] || line=$(tail -n 1 "$STUB_ROOT/check-lines")
+          printf '%s\n' "$line" > "$STUB_ROOT/pending"
+        fi
         ;;
     esac
     ;;
@@ -75,6 +88,7 @@ prepare_case() {
   STUB_ROOT="$WORK/$name"
   mkdir -p "$STUB_ROOT"
   : > "$STUB_ROOT/calls"
+  touch "$STUB_ROOT/running"
   printf '%s\n' "$@" > "$STUB_ROOT/check-lines"
 }
 
@@ -97,6 +111,8 @@ check_that() {
 
 has_exit_code() { [[ "$exit_code" -eq "$1" ]]; }
 has_output_containing() { [[ "$output" == *"$1"* ]]; }
+# Ни один am start не ушёл в уже запущенное приложение (там серия и проверка не выполняются).
+has_no_ignored_start() { [[ ! -e "$STUB_ROOT/ignored-start" ]]; }
 has_call_count() { [[ "$(grep -c -- "$1" "$STUB_ROOT/calls")" -eq "$2" ]]; }
 
 # Вызовы $1, $2… есть в журнале в этом порядке: каждый ищется после предыдущего найденного.
@@ -120,6 +136,7 @@ test_all_runs_in_series_pass() {
   check_that "код 0" has_exit_code 0
   check_that "итог «consistent 3 из 3, integrity ok 3 из 3, посреди серии 3 из 3»" \
     has_output_containing "consistent 3 из 3, integrity ok 3 из 3, посреди серии 3 из 3"
+  check_that "каждый запуск серии и проверки начат с остановленного приложения" has_no_ignored_start
 }
 
 test_default_is_twenty_runs() {
@@ -137,9 +154,9 @@ test_default_is_twenty_runs() {
 test_calls_follow_the_plan_order() {
   prepare_case calls_follow_the_plan_order "$(make_check_line 0)" "$(make_check_line 700)"
   run_killtest 1
-  check_that "порядок: базовая проверка, остановка, серия, остановка, очистка журнала, проверка, чтение журнала" \
-    has_calls_in_order 'wait-for-device' 'logcat -c' '--es probe check' 'logcat -d' 'force-stop app.deckly.spike' \
-    '--es probe series' 'force-stop app.deckly.spike' 'logcat -c' '--es probe check' 'logcat -d'
+  check_that "порядок: остановка, базовая проверка, остановка, серия, остановка, очистка журнала, проверка, чтение журнала" \
+    has_calls_in_order 'wait-for-device' 'force-stop app.deckly.spike' 'logcat -c' '--es probe check' 'logcat -d' \
+    'force-stop app.deckly.spike' '--es probe series' 'force-stop app.deckly.spike' 'logcat -c' '--es probe check' 'logcat -d'
 }
 
 test_classifies_increase_per_run() {

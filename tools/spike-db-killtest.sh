@@ -2,8 +2,9 @@
 # Проверка базы прототипа после убийства приложения посреди серии записей.
 #
 # Сначала один раз снимается базовая линия: проверка (--es probe check) до цикла. Каждый раз потом:
-# ждём планшет -> запускаем приложение с серией записей (--es probe series) -> через случайные
-# 0,3-2,0 с останавливаем его (am force-stop) -> чистим logcat -> запускаем приложение с проверкой
+# ждём планшет -> останавливаем приложение (am force-stop: am start поверх запущенного ничего не
+# делает) -> запускаем его с серией записей (--es probe series) -> через случайные 0,3-2,0 с
+# останавливаем (am force-stop) -> чистим logcat -> запускаем приложение с проверкой
 # (--es probe check) -> ждём строку PROBE_CHECK в logcat (тег DecklySpike). База цела, если
 # integrity=ok, и счётчик равен числу строк (consistent=true).
 #
@@ -149,8 +150,15 @@ fi
 
 # --- прогон ------------------------------------------------------------------------------------
 
-# Базовая линия: сколько строк в базе до цикла. Приложение после неё останавливаем, чтобы первый
-# запуск серии был таким же холодным, как остальные.
+# Приложение могло остаться запущенным (после ручной проверки или после предыдущей проверки цикла):
+# тогда am start отдаёт intent работающему экземпляру («Activity not started, intent has been
+# delivered to currently running top-most instance»), и серия или проверка не выполняются. Поэтому
+# базовая линия и каждый запуск серии начинаются с am force-stop, и серия всегда стартует холодной.
+#
+# Базовая линия: сколько строк в базе до цикла.
+if ! run_adb_retrying shell am force-stop "$PACKAGE"; then
+  fail 1 "Ошибка: не удалось остановить приложение перед базовой проверкой"
+fi
 if ! start_probe_check; then
   fail 1 "Ошибка: не удалось запустить базовую проверку"
 fi
@@ -167,9 +175,6 @@ if ! [[ "$check_line" =~ entries=([0-9]+) ]]; then
 fi
 previous_entries="${BASH_REMATCH[1]}"
 echo "базовая линия: $previous_entries строк"
-if ! run_adb_retrying shell am force-stop "$PACKAGE"; then
-  fail 1 "Ошибка: не удалось остановить приложение после базовой проверки"
-fi
 
 consistent_count=0
 integrity_ok_count=0
@@ -179,6 +184,12 @@ after_count=0
 increases=()
 
 for (( run = 1; run <= runs; run++ )); do
+  if ! run_adb_retrying shell am force-stop "$PACKAGE"; then
+    echo "запуск $run/$runs: не удалось остановить приложение перед серией"
+    previous_entries=""
+    increases+=("?")
+    continue
+  fi
   if ! run_adb_retrying shell am start -n "$ACTIVITY" --es probe series; then
     echo "запуск $run/$runs: не удалось запустить серию записей"
     previous_entries=""
