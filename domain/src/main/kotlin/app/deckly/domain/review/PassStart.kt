@@ -114,14 +114,23 @@ private fun refillFromPool(cards: List<Card>, today: Int): List<Card> {
     return moveCards(cards, refillIds, Section.EPOCH_1, today)
 }
 
-/** Переносит карточки в конец секции назначения в порядке [movingIds]. */
-private fun moveCards(cards: List<Card>, movingIds: List<Long>, destination: Section, today: Int): List<Card> {
+/**
+ * Переносит карточки в конец секции назначения в порядке [movingIds]. [successes] — успехи после
+ * переезда: ноль, а при спуске после ошибки на один меньше порога новой эпохи.
+ */
+internal fun moveCards(
+    cards: List<Card>,
+    movingIds: List<Long>,
+    destination: Section,
+    today: Int,
+    successes: Int = 0,
+): List<Card> {
     if (movingIds.isEmpty()) return cards
     val firstPosition = (cards.filter { it.section == destination }.maxOfOrNull { it.position } ?: -1) + 1
     val newPositions = movingIds.withIndex().associate { (index, id) -> id to firstPosition + index }
     return cards.map { card ->
         val position = newPositions[card.id] ?: return@map card
-        moveCard(card, destination, position, today)
+        moveCard(card, destination, position, today, successes)
     }
 }
 
@@ -130,10 +139,10 @@ private fun moveCards(cards: List<Card>, movingIds: List<Long>, destination: Sec
  * приезжает с [Card.excludedFromPass]: если эпоха стартует сейчас (добор, проверка выученных),
  * `startPass` флаг сбросит, иначе карточка дождётся старта прохода своей эпохи.
  */
-private fun moveCard(card: Card, destination: Section, position: Int, today: Int): Card = card.copy(
+private fun moveCard(card: Card, destination: Section, position: Int, today: Int, successes: Int): Card = card.copy(
     section = destination,
     position = position,
-    successes = 0,
+    successes = successes,
     sectionDay = today,
     postponed = false,
     answerRevealed = false,
