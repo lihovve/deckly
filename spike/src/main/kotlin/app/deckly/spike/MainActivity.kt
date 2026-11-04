@@ -159,6 +159,9 @@ private fun SpikeScreen(
     val isPenAvailable = SdkStatus.isPenAvailable
     var mode by rememberSaveable { mutableStateOf(if (isPenAvailable) PenMode.ONYX else PenMode.CANVAS) }
     var isGcAfterErase by remember { mutableStateOf(PenSettings.isGcAfterErase) }
+    var eraseGcApi by remember { mutableStateOf(PenSettings.eraseGcApi) }
+    var eraseResumeMs by remember { mutableStateOf(PenSettings.eraseResumeMs) }
+    var isEraserTrackEnabled by remember { mutableStateOf(PenSettings.isEraserTrackEnabled) }
     val lines by SpikeLog.lines.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
@@ -193,17 +196,38 @@ private fun SpikeScreen(
             PenButton("Canvas", selected = mode == PenMode.CANVAS) { mode = PenMode.CANVAS }
             PenButton("Очистить") {
                 StrokeStore.clear()
-                scope.refreshSheet(getSheet)
+                scope.refreshSheet(getSheet, reason = "clear")
             }
         }
         ButtonRow {
             PenButton("GC") { scope.repaintAll(getSheet, UpdateMode.GC) }
             PenButton("REGAL+") { scope.repaintAll(getSheet, UpdateMode.REGAL_PLUS) }
-            PenButton("Статус") { scope.refreshSheet(getSheet) }
+            PenButton("Статус") { scope.refreshSheet(getSheet, reason = "status") }
             PenButton("GC после ластика: ${if (isGcAfterErase) "вкл" else "выкл"}", selected = isGcAfterErase) {
                 isGcAfterErase = !isGcAfterErase
                 PenSettings.isGcAfterErase = isGcAfterErase
                 SpikeLog.write("SETTING", "gcAfterErase" to isGcAfterErase)
+            }
+        }
+        // Диагностика серого следа ластика: каждая кнопка показывает текущее значение.
+        ButtonRow {
+            PenButton("GC ластика: ${eraseGcApi.label}") {
+                eraseGcApi = EraseGcApi.entries[(eraseGcApi.ordinal + 1) % EraseGcApi.entries.size]
+                PenSettings.eraseGcApi = eraseGcApi
+                SpikeLog.write("SETTING", "eraseGcApi" to eraseGcApi.label)
+            }
+            PenButton("Перо через: $eraseResumeMs мс") {
+                val options = PenSettings.RESUME_OPTIONS_MS
+                eraseResumeMs = options[(options.indexOf(eraseResumeMs) + 1) % options.size]
+                PenSettings.eraseResumeMs = eraseResumeMs
+                SpikeLog.write("SETTING", "eraseResumeMs" to eraseResumeMs)
+            }
+            PenButton("Трек ластика: ${if (isEraserTrackEnabled) "вкл" else "выкл"}", selected = isEraserTrackEnabled) {
+                isEraserTrackEnabled = !isEraserTrackEnabled
+                PenSettings.isEraserTrackEnabled = isEraserTrackEnabled
+                SpikeLog.write("SETTING", "eraserTrack" to isEraserTrackEnabled)
+                // Трек ставится при включении пера, поэтому цикл pause -> resume применяет новое значение сразу.
+                scope.refreshSheet(getSheet, reason = "eraserTrack")
             }
         }
         ButtonRow {
@@ -222,9 +246,11 @@ private fun createSheet(context: Context, mode: PenMode): View = when (mode) {
 }
 
 // Пока перо Onyx включено, прошивка замораживает экран: отпускаем его, даём обновиться и возвращаем перо.
-private fun CoroutineScope.refreshSheet(getSheet: () -> PenSheet?) {
+private fun CoroutineScope.refreshSheet(getSheet: () -> PenSheet?, reason: String) {
     launch {
-        val sheet = getSheet() ?: return@launch
+        val sheet = getSheet()
+        SpikeLog.write("STATUS_REFRESH", "reason" to reason, "hasSheet" to (sheet != null))
+        sheet ?: return@launch
         sheet.pause()
         sheet.redrawAll()
         delay(REFRESH_SETTLE_MS)

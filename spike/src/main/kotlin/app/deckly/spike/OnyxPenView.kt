@@ -40,6 +40,11 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
     private var eraseCommitStartedAt = 0L
     private var isEraseGcDone = false
 
+    // Снимок настроек диагностики на момент начала фиксации: кнопки можно нажать посреди неё.
+    private var commitGcApi = EraseGcApi.REFRESH_REGION
+    private var commitResumeMs = 0L
+    private var isCommitTrackEnabled = true
+
     private val gcStep = Runnable { runEraseGcStep() }
     private val resumeStep = Runnable { runEraseResumeStep() }
 
@@ -212,15 +217,19 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         }
     }
 
+    // Трек ластика (серый след прошивки) включается настройкой PenSettings.isEraserTrackEnabled.
     private fun enableEraserTrack(helper: TouchHelper) {
+        val isTrackEnabled = PenSettings.isEraserTrackEnabled
         try {
-            Device.currentDevice().setStrokeParameters(
-                ERASER_STROKE_ID,
-                floatArrayOf(ERASER_TRACK_WIDTH, 0.5f, 1f),
-            )
-            helper.setEraserRawDrawingEnabled(true, ERASER_STROKE_ID)
+            if (isTrackEnabled) {
+                Device.currentDevice().setStrokeParameters(
+                    ERASER_STROKE_ID,
+                    floatArrayOf(ERASER_TRACK_WIDTH, 0.5f, 1f),
+                )
+            }
+            helper.setEraserRawDrawingEnabled(isTrackEnabled, ERASER_STROKE_ID)
         } catch (error: Throwable) {
-            SpikeLog.write("PEN_ERASER_TRACK", "error" to error)
+            SpikeLog.write("PEN_ERASER_TRACK", "enabled" to isTrackEnabled, "error" to error)
         }
     }
 
@@ -342,6 +351,9 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
             if (eraseCommitStartedAt == 0L) {
                 eraseCommitStartedAt = SystemClock.elapsedRealtime()
                 isEraseGcDone = false
+                commitGcApi = PenSettings.eraseGcApi
+                commitResumeMs = PenSettings.eraseResumeMs
+                isCommitTrackEnabled = PenSettings.isEraserTrackEnabled
                 disableRawDrawing()
             }
             pendingEraseRect = StrokeStore.union(pendingEraseRect, dirty)
@@ -357,15 +369,26 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         val rect = synchronized(eraseLock) { pendingEraseRect }
         val isGcEnabled = PenSettings.isGcAfterErase
         if (isGcEnabled && rect != null) {
-            try {
-                EpdController.invalidate(this, rect.left, rect.top, rect.right, rect.bottom, UpdateMode.GC)
-                SpikeLog.write("PEN_GC", "rect" to rect.toShortString())
-            } catch (error: Throwable) {
-                SpikeLog.write("PEN_GC", "error" to error)
-            }
+            runEraseGc(rect, commitGcApi)
         }
         synchronized(eraseLock) { isEraseGcDone = isGcEnabled }
-        postDelayed(resumeStep, ERASE_RESUME_MS)
+        postDelayed(resumeStep, commitResumeMs)
+    }
+
+    // GC выбранным вызовом (диагностика серого следа). Перо в это время выключено.
+    private fun runEraseGc(rect: Rect, api: EraseGcApi) {
+        try {
+            when (api) {
+                EraseGcApi.INVALIDATE ->
+                    EpdController.invalidate(this, rect.left, rect.top, rect.right, rect.bottom, UpdateMode.GC)
+                EraseGcApi.REFRESH_REGION ->
+                    EpdController.refreshScreenRegion(this, rect.left, rect.top, rect.width(), rect.height(), UpdateMode.GC)
+                EraseGcApi.REPAINT_ALL -> EpdController.repaintEveryThing(UpdateMode.GC)
+            }
+            SpikeLog.write("PEN_GC", "api" to api.label, "rect" to rect.toShortString())
+        } catch (error: Throwable) {
+            SpikeLog.write("PEN_GC", "api" to api.label, "error" to error)
+        }
     }
 
     private fun runEraseResumeStep() {
@@ -388,6 +411,9 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
             "ERASE_COMMIT",
             "rect" to rect?.toShortString(),
             "gc" to isGc,
+            "api" to commitGcApi.label,
+            "resumeMs" to commitResumeMs,
+            "track" to isCommitTrackEnabled,
             "pausedMs" to pausedMs,
             "resumed" to isResumed,
         )
@@ -410,6 +436,5 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         const val ERASER_STROKE_ID = 8
         const val ERASER_TRACK_WIDTH = 20f
         const val GC_DELAY_MS = 200L
-        const val ERASE_RESUME_MS = 150L
     }
 }
