@@ -12,7 +12,11 @@ abstract class DeckDao {
     @Insert
     abstract suspend fun insertDeck(deck: DeckEntity): Long
 
-    @Query("DELETE FROM deck WHERE id = :deckId")
+    @Query(
+        "DELETE\n" +
+        "  FROM deck\n" +
+        " WHERE deck.id = :deckId",
+    )
     abstract suspend fun deleteDeck(deckId: Long)
 }
 
@@ -26,16 +30,29 @@ abstract class CardDao {
     @Update(entity = CardEntity::class)
     abstract suspend fun updateCardState(update: CardStateUpdate)
 
-    @Query("SELECT * FROM card WHERE id = :cardId")
+    @Query(
+        "SELECT *\n" +
+        "  FROM card\n" +
+        " WHERE card.id = :cardId",
+    )
     abstract suspend fun findCard(cardId: Long): CardEntity?
 
-    @Query("SELECT * FROM card WHERE deck_id = :deckId ORDER BY id")
+    @Query(
+        "  SELECT *\n" +
+        "    FROM card\n" +
+        "   WHERE card.deck_id = :deckId\n" +
+        "ORDER BY card.id",
+    )
     abstract suspend fun listCards(deckId: Long): List<CardEntity>
 }
 
 @Dao
 abstract class AppStateDao {
 
-    @Query("SELECT * FROM app_state WHERE id = 1")
+    @Query(
+        "SELECT *\n" +
+        "  FROM app_state\n" +
+        " WHERE app_state.id = 1",
+    )
     abstract suspend fun findAppState(): AppStateEntity?
 }

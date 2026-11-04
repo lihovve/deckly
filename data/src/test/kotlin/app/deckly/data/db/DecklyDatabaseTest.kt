@@ -52,7 +52,11 @@ class DecklyDatabaseTest {
 
     @Test
     fun databaseHasAllFourTables() = runTest {
-        val tables = readColumn("SELECT name FROM sqlite_master WHERE type = 'table'")
+        val tables = readColumn(
+            "SELECT sqlite_master.name\n" +
+            "  FROM sqlite_master\n" +
+            " WHERE sqlite_master.type = 'table'",
+        )
 
         assertTrue(tables.toString(), tables.containsAll(listOf("deck", "card", "draft", "app_state")))
     }
