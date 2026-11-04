@@ -209,7 +209,7 @@
     `1 1 1 1 1 2 1 1 1 1 1 2 1 1 1 1 1 2 3 1 1 1 1 1 2 1 1 1 1 1 2 1 1 1 1 1 2 3 4`.
   - `waitingEpochGivesTurnToFirstEpoch`: `chooseNextEpoch(1, 5, waitingEpoch = 2) == 1`.
   - `secondEpochMaturesNextDay` (проверка 13): `lastPassDay[2] = 10`, в эпохе карточка — при
-    `today = 10` не созрела, при 11 созрела. Так же эпоха 3 (13 нет, 14 да) и эпоха 4 (17 нет, 18 да).
+    `today = 10` не созрела, при 11 созрела. Так же эпоха 3 (12 нет, 13 да) и эпоха 4 (16 нет, 17 да).
   - `emptyEpochDoesNotWait`: пустая эпоха 2 с `lastPassDay[2] = today` созрела.
   - `fourthEpochWithReadyLearnedIsNotEmpty` (раздел «Нижняя граница интервала»): эпоха 4 пуста,
     `pass4 = 1`, в выученных карточка с `sectionDay = today - 30` — не пустая и не созрела при
