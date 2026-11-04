@@ -433,6 +433,8 @@
     старте следующего прохода эпохи 2 она есть.
   - `openingInactiveSectionDoesNotMovePass`: во время прохода эпохи 1 открыть `EPOCH_3`, листать,
     вернуться в `EPOCH_1` — `ShowCard` той же карточки, `passCursor` прежний.
+  - `deletingFirstCardOfFreshPassDoesNotInsertFirstEpochPass`: удаление первой карточки свежего
+    прохода эпохи 2–4 и удаление сразу после `RESUMED` дают `ShowCard`, а не вставку.
   - `restartShowsCurrentCard`: `computeCurrentOutcome` для начатого прохода — `ShowCard` по
     `passCursor`; для открытой пустой секции — `EmptySection`.
 
@@ -464,7 +466,8 @@
        `finishPass`, `passCount + 1`, `currentEpoch = chooseNextEpoch(…)`, к шагу 1.
   - **После оценки или удаления** в активном проходе:
     - проход исчерпан → его конец;
-    - иначе эпоха 2–4 без прерывания, `passCursor % 40 == 0` и в эпохе 1 или в пуле есть карточки →
+    - иначе, только после `Knew` и `DidNotKnow` (удаление ничего не оценивает): эпоха 2–4 без
+      прерывания, `passCursor % 40 == 0` и в эпохе 1 или в пуле есть карточки →
       `pausedEpoch`, `pausedCursor = passCursor`, `currentEpoch = 1`, `startPass(1)`.
       Вставка непустая → `Transition(1, size, INSERTED)`. Пустая → её `finishPass` и сразу возврат;
     - иначе `ShowCard`.
