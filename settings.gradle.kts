@@ -20,4 +20,10 @@ dependencyResolutionManagement {
 
 rootProject.name = "deckly"
 
+include(":domain")
+include(":data")
+include(":ink")
+include(":ui-contract")
+include(":design-e")
+include(":app")
 include(":spike")

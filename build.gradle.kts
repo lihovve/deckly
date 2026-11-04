@@ -13,3 +13,43 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.ksp) apply false
 }
+
+// Разрешённые связи между модулями проекта (документ архитектуры, раздел «Модули»).
+// :spike в проверке не участвует.
+val allowedModuleDependencies = mapOf(
+    "app" to setOf("domain", "data", "ink", "ui-contract", "design-e"),
+    "data" to setOf("domain"),
+    "ink" to setOf("domain"),
+    "design-e" to setOf("ui-contract"),
+    "ui-contract" to emptySet(),
+    "domain" to emptySet(),
+)
+
+tasks.register("verifyModuleGraph") {
+    group = "verification"
+    description = "Падает, если модуль зависит от модуля, которого нет в таблице разрешённых связей."
+
+    doLast {
+        val violations = subprojects
+            .filter { it.name in allowedModuleDependencies }
+            .flatMap { module ->
+                val allowed = allowedModuleDependencies.getValue(module.name)
+                module.configurations
+                    .flatMap { configuration -> configuration.allDependencies.withType<ProjectDependency>() }
+                    // AGP кладёт сам модуль в конфигурации androidTest: это не граница модулей.
+                    .filter { dependency -> dependency.path != module.path }
+                    .map { dependency -> dependency.path.removePrefix(":") }
+                    .filter { it !in allowed }
+                    .map { "${module.name} → $it" }
+            }
+            .distinct()
+            .sorted()
+        if (violations.isNotEmpty()) {
+            throw GradleException("Нарушены границы модулей:\n" + violations.joinToString("\n") { "  $it" })
+        }
+    }
+}
+
+subprojects {
+    tasks.matching { it.name == "check" }.configureEach { dependsOn(":verifyModuleGraph") }
+}
