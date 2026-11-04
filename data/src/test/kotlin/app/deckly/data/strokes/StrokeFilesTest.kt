@@ -102,6 +102,52 @@ class StrokeFilesTest {
     }
 
     @Test
+    fun writtenAndDeletedFilesAreReported() {
+        val reported = mutableListOf<File>()
+        val reporting = StrokeFiles(storage.strokesDir) { reported += it }
+
+        val cardFile = reporting.writeCardFile(7, strokes, emptyList())
+        val draftFile = reporting.writeDraftFile(strokes, emptyList())
+        reporting.deleteContentFile(cardFile)
+
+        assertEquals(
+            listOf(
+                File(storage.strokesDir, cardFile),
+                File(storage.strokesDir, draftFile),
+                File(storage.strokesDir, cardFile),
+            ),
+            reported,
+        )
+    }
+
+    @Test
+    fun deletingMissingOrForeignNameReportsNothing() {
+        val reported = mutableListOf<File>()
+        val reporting = StrokeFiles(storage.strokesDir) { reported += it }
+        File(storage.rootDir, "outside.dks").writeText("мой файл")
+
+        reporting.deleteContentFile("card-1-0000000000000000.dks")
+        reporting.deleteContentFile("../outside.dks")
+
+        assertEquals(emptyList<File>(), reported)
+    }
+
+    @Test
+    fun cleanUpReportsDeletedFilesOnly() {
+        val reported = mutableListOf<File>()
+        val reporting = StrokeFiles(storage.strokesDir) { reported += it }
+        val kept = files.writeCardFile(1, strokes, emptyList())
+        val orphan = files.writeCardFile(2, strokes, emptyList())
+        val temporary = File(storage.strokesDir, "y.tmp").apply { writeText("y") }
+        File(storage.strokesDir, "README").writeText("не трогать")
+
+        reporting.cleanUpStrokeFiles(setOf(kept))
+
+        assertEquals(setOf(File(storage.strokesDir, orphan), temporary), reported.toSet())
+        assertEquals(2, reported.size)
+    }
+
+    @Test
     fun cleanUpWithoutStrokesFolderDoesNothing() {
         val bare = StrokeFiles(File(storage.rootDir, "no-such-folder"))
 

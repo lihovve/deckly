@@ -16,8 +16,14 @@ private const val DRAFT_PREFIX = "draft-"
  * Файлы штрихов в папке [strokesDir]: `card-<cardId>-<16 hex>.dks` и `draft-<16 hex>.dks`. У каждой
  * записи новое имя. Запись идёт в `<имя>.tmp`, потом `renameTo`, поэтому полуфайла под настоящим
  * именем не бывает. Возвращаются имена без пути. Всё, что не названо здесь, чужое и не трогается.
+ *
+ * [onFileChanged] получает каждый записанный и каждый удалённый файл (после того, как это случилось):
+ * так MediaStore узнаёт обо всех изменениях папки.
  */
-open class StrokeFiles(private val strokesDir: File) {
+open class StrokeFiles(
+    private val strokesDir: File,
+    private val onFileChanged: (File) -> Unit = {},
+) {
 
     // Запись открыта для переопределения ради тестов: сбой записи при настоящем удалении.
     open fun writeCardFile(cardId: Long, front: List<Stroke>, back: List<Stroke>): String =
@@ -38,7 +44,8 @@ open class StrokeFiles(private val strokesDir: File) {
 
     /** Удаляет файл, если он есть. Имя не из этой папки игнорируется: чужое не трогаем никогда. */
     fun deleteContentFile(name: String) {
-        findOwnFile(name)?.takeIf { it.isFile }?.delete()
+        val file = findOwnFile(name)?.takeIf { it.isFile } ?: return
+        if (file.delete()) onFileChanged(file)
     }
 
     /**
@@ -48,9 +55,9 @@ open class StrokeFiles(private val strokesDir: File) {
     fun cleanUpStrokeFiles(referenced: Set<String>) {
         val candidates = strokesDir.listFiles()?.filter { it.isFile } ?: return
         for (file in candidates) {
-            if (file.name.endsWith(TEMPORARY_SUFFIX) || (isContentFileName(file.name) && file.name !in referenced)) {
-                file.delete()
-            }
+            val isObsolete = file.name.endsWith(TEMPORARY_SUFFIX) ||
+                (isContentFileName(file.name) && file.name !in referenced)
+            if (isObsolete && file.delete()) onFileChanged(file)
         }
     }
 
@@ -71,6 +78,7 @@ open class StrokeFiles(private val strokesDir: File) {
             temporary.delete()
             throw failure
         }
+        onFileChanged(File(strokesDir, name))
         return name
     }
 
