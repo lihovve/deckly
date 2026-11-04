@@ -18,9 +18,11 @@ test_ok=1
 
 # --- помощники ---------------------------------------------------------------------------------
 
-# Свежий «планшет» и APK из случайных байт для каждого теста.
+# Свежий «планшет» и APK из случайных байт для каждого теста. PACKAGE — имя пакета для второго
+# аргумента скрипта; пусто — скрипт запускается с одним аргументом.
 prepare_case() {
   local name=$1
+  PACKAGE=""
   CASE_DIR="$WORK/$name"
   FAKE_ROOT="$CASE_DIR/tablet"
   APK="$CASE_DIR/app.apk"
@@ -33,7 +35,7 @@ prepare_case() {
 # Зависший скрипт убивается через RUN_TIMEOUT, чтобы поломка не вешала весь прогон (код 124).
 run_install() {
   output="$(timeout "$RUN_TIMEOUT" env ADB="$FAKE_ADB" FAKE_ROOT="$FAKE_ROOT" RETRY_DELAY=0 "$@" \
-    bash "$INSTALL_SCRIPT" "$APK" 2>&1)"
+    bash "$INSTALL_SCRIPT" "$APK" ${PACKAGE:+"$PACKAGE"} 2>&1)"
   exit_code=$?
 }
 
@@ -59,6 +61,12 @@ is_always_after_wait() {
     END { exit (found && !bad) ? 0 : 1 }' "$FAKE_ROOT/.calls"
 }
 has_pm_called_once() { [[ "$(wc -l < "$FAKE_ROOT/.pm_calls" 2>/dev/null)" -eq 1 ]]; }
+# В журнале подменного adb нет строки $1 (например shell:dumpsys).
+has_no_call() { ! grep -qx -- "$1" "$FAKE_ROOT/.calls"; }
+has_package_state() { [[ "$(cat "$FAKE_ROOT/package.enabled" 2>/dev/null)" == "$1" ]]; }
+has_file_access_granted() { [[ "$(cat "$FAKE_ROOT/package.appops" 2>/dev/null)" == allow ]]; }
+# Сколько раз скрипт вызвал pm enable ($1 = .enable_calls) или appops set ($1 = .appops_calls).
+has_call_count() { [[ "$(wc -l < "$FAKE_ROOT/$1" 2>/dev/null || echo 0)" -eq "$2" ]]; }
 has_matching_installed_apk() { [[ "$(md5sum "$FAKE_ROOT/installed.apk" 2>/dev/null | cut -c1-32)" == "$APK_MD5" ]]; }
 
 DEVICE_DIR_REL="data/local/tmp/deckly-install"
@@ -71,6 +79,7 @@ test_clean_install() {
   check_that "код 0" has_exit_code 0
   check_that "md5 установленного APK равен md5 исходного" has_matching_installed_apk
   check_that "в выводе «Установлено»" has_output_containing "Установлено"
+  check_that "шум adb push в вывод не попадает" has_no_output_containing "file pushed"
   check_that "папка на планшете убрана" is_path_absent "$FAKE_ROOT/$DEVICE_DIR_REL"
   check_that "перед каждой передачей куска ждём планшет" is_always_after_wait '^push$'
   check_that "перед склейкой ждём планшет" is_always_after_wait '^shell:cat$'
@@ -140,6 +149,60 @@ test_bad_assembly_reported() {
   check_that "папка на планшете убрана и после ошибки" is_path_absent "$FAKE_ROOT/$DEVICE_DIR_REL"
 }
 
+test_push_error_shown() {
+  prepare_case push_error_shown
+  run_install FAKE_PUSH_FAIL=001:1
+  check_that "код 0" has_exit_code 0
+  check_that "md5 установленного APK равен md5 исходного" has_matching_installed_apk
+  check_that "в выводе «кусок 001: попытка 2»" has_output_containing "кусок 001: попытка 2"
+  check_that "текст ошибки adb показан" has_output_containing "remote Operation not permitted"
+}
+
+test_package_enabled_and_access_granted() {
+  prepare_case package_enabled_and_access_granted
+  PACKAGE=app.deckly.spike
+  run_install
+  check_that "код 0" has_exit_code 0
+  check_that "в выводе «Пакет включён: app.deckly.spike»" has_output_containing "Пакет включён: app.deckly.spike"
+  check_that "в выводе «Доступ ко всем файлам: allow»" has_output_containing "Доступ ко всем файлам: allow"
+  check_that "в выводе по-прежнему «Установлено»" has_output_containing "Установлено"
+  check_that "пакет включён (enabled=1)" has_package_state 1
+  check_that "доступ ко всем файлам выдан" has_file_access_granted
+  check_that "перед appops ждём планшет" is_always_after_wait '^shell:appops$'
+  check_that "перед dumpsys ждём планшет" is_always_after_wait '^shell:dumpsys$'
+}
+
+test_default_enabled_state_accepted() {
+  prepare_case default_enabled_state_accepted
+  PACKAGE=app.deckly.spike
+  run_install FAKE_ENABLED_AFTER_INSTALL=0 FAKE_ENABLE_REFUSED=1
+  check_that "код 0: enabled=0 годится" has_exit_code 0
+  check_that "в выводе «Пакет включён: app.deckly.spike»" has_output_containing "Пакет включён: app.deckly.spike"
+  check_that "пакет остался enabled=0" has_package_state 0
+  check_that "доступ ко всем файлам выдан" has_file_access_granted
+}
+
+test_without_package_skips_post_install() {
+  prepare_case without_package_skips_post_install
+  run_install
+  check_that "код 0" has_exit_code 0
+  check_that "pm enable не вызывался" is_path_absent "$FAKE_ROOT/.enable_calls"
+  check_that "appops не вызывался" is_path_absent "$FAKE_ROOT/.appops_calls"
+  check_that "dumpsys не вызывался" has_no_call "shell:dumpsys"
+  check_that "строк про пакет в выводе нет" has_no_output_containing "Пакет включён"
+  check_that "состояние пакета не тронуто (enabled=3)" has_package_state 3
+}
+
+test_enable_refused_reported() {
+  prepare_case enable_refused_reported
+  PACKAGE=app.deckly.spike
+  run_install FAKE_ENABLE_REFUSED=1 MAX_TRIES=3
+  check_that "код 6" has_exit_code 6
+  check_that "pm enable повторён до MAX_TRIES (3 вызова)" has_call_count .enable_calls 3
+  check_that "в выводе имя пакета" has_output_containing "app.deckly.spike"
+  check_that "успех по пакету не объявлен" has_no_output_containing "Пакет включён:"
+}
+
 test_missing_apk() {
   prepare_case missing_apk
   APK="$CASE_DIR/нет-такого.apk"
@@ -172,6 +235,11 @@ for test_name in \
   test_bad_assembly_reported \
   test_pm_transport_error_retried \
   test_hung_push_retried \
+  test_push_error_shown \
+  test_package_enabled_and_access_granted \
+  test_default_enabled_state_accepted \
+  test_without_package_skips_post_install \
+  test_enable_refused_reported \
   test_missing_apk; do
   run_test "$test_name"
 done
