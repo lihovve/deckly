@@ -20,6 +20,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
+
+    // onyxsdk-pen и onyxsdk-pennative приносят каждый свой libc++_shared.so.
+    packaging {
+        jniLibs { pickFirsts += "**/libc++_shared.so" }
+    }
 }
 
 dependencies {
