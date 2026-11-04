@@ -3,8 +3,8 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** поставить инструменты сборки и надёжную установку APK на Boox, затем одноразовым прототипом
-на самом Go 10.3 Gen II ответить на два вопроса архитектуры: какой путь пера основной и может ли
-база жить в `/sdcard/Deckly/`.
+на самом Go 10.3 Gen II ответить на вопросы архитектуры: какой путь пера основной, может ли
+база жить в `/sdcard/Deckly/` и годится ли перьевая ручка с толщиной от нажима (задача 6).
 
 **Architecture:** корневая Gradle-сборка создаётся здесь и переиспользуется планом 2 (каталог
 версий, репозитории, обёртка). В ней один модуль `:spike` — одноразовое приложение на Compose с
@@ -584,5 +584,109 @@
   Обновить документ архитектуры по этим решениям. Предложить владельцу правки раздела «Onyx SDK»
   в ТЗ по списку «Расхождения с ТЗ» с учётом подтверждённого на планшете; внести после согласия.
 
+  - ручка (задача 6): рисует ли прошивка стилем ручки толщину по нажиму и не падает ли; какой
+    скачок после отрыва пера даёт отрисовка SDK и своя; кривая «нажим → толщина» из
+    `PEN_FOUNTAIN_CURVE`. Предложение владельцу **(моё)**: если ручка прошла — стиль FOUNTAIN, нажим
+    0..1 обязателен в каждой точке штриха; после отрыва своя отрисовка с кривой по
+    `PEN_FOUNTAIN_CURVE`, если владелец считает скачок терпимым, иначе SDK на Onyx и своя без SDK.
+
 - [ ] **Step 10: Commit** — итоги, документ архитектуры, ТЗ (если согласовано): «Прототип на
   Go 10.3 Gen II: итоги по перу и базе».
+
+### Task 6: перьевая ручка (толщина от нажима)
+
+Владелец 2026-11-04: толщина линии не зависит от нажима, хочет попробовать перьевую ручку. Нажим
+приходит (в журнале фазы Б 95…2555 при максимуме 4096), но прошивка рисует стилем
+`STROKE_STYLE_PENCIL`, а `StrokeStore` перерисовывает штрих одной толщиной. На планшете надо узнать:
+1. рисует ли прошивка стилем `STROKE_STYLE_FOUNTAIN` (= 1) толщину по нажиму под пером и не падает ли;
+2. совпадает ли с этим штрих, перерисованный после отрыва пера через SDK
+   `NeoFountainPenWrapper.drawStroke` (внутри нативная `libneopen_jni.so`; кисти Neo падали, про
+   ручку неизвестно);
+3. насколько заметен скачок при своей отрисовке на Kotlin, которая не зависит от Onyx и нужна
+   запасному Canvas.
+
+Код идёт в одну сборку с диагностикой следа ластика (08ca6f9), чтобы ставить на планшет один раз.
+
+**Files:**
+- Create: `spike/src/main/kotlin/app/deckly/spike/StrokeRenderer.kt`
+- Modify: `PenSheet.kt`, `SdkStatus.kt`, `SpikeApplication.kt`, `StrokeStore.kt`, `OnyxPenView.kt`,
+  `CanvasPenView.kt`, `MainActivity.kt`
+
+**Interfaces:**
+- `SpikeStroke.points` — тройки `x, y, нажим`; нажим нормирован в 0..1 при вводе. `SpikeStroke.width` —
+  толщина из настройки на момент штриха.
+- `enum class PenStyle(val label: String, val sdkStyle: Int)`: `PENCIL("карандаш", STROKE_STYLE_PENCIL)`,
+  `FOUNTAIN("ручка", STROKE_STYLE_FOUNTAIN)`.
+- `enum class StrokeRender(val label: String)`: `CONSTANT("ровно")`, `OWN("свой")`, `SDK("SDK")`.
+- `PenSettings`: `@Volatile var penStyle = PenStyle.PENCIL`, `val WIDTH_OPTIONS = floatArrayOf(3f, 6f, 10f)`,
+  `@Volatile var strokeWidth = 3f`, `@Volatile var strokeRender = StrokeRender.CONSTANT`.
+- `SdkStatus.maxTouchPressure: Float` — сырой максимум нажима.
+- `PenSheet.applyPenSettings()` — следующий штрих идёт новым стилем и толщиной, лист перерисован
+  новой отрисовкой.
+- `object StrokeRenderer`: `drawStroke(canvas: Canvas, stroke: SpikeStroke)`,
+  `computePressureWidth(baseWidth: Float, pressure: Float): Float`, `computeMargin(stroke: SpikeStroke): Int`.
+
+- [ ] **Step 1: Нажим 0..1 и стиль из настроек**
+  - `SpikeApplication` после инициализации SDK: `SdkStatus.maxTouchPressure =
+    EpdController.getMaxTouchPressure()`. Если меньше или равно 0 или исключение — `4096f`. Лог
+    `PEN_MAX_PRESSURE value=… source=sdk|fallback`.
+  - `OnyxPenView.handleStroke`: нажим `point.pressure / SdkStatus.maxTouchPressure`, обрезанный в
+    0..1; `width = PenSettings.strokeWidth`; запас прямоугольника — `StrokeRenderer.computeMargin`.
+  - `CanvasPenView.collectPoints`: нажим у каждой точки свой — `getHistoricalPressure(0, i)` для
+    истории, `getPressure(0)` для текущей, обрезанный в 0..1. Сейчас всем точкам пачки ставится
+    последний нажим — это ошибка.
+  - `applyPenStyle`: `setStrokeStyle(PenSettings.penStyle.sdkStyle)`,
+    `setStrokeWidth(PenSettings.strokeWidth)`; лог `PEN_STYLE style=… width=… render=…`.
+
+- [ ] **Step 2: `StrokeRenderer`** по `PenSettings.strokeRender`:
+  - `CONSTANT` — нынешний `StrokeStore.drawStroke` без изменений, перенесённый сюда.
+  - `OWN` — каждый отрезок `i-1 → i` через `drawLine` с `Cap.ROUND` и толщиной
+    `computePressureWidth(stroke.width, (p[i-1] + p[i]) / 2)`; штрих из одной точки — круг этого
+    диаметра. `computePressureWidth = baseWidth * (MIN_WIDTH_FACTOR + (1 - MIN_WIDTH_FACTOR) * pressure)`,
+    `MIN_WIDTH_FACTOR = 0.3f` **(моё; подгоняется по `PEN_FOUNTAIN_CURVE`)**. Нулевой нажим даёт
+    тонкую, но видимую линию.
+  - `SDK` — при `SdkStatus.isPenAvailable`: точки в `TouchPoint(x, y, p * maxTouchPressure,
+    stroke.width, 0L)`, затем `NeoFountainPenWrapper.drawStroke(canvas, paint, points, 1f, stroke.width,
+    SdkStatus.maxTouchPressure, false)`. Порядок аргументов — масштаб, толщина, максимум нажима — взят
+    из байткода (`computeStrokePoints(list, F, F, F)` передаёт два последних дальше) и совпадает с
+    OnyxAndroidDemo. Перед самым первым вызовом пишется лог `PEN_RENDER_SDK call=first`: если
+    процесс упадёт в нативном коде, в logcat будет видно где. При `Throwable` пишется лог
+    `PEN_RENDER_SDK error=…` и этот штрих рисуется как `OWN`. Без SDK — `OWN`.
+  - `computeMargin = ceil(stroke.width).toInt() * 2 + 2`: ручка SDK может выйти за базовую толщину.
+  - `StrokeStore.drawTo` и `computeBounds` идут через `StrokeRenderer`. `CanvasPenView.drawLiveStroke`
+    рисует текущий штрих тем же `drawStroke`, чтобы в Canvas нажим был виден под пером.
+
+- [ ] **Step 3: Данные для подгонки.** После каждого штриха пишется лог
+  `PEN_PRESSURE points=N min=… max=… avg=…` (нажим 0..1, два знака). Если стиль `FOUNTAIN` и SDK
+  поднят, вызывается `NeoFountainPenWrapper.computeStrokePoints(points, 1f, width, maxTouchPressure)`
+  и пишется лог `PEN_FOUNTAIN_CURVE width=… pairs=p:size,…`: до 12 равномерно взятых точек
+  результата, `p` — нормированный нажим, `size` — поле `size`. В результате точек может быть
+  больше или меньше, чем на входе. Ошибка — лог `PEN_FOUNTAIN_CURVE error=…`.
+
+- [ ] **Step 4: Кнопки.** Новый ряд: «Перо: карандаш|ручка», «Толщина: 3|6|10», «Отрисовка:
+  ровно|свой|SDK». Нажатие переключает значение по кругу, пишет его в `PenSettings` и вызывает
+  `getSheet()?.applyPenSettings()`.
+  - `OnyxPenView.applyPenSettings`: если сессия открыта и стирание не коммитится — `disableRawDrawing()`,
+    затем `enableRawDrawing()`. Последний заново ставит стиль и трек ластика. После этого `redrawAll()`.
+  - Если стирание коммитится — только `redrawAll()`: стиль поставит возобновление пера.
+  - `CanvasPenView` — `redrawAll()`.
+
+- [ ] **Step 5: Собрать**
+  Run: `./gradlew :spike:assembleDebug && unzip -l spike/build/outputs/apk/debug/spike-debug.apk | grep libneopen_jni`
+  Expected: `BUILD SUCCESSFUL`; `lib/arm64-v8a/libneopen_jni.so` в APK.
+
+- [ ] **Step 6: Commit** — «Прототип: перьевая ручка и толщина от нажима (не проверено на планшете)».
+
+- [ ] **Step 7: Планшет — владелец, режим «Onyx».** Установка как в задаче 5, плюс `pm enable` и
+  `appops`. Проверки:
+  1. «Перо: ручка», «Отрисовка: ровно», «Толщина: 6». Штрихи слабым и сильным нажимом: меняется ли
+     толщина под пером? После отрыва штрих станет ровным — так и должно быть, это наша перерисовка.
+  2. «Отрисовка: SDK». Остаётся ли штрих после отрыва таким, каким был под пером? Не упало ли
+     приложение?
+  3. «Отрисовка: свой». Насколько заметен скачок после отрыва?
+  4. Толщины 3 и 10: видна ли разница от нажима.
+  5. Ластик кнопкой пера по штрихам ручки: уходят ли целиком. Не выросла ли задержка пера.
+  6. Режим «Canvas», «Отрисовка: свой»: видна ли толщина по нажиму под пером.
+
+  Исполнитель записывает `PEN_MAX_PRESSURE`, `PEN_STYLE`, `PEN_PRESSURE`, `PEN_FOUNTAIN_CURVE`,
+  `PEN_RENDER_SDK`. После падения — `adb logcat -b crash -d | tail -50`. Итоги идут в шаг 9 задачи 5.
