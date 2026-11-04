@@ -19,22 +19,31 @@ internal sealed interface StrokeChange {
  * лист добавляет только что нарисованный штрих к показанным сам ([appendLocal]), не дожидаясь хоста.
  * Иначе штрих пропал бы с поверхности на время записи и появился снова.
  *
- * Значение хоста, которое не менялось, показанное не трогает: перекомпозиция по другой причине приносит
- * прежний список, в котором нового штриха ещё нет.
+ * Лист помнит, какие штрихи он добавил сам и хост ещё не подтвердил. Пока почерк быстрее записи, хост
+ * присылает список без последних штрихов листа: это отставание ([StrokeChange.None]), а не удаление. Так же
+ * выглядит прежний список хоста, который перекомпозиция по другой причине приносит повторно.
+ * Заменой такой список становится, только если в недостающем хвосте есть штрих, который хост уже
+ * подтверждал: его убрали по-настоящему.
  */
 internal class ShownStrokes {
     var shown: List<Stroke> = emptyList()
         private set
 
-    private var host: List<Stroke> = emptyList()
+    // Штрихи листа, которых в списках хоста ещё не было. Показанное — это список хоста и эти штрихи в конце.
+    private var pending: List<Stroke> = emptyList()
 
     fun appendLocal(stroke: Stroke) {
         shown = shown + stroke
+        pending = pending + stroke
     }
 
     fun updateFromHost(new: List<Stroke>): StrokeChange {
-        if (new == host) return StrokeChange.None
-        host = new
+        if (isLaggingBehindLocalStrokes(new)) {
+            pending = pending.filter { it !in new }
+            return StrokeChange.None
+        }
+        // Дальше показанное становится списком хоста, ждать от хоста больше нечего.
+        pending = emptyList()
         if (new == shown) return StrokeChange.None
 
         val before = shown
@@ -46,4 +55,10 @@ internal class ShownStrokes {
             StrokeChange.Replaced(before, new)
         }
     }
+
+    // Список хоста — начало показанного, а недостающий хвост целиком из штрихов, которые хост не видел.
+    private fun isLaggingBehindLocalStrokes(new: List<Stroke>): Boolean =
+        new.size < shown.size &&
+            shown.subList(0, new.size) == new &&
+            shown.subList(new.size, shown.size).all { it in pending }
 }
