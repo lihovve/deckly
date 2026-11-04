@@ -3,6 +3,7 @@ package app.deckly.spike
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.Rect
 import android.view.MotionEvent
@@ -26,6 +27,11 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
     private var gestureBounds: Rect? = null
     private var removedInGesture = 0
 
+    private val backgroundPaint = Paint().apply {
+        color = Color.WHITE
+        style = Paint.Style.FILL
+    }
+
     override fun pause() = Unit
 
     override fun resume() = Unit
@@ -39,8 +45,10 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
         redrawAll()
     }
 
+    // Фон — прямоугольник листа, а не drawColor: тот заливает всю область отсечения, а Compose не отсекает
+    // AndroidView по границам, и заливка закрашивала бы всё, что нарисовано до листа (блок статуса).
     override fun onDraw(canvas: Canvas) {
-        canvas.drawColor(Color.WHITE)
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
         StrokeStore.drawTo(canvas)
         drawLiveStroke(canvas)
     }
