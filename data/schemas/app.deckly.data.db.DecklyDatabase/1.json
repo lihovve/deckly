@@ -1,0 +1,360 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "33861688014019c68b2f67138d951e45",
+    "entities": [
+      {
+        "tableName": "deck",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `active_section` TEXT NOT NULL, `current_epoch` INTEGER NOT NULL, `pass_started` INTEGER NOT NULL, `pass_count_1` INTEGER NOT NULL, `pass_count_2` INTEGER NOT NULL, `pass_count_3` INTEGER NOT NULL, `pass_count_4` INTEGER NOT NULL, `pass_cursor` INTEGER NOT NULL, `browse_cursor` INTEGER NOT NULL, `visible_side` TEXT NOT NULL, `last_pass_day_1` INTEGER, `last_pass_day_2` INTEGER, `last_pass_day_3` INTEGER, `last_pass_day_4` INTEGER, `waiting_epoch` INTEGER NOT NULL, `paused_epoch` INTEGER NOT NULL, `paused_cursor` INTEGER NOT NULL, `portion_rated_count` INTEGER NOT NULL, `tail_1` TEXT NOT NULL, `tail_2` TEXT NOT NULL, `tail_3` TEXT NOT NULL, `tail_4` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeSection",
+            "columnName": "active_section",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentEpoch",
+            "columnName": "current_epoch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passStarted",
+            "columnName": "pass_started",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passCount1",
+            "columnName": "pass_count_1",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passCount2",
+            "columnName": "pass_count_2",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passCount3",
+            "columnName": "pass_count_3",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passCount4",
+            "columnName": "pass_count_4",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "passCursor",
+            "columnName": "pass_cursor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "browseCursor",
+            "columnName": "browse_cursor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "visibleSide",
+            "columnName": "visible_side",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastPassDay1",
+            "columnName": "last_pass_day_1",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastPassDay2",
+            "columnName": "last_pass_day_2",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastPassDay3",
+            "columnName": "last_pass_day_3",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastPassDay4",
+            "columnName": "last_pass_day_4",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "waitingEpoch",
+            "columnName": "waiting_epoch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pausedEpoch",
+            "columnName": "paused_epoch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pausedCursor",
+            "columnName": "paused_cursor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "portionRatedCount",
+            "columnName": "portion_rated_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tail1",
+            "columnName": "tail_1",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tail2",
+            "columnName": "tail_2",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tail3",
+            "columnName": "tail_3",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tail4",
+            "columnName": "tail_4",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "card",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `deck_id` INTEGER NOT NULL, `section` TEXT NOT NULL, `position` INTEGER NOT NULL, `successes` INTEGER NOT NULL, `section_day` INTEGER NOT NULL, `last_success_day` INTEGER, `created_at` INTEGER NOT NULL, `postponed` INTEGER NOT NULL, `answer_revealed` INTEGER NOT NULL, `failed` INTEGER NOT NULL, `checking` INTEGER NOT NULL, `excluded_from_pass` INTEGER NOT NULL, `content_file` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`deck_id`) REFERENCES `deck`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deckId",
+            "columnName": "deck_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "section",
+            "columnName": "section",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "successes",
+            "columnName": "successes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sectionDay",
+            "columnName": "section_day",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSuccessDay",
+            "columnName": "last_success_day",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postponed",
+            "columnName": "postponed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "answerRevealed",
+            "columnName": "answer_revealed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "failed",
+            "columnName": "failed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "checking",
+            "columnName": "checking",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excludedFromPass",
+            "columnName": "excluded_from_pass",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentFile",
+            "columnName": "content_file",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_card_deck_id",
+            "unique": false,
+            "columnNames": [
+              "deck_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_card_deck_id` ON `${TABLE_NAME}` (`deck_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "deck",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "deck_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "draft",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `deck_id` INTEGER NOT NULL, `card_id` INTEGER, `visible_side` TEXT NOT NULL, `return_section` TEXT NOT NULL, `content_file` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deckId",
+            "columnName": "deck_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cardId",
+            "columnName": "card_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "visibleSide",
+            "columnName": "visible_side",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "returnSection",
+            "columnName": "return_section",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentFile",
+            "columnName": "content_file",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "app_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `current_deck_id` INTEGER, `next_card_id` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentDeckId",
+            "columnName": "current_deck_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "nextCardId",
+            "columnName": "next_card_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '33861688014019c68b2f67138d951e45')"
+    ]
+  }
+}
