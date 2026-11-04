@@ -16,8 +16,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-    // Robolectric берёт манифест и ресурсы из сборки.
-    testOptions { unitTests { isIncludeAndroidResources = true } }
+    testOptions {
+        unitTests {
+            // Robolectric берёт манифест и ресурсы из сборки.
+            isIncludeAndroidResources = true
+            // Robolectric грузит нативную SQLite; в будущих JDK без этого флага это станет ошибкой.
+            all { it.jvmArgs("--enable-native-access=ALL-UNNAMED") }
+        }
+    }
 }
 
 // Схема базы лежит в репозитории: каждая смена версии — явная миграция с тестом.

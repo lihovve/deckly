@@ -18,6 +18,7 @@ import app.deckly.data.storage.DecklyStorage
 abstract class DecklyDatabase : RoomDatabase() {
     abstract fun deckDao(): DeckDao
     abstract fun cardDao(): CardDao
+    abstract fun draftDao(): DraftDao
     abstract fun appStateDao(): AppStateDao
 }
 
