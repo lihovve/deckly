@@ -82,3 +82,7 @@ fun buildPassDeck(epoch: Int, passCursor: Int = 0): Deck = buildDeck(
 /** Карточки эпохи с позициями 0, 1, … в порядке [ids]. */
 fun buildEpochCards(epoch: Int, vararg ids: Long): List<Card> =
     ids.mapIndexed { index, id -> buildCard(id, findEpochSection(epoch), position = index) }
+
+/** [count] карточек эпохи с id от [firstId] и позициями 0, 1, … */
+fun buildEpochRange(epoch: Int, firstId: Long, count: Int): List<Card> =
+    (0 until count).map { buildCard(firstId + it, findEpochSection(epoch), position = it) }
