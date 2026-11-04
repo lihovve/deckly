@@ -47,6 +47,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
 
     private val gcStep = Runnable { runEraseGcStep() }
     private val resumeStep = Runnable { runEraseResumeStep() }
+    private val applySettingsStep = Runnable { runApplySettingsStep() }
 
     private val callback = object : RawInputCallback() {
         override fun onBeginRawDrawing(shortcutDrawing: Boolean, point: TouchPoint) {
@@ -94,6 +95,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
+        removeCallbacks(applySettingsStep)
         cancelEraseCommit()
         val helper = touchHelper ?: return
         try {
@@ -109,6 +111,7 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
 
     override fun pause() {
         isPausedByOwner = true
+        removeCallbacks(applySettingsStep)
         cancelEraseCommit()
         disableRawDrawing()
     }
@@ -141,6 +144,29 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
     override fun redrawAll() {
         drawSurface(null)
         refreshRegion(Rect(0, 0, width, height))
+    }
+
+    // Пока перо включено, прошивка замораживает экран, и перерисованный лист не показался бы. Поэтому
+    // перо выключается, лист перерисовывается новой отрисовкой, и через SETTINGS_SETTLE_MS перо
+    // включается заново: enableRawDrawing() ставит новые стиль и толщину. Если перо и так выключено
+    // (пауза владельца, фиксация стирания), хватает перерисовки: стиль поставит возобновление пера.
+    override fun applyPenSettings() {
+        val isCommitting = synchronized(eraseLock) { eraseCommitStartedAt != 0L }
+        removeCallbacks(applySettingsStep)
+        if (touchHelper == null || isPausedByOwner || isCommitting) {
+            redrawAll()
+            return
+        }
+        disableRawDrawing()
+        redrawAll()
+        postDelayed(applySettingsStep, SETTINGS_SETTLE_MS)
+    }
+
+    private fun runApplySettingsStep() {
+        val isCommitting = synchronized(eraseLock) { eraseCommitStartedAt != 0L }
+        if (!isPausedByOwner && !isCommitting) {
+            enableRawDrawing()
+        }
     }
 
     // --- создание и сессия ---------------------------------------------------------------------
@@ -233,9 +259,16 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         }
     }
 
+    // Строка пишется до вызовов SDK: если стиль уронит процесс, она останется последней в logcat.
     private fun applyPenStyle(helper: TouchHelper) {
-        helper.setStrokeStyle(TouchHelper.STROKE_STYLE_PENCIL)
-        helper.setStrokeWidth(PenDefaults.STROKE_WIDTH)
+        SpikeLog.write(
+            "PEN_STYLE",
+            "style" to PenSettings.penStyle.label,
+            "width" to PenSettings.strokeWidth,
+            "render" to PenSettings.strokeRender.label,
+        )
+        helper.setStrokeStyle(PenSettings.penStyle.sdkStyle)
+        helper.setStrokeWidth(PenSettings.strokeWidth)
         helper.setStrokeColor(Color.BLACK)
     }
 
@@ -256,13 +289,14 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
     private fun handleStroke(pointList: TouchPointList) {
         val points = pointList.points
         if (points.isEmpty()) return
+        val maxPressure = SdkStatus.maxTouchPressure
         val values = FloatArray(points.size * SpikeStroke.VALUES_PER_POINT)
         points.forEachIndexed { index, point ->
             values[index * SpikeStroke.VALUES_PER_POINT] = point.x
             values[index * SpikeStroke.VALUES_PER_POINT + 1] = point.y
-            values[index * SpikeStroke.VALUES_PER_POINT + 2] = point.pressure
+            values[index * SpikeStroke.VALUES_PER_POINT + 2] = (point.pressure / maxPressure).coerceIn(0f, 1f)
         }
-        val stroke = SpikeStroke(values, PenDefaults.STROKE_WIDTH)
+        val stroke = SpikeStroke(values, PenSettings.strokeWidth)
         StrokeStore.add(stroke)
         SpikeLog.write(
             "PEN_STROKE",
@@ -273,7 +307,9 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
             "uptimeMs" to SystemClock.uptimeMillis(),
         )
         // Поверхность держим в соответствии со штрихами, чтобы после pause() ничего не пропало.
-        drawSurface(computeStrokeBounds(points))
+        drawSurface(computeStrokeBounds(points, StrokeRenderer.computeMargin(stroke)))
+        // Последним: вызов SDK для кривой нативный, и при падении поверхность и строки выше уже готовы.
+        StrokeRenderer.logStroke(stroke)
     }
 
     private fun handleErase(pointList: TouchPointList) {
@@ -288,13 +324,12 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         commitErase(dirty)
     }
 
-    private fun computeStrokeBounds(points: List<TouchPoint>): Rect {
+    private fun computeStrokeBounds(points: List<TouchPoint>, margin: Int): Rect {
         val first = points.first()
         val bounds = Rect(first.x.toInt(), first.y.toInt(), first.x.toInt(), first.y.toInt())
         for (point in points) {
             bounds.union(point.x.toInt(), point.y.toInt())
         }
-        val margin = PenDefaults.STROKE_WIDTH.toInt() + 2
         bounds.inset(-margin, -margin)
         return bounds
     }
@@ -436,5 +471,6 @@ class OnyxPenView(context: Context, private val useSfRender: Boolean) :
         const val ERASER_STROKE_ID = 8
         const val ERASER_TRACK_WIDTH = 20f
         const val GC_DELAY_MS = 200L
+        const val SETTINGS_SETTLE_MS = 300L
     }
 }

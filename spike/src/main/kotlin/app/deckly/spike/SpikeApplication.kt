@@ -3,6 +3,7 @@ package app.deckly.spike
 import android.app.Application
 import android.os.Build
 import android.view.InputDevice
+import com.onyx.android.sdk.api.device.epd.EpdController
 import com.onyx.android.sdk.device.Device
 import com.onyx.android.sdk.rx.RxManager
 import com.onyx.android.sdk.utils.ResManager
@@ -16,6 +17,7 @@ class SpikeApplication : Application() {
             initOnyxSdk()
         }
         SdkStatus.logSummary()
+        readMaxTouchPressure()
         logInputDevices()
     }
 
@@ -41,6 +43,26 @@ class SpikeApplication : Application() {
         } catch (error: Throwable) {
             SdkStatus.initError = error
         }
+    }
+
+    // Максимум нажима нужен, чтобы нормировать нажим точек в 0..1. Без SDK, при ошибке и при значении
+    // не больше нуля берём запасное.
+    private fun readMaxTouchPressure() {
+        var value = 0f
+        if (SdkStatus.isPenAvailable) {
+            try {
+                value = EpdController.getMaxTouchPressure()
+            } catch (error: Throwable) {
+                SpikeLog.write("PEN_MAX_PRESSURE", "error" to error)
+            }
+        }
+        val isFromSdk = value > 0f
+        SdkStatus.maxTouchPressure = if (isFromSdk) value else SdkStatus.FALLBACK_MAX_TOUCH_PRESSURE
+        SpikeLog.write(
+            "PEN_MAX_PRESSURE",
+            "value" to SdkStatus.maxTouchPressure,
+            "source" to if (isFromSdk) "sdk" else "fallback",
+        )
     }
 
     // По строке на устройство ввода: по имени пера видно, какой рендер выберет TouchHelper.create.

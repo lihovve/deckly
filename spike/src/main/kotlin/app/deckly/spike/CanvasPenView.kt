@@ -3,7 +3,6 @@ package app.deckly.spike
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.Rect
 import android.view.MotionEvent
@@ -27,20 +26,17 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
     private var gestureBounds: Rect? = null
     private var removedInGesture = 0
 
-    private val livePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.BLACK
-        style = Paint.Style.STROKE
-        strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
-        strokeWidth = PenDefaults.STROKE_WIDTH
-    }
-
     override fun pause() = Unit
 
     override fun resume() = Unit
 
     override fun redrawAll() {
         invalidate()
+    }
+
+    // Стиль пера прошивки здесь не участвует; толщину и отрисовку читает StrokeRenderer при каждом рисовании.
+    override fun applyPenSettings() {
+        redrawAll()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -110,8 +106,10 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
 
     private fun finishStroke() {
         if (strokeValues.isEmpty()) return
-        StrokeStore.add(SpikeStroke(strokeValues.toFloatArray(), PenDefaults.STROKE_WIDTH))
-        SpikeLog.write("PEN_STROKE", "points" to strokeValues.size / SpikeStroke.VALUES_PER_POINT)
+        val stroke = SpikeStroke(strokeValues.toFloatArray(), PenSettings.strokeWidth)
+        StrokeStore.add(stroke)
+        SpikeLog.write("PEN_STROKE", "points" to stroke.pointCount)
+        StrokeRenderer.logStroke(stroke)
         strokeValues.clear()
         refreshPartially(gestureBounds)
     }
@@ -124,29 +122,33 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
 
     // --- точки ---------------------------------------------------------------------------------
 
+    // У каждой точки свой нажим: у исторических точек пачки он свой, у текущей — текущий.
     private fun collectPoints(event: MotionEvent, includeHistory: Boolean) {
         val newPoints = ArrayList<PointF>()
+        val newPressures = ArrayList<Float>()
         if (includeHistory) {
             for (index in 0 until event.historySize) {
                 newPoints += PointF(event.getHistoricalX(0, index), event.getHistoricalY(0, index))
+                newPressures += event.getHistoricalPressure(0, index).coerceIn(0f, 1f)
             }
         }
         newPoints += PointF(event.getX(0), event.getY(0))
+        newPressures += event.getPressure(0).coerceIn(0f, 1f)
 
         when (gesture) {
-            Gesture.DRAW -> addToStroke(newPoints, event.getPressure(0))
+            Gesture.DRAW -> addToStroke(newPoints, newPressures)
             Gesture.ERASE -> eraseWith(newPoints)
             Gesture.NONE, Gesture.IGNORE -> Unit
         }
     }
 
-    private fun addToStroke(points: List<PointF>, pressure: Float) {
-        for (point in points) {
+    private fun addToStroke(points: List<PointF>, pressures: List<Float>) {
+        for ((index, point) in points.withIndex()) {
             strokeValues += point.x
             strokeValues += point.y
-            strokeValues += pressure
+            strokeValues += pressures[index]
         }
-        val dirty = computeBounds(points, PenDefaults.STROKE_WIDTH.toInt() + 2)
+        val dirty = computeBounds(points, StrokeRenderer.computeMargin(PenSettings.strokeWidth))
         extendBounds(dirty)
         invalidateRegion(dirty)
     }
@@ -176,13 +178,10 @@ class CanvasPenView(context: Context) : View(context), PenSheet {
         gestureBounds = StrokeStore.union(gestureBounds, rect)
     }
 
+    // Текущий штрих рисуется тем же StrokeRenderer, что и сохранённые: в Canvas нажим виден под пером.
     private fun drawLiveStroke(canvas: Canvas) {
-        val count = strokeValues.size / SpikeStroke.VALUES_PER_POINT
-        for (index in 1 until count) {
-            val from = (index - 1) * SpikeStroke.VALUES_PER_POINT
-            val to = index * SpikeStroke.VALUES_PER_POINT
-            canvas.drawLine(strokeValues[from], strokeValues[from + 1], strokeValues[to], strokeValues[to + 1], livePaint)
-        }
+        if (strokeValues.isEmpty()) return
+        StrokeRenderer.drawStroke(canvas, SpikeStroke(strokeValues.toFloatArray(), PenSettings.strokeWidth))
     }
 
     // --- обновление экрана ---------------------------------------------------------------------

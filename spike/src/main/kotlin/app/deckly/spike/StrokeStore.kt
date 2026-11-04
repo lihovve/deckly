@@ -1,18 +1,19 @@
 package app.deckly.spike
 
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
 import android.graphics.PointF
 import android.graphics.Rect
 
-/** Штрих прототипа: точки подряд как x, y, нажим; координаты в пикселях холста. */
+/**
+ * Штрих прототипа: точки подряд как x, y, нажим; координаты в пикселях холста, нажим нормирован в
+ * 0..1 при вводе. [width] — базовая толщина из настройки на момент штриха.
+ */
 data class SpikeStroke(val points: FloatArray, val width: Float) {
     val pointCount: Int get() = points.size / VALUES_PER_POINT
 
     fun x(index: Int): Float = points[index * VALUES_PER_POINT]
     fun y(index: Int): Float = points[index * VALUES_PER_POINT + 1]
+    fun pressure(index: Int): Float = points[index * VALUES_PER_POINT + 2]
 
     companion object {
         const val VALUES_PER_POINT = 3
@@ -26,13 +27,6 @@ data class SpikeStroke(val points: FloatArray, val width: Float) {
  */
 object StrokeStore {
     private val strokes = mutableListOf<SpikeStroke>()
-
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.BLACK
-        style = Paint.Style.STROKE
-        strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
-    }
 
     @Synchronized
     fun add(stroke: SpikeStroke) {
@@ -71,7 +65,7 @@ object StrokeStore {
     @Synchronized
     fun drawTo(canvas: Canvas) {
         for (stroke in strokes) {
-            drawStroke(canvas, stroke)
+            StrokeRenderer.drawStroke(canvas, stroke)
         }
     }
 
@@ -117,27 +111,9 @@ object StrokeStore {
             right = maxOf(right, stroke.x(index))
             bottom = maxOf(bottom, stroke.y(index))
         }
-        val margin = stroke.width.toInt() + 2
+        val margin = StrokeRenderer.computeMargin(stroke)
         return Rect(left.toInt(), top.toInt(), right.toInt(), bottom.toInt()).apply {
             inset(-margin, -margin)
         }
-    }
-
-    private fun drawStroke(canvas: Canvas, stroke: SpikeStroke) {
-        if (stroke.pointCount == 0) return
-        paint.strokeWidth = stroke.width
-        if (stroke.pointCount == 1) {
-            paint.style = Paint.Style.FILL
-            canvas.drawCircle(stroke.x(0), stroke.y(0), stroke.width / 2, paint)
-            paint.style = Paint.Style.STROKE
-            return
-        }
-        val path = Path().apply {
-            moveTo(stroke.x(0), stroke.y(0))
-            for (index in 1 until stroke.pointCount) {
-                lineTo(stroke.x(index), stroke.y(index))
-            }
-        }
-        canvas.drawPath(path, paint)
     }
 }

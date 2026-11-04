@@ -162,6 +162,9 @@ private fun SpikeScreen(
     var eraseGcApi by remember { mutableStateOf(PenSettings.eraseGcApi) }
     var eraseResumeMs by remember { mutableStateOf(PenSettings.eraseResumeMs) }
     var isEraserTrackEnabled by remember { mutableStateOf(PenSettings.isEraserTrackEnabled) }
+    var penStyle by remember { mutableStateOf(PenSettings.penStyle) }
+    var strokeWidth by remember { mutableStateOf(PenSettings.strokeWidth) }
+    var strokeRender by remember { mutableStateOf(PenSettings.strokeRender) }
     val lines by SpikeLog.lines.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
@@ -230,6 +233,29 @@ private fun SpikeScreen(
                 scope.refreshSheet(getSheet, reason = "eraserTrack")
             }
         }
+        // Перьевая ручка (задача 6): стиль пера, толщина и отрисовка штриха после отрыва пера.
+        ButtonRow {
+            PenButton("Перо: ${penStyle.label}") {
+                penStyle = PenStyle.entries[(penStyle.ordinal + 1) % PenStyle.entries.size]
+                PenSettings.penStyle = penStyle
+                SpikeLog.write("SETTING", "penStyle" to penStyle.label)
+                getSheet()?.applyPenSettings()
+            }
+            PenButton("Толщина: ${formatWidth(strokeWidth)}") {
+                val options = PenSettings.WIDTH_OPTIONS
+                val current = options.indexOfFirst { it == strokeWidth }
+                strokeWidth = options[(current + 1) % options.size]
+                PenSettings.strokeWidth = strokeWidth
+                SpikeLog.write("SETTING", "strokeWidth" to strokeWidth)
+                getSheet()?.applyPenSettings()
+            }
+            PenButton("Отрисовка: ${strokeRender.label}") {
+                strokeRender = StrokeRender.entries[(strokeRender.ordinal + 1) % StrokeRender.entries.size]
+                PenSettings.strokeRender = strokeRender
+                SpikeLog.write("SETTING", "strokeRender" to strokeRender.label)
+                getSheet()?.applyPenSettings()
+            }
+        }
         ButtonRow {
             PenButton("Доступ к файлам") { onRequestAllFilesAccess() }
             PenButton("База: серия") { onProbe(ProbeAction.SERIES) }
@@ -238,6 +264,9 @@ private fun SpikeScreen(
         }
     }
 }
+
+// 3.0 -> «3», чтобы подпись кнопки не шире нужного.
+private fun formatWidth(width: Float): String = if (width % 1f == 0f) width.toInt().toString() else width.toString()
 
 private fun createSheet(context: Context, mode: PenMode): View = when (mode) {
     PenMode.ONYX -> OnyxPenView(context, useSfRender = false)
