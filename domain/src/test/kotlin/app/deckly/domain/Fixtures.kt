@@ -5,6 +5,8 @@ import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Stroke
+import app.deckly.domain.model.StrokePoint
 import app.deckly.domain.model.findEpochSection
 
 fun buildCard(
@@ -86,3 +88,11 @@ fun buildEpochCards(epoch: Int, vararg ids: Long): List<Card> =
 /** [count] карточек эпохи с id от [firstId] и позициями 0, 1, … */
 fun buildEpochRange(epoch: Int, firstId: Long, count: Int): List<Card> =
     (0 until count).map { buildCard(firstId + it, findEpochSection(epoch), position = it) }
+
+/** Штрих по точкам `x to y`, толщина 2, нажим 0.5. */
+fun buildStroke(vararg points: Pair<Float, Float>): Stroke =
+    Stroke(2f, points.map { StrokePoint(it.first, it.second, 0.5f) })
+
+/** Траектория ластика по точкам `x to y`. */
+fun buildPath(vararg points: Pair<Float, Float>): List<StrokePoint> =
+    points.map { StrokePoint(it.first, it.second, 0.5f) }
