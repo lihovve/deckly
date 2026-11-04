@@ -96,11 +96,11 @@
     (`app.deckly`, `applicationId` `app.deckly`); `:spike` остаётся;
   - задача `verifyModuleGraph`, подключённая к `check`.
 
-- [ ] **Step 1: Каталог.** `junit = "6.1.3"`; библиотеки `junit-bom`, `junit-jupiter`,
+- [x] **Step 1: Каталог.** `junit = "6.1.3"`; библиотеки `junit-bom`, `junit-jupiter`,
   `junit-platform-launcher` (`org.junit.platform:junit-platform-launcher`, без версии, из BOM);
   библиотека `compose-runtime` (`androidx.compose.runtime:runtime`, из Compose BOM).
 
-- [ ] **Step 2: Модули.**
+- [x] **Step 2: Модули.**
   - `domain`: плагин `kotlin.jvm`, target 21 (`java` и `kotlin.compilerOptions.jvmTarget`).
     `testImplementation(platform(junit-bom))`, `junit-jupiter`,
     `testRuntimeOnly(junit-platform-launcher)`, `tasks.test { useJUnitPlatform() }`.
@@ -111,7 +111,7 @@
   - `app`: `android.application`, `abiFilters += "arm64-v8a"`, зависимости на все пять модулей.
     В манифесте только `<application android:label="Deckly" />`.
 
-- [ ] **Step 3: `verifyModuleGraph` в корневом `build.gradle.kts`.** Таблица разрешённых связей
+- [x] **Step 3: `verifyModuleGraph` в корневом `build.gradle.kts`.** Таблица разрешённых связей
   между модулями проекта:
   - `app` → `domain`, `data`, `ink`, `ui-contract`, `design-e`;
   - `data` → `domain`;
@@ -122,15 +122,15 @@
   Задача обходит `ProjectDependency` во всех конфигурациях каждого модуля и падает со списком
   нарушений вида `ui-contract → domain`. Задача `check` каждого модуля зависит от неё.
 
-- [ ] **Step 4: Дымовой тест** `BuildSmokeTest.junitRuns`: `assertEquals(2, 1 + 1)`.
+- [x] **Step 4: Дымовой тест** `BuildSmokeTest.junitRuns`: `assertEquals(2, 1 + 1)`.
 
-- [ ] **Step 5: Проверить.**
+- [x] **Step 5: Проверить.**
   Run: `./gradlew build && ./gradlew :domain:dependencies --configuration runtimeClasspath`
   Expected: `BUILD SUCCESSFUL`; в `runtimeClasspath` домена только `kotlin-stdlib` и её
   `annotations`. Затем временно добавить `implementation(project(":domain"))` в `ui-contract`:
   `./gradlew verifyModuleGraph` падает с `ui-contract → domain`. Правку убрать.
 
-- [ ] **Step 6: Commit** — «Каркас: шесть модулей и проверка их связей».
+- [x] **Step 6: Commit** — «Каркас: шесть модулей и проверка их связей».
 
 ### Task 2: модель, номер дня, изменения колоды
 
@@ -167,7 +167,7 @@
   - Тестовые помощники в `Fixtures.kt`: `buildCard(id, section, …)` со значениями по умолчанию,
     `buildDeck(…)`, `buildDeckState(deck, vararg cards)`. Ими пользуются все задачи ниже.
 
-- [ ] **Step 1: Тесты.**
+- [x] **Step 1: Тесты.**
   - `dayStartsAtFourInTheMorning`: 2026-11-04T03:59 даёт тот же номер, что 2026-11-03T12:00;
     2026-11-04T04:00 — на один больше.
   - `newDeckStartsAtPoolWithFirstEpochNotStarted`: `createDeck(1, "Слова")` — `activeSection = NEW`,
@@ -178,13 +178,13 @@
     изменённую и новую карточки в `upsertedCards`, исчезнувшую — в `deletedCardIds`, а неизменённую
     не возвращает.
 
-- [ ] **Step 2: Убедиться, что падают.** Run: `./gradlew :domain:test` → компиляция падает, типов нет.
+- [x] **Step 2: Убедиться, что падают.** Run: `./gradlew :domain:test` → компиляция падает, типов нет.
 
-- [ ] **Step 3: Реализация.** Номер дня: `dateTime.minusHours(4).toLocalDate().toEpochDay().toInt()`.
+- [x] **Step 3: Реализация.** Номер дня: `dateTime.minusHours(4).toLocalDate().toEpochDay().toInt()`.
 
-- [ ] **Step 4: Run:** `./gradlew :domain:test` → `BUILD SUCCESSFUL`.
+- [x] **Step 4: Run:** `./gradlew :domain:test` → `BUILD SUCCESSFUL`.
 
-- [ ] **Step 5: Commit** — «domain: модель колоды и карточки, номер дня».
+- [x] **Step 5: Commit** — «domain: модель колоды и карточки, номер дня».
 
 ### Task 3: расписание и созревание эпох
 
@@ -203,7 +203,7 @@
     пустая созрела; `lastPassDay == null` — созрела; иначе `max(0, today - lastPassDay) >= граница`;
   - `fun isReadyForCheck(card: Card, today: Int): Boolean` — `LEARNED` и `max(0, today - sectionDay) >= 30`.
 
-- [ ] **Step 1: Тесты.**
+- [x] **Step 1: Тесты.**
   - `scheduleMatchesReferenceSequence` (проверка 1): от нулевых счётчиков 39 раз записать эпоху,
     увеличить её счётчик и вызвать `chooseNextEpoch`. Результат равен
     `1 1 1 1 1 2 1 1 1 1 1 2 1 1 1 1 1 2 3 1 1 1 1 1 2 1 1 1 1 1 2 1 1 1 1 1 2 3 4`.
@@ -218,10 +218,10 @@
     исключений нет.
   - `learnedCardReadyAfterThirtyDays`: 29 дней — нет, 30 — да, `today < sectionDay` — нет.
 
-- [ ] **Step 2: Run:** `./gradlew :domain:test` → новые тесты не компилируются.
-- [ ] **Step 3: Реализация** по сигнатурам и правилам ТЗ.
-- [ ] **Step 4: Run:** `./gradlew :domain:test` → `BUILD SUCCESSFUL`.
-- [ ] **Step 5: Commit** — «domain: расписание эпох и нижние границы».
+- [x] **Step 2: Run:** `./gradlew :domain:test` → новые тесты не компилируются.
+- [x] **Step 3: Реализация** по сигнатурам и правилам ТЗ.
+- [x] **Step 4: Run:** `./gradlew :domain:test` → `BUILD SUCCESSFUL`.
+- [x] **Step 5: Commit** — «domain: расписание эпох и нижние границы».
 
 ### Task 4: старт прохода
 
@@ -244,7 +244,7 @@
   - `position` — в конец секции назначения;
   - флаги прохода сброшены.
 
-- [ ] **Step 1: Тесты.**
+- [x] **Step 1: Тесты.**
   - `firstEpochCardLeavesOnlyAfterNight` (проверка 2): `successes = 4`, `sectionDay = 5`.
     При `lastSuccessDay = 5` после `startPass(…, 1, today = 9, …)` она в `EPOCH_1`. При
     `lastSuccessDay = 6` — в `EPOCH_2` с `successes = 0`, `sectionDay = 9`, `excludedFromPass = true`.
@@ -269,15 +269,15 @@
   - `positionsAreContiguousAfterStart`: позиции карточек эпохи после старта — `0 until N` в
     порядке `shuffleWithOffset`.
 
-- [ ] **Step 2: Run:** `./gradlew :domain:test` → новые тесты не компилируются.
-- [ ] **Step 3: Реализация.** Перемешивание (тестам годится любой корректный алгоритм, этот —
+- [x] **Step 2: Run:** `./gradlew :domain:test` → новые тесты не компилируются.
+- [x] **Step 3: Реализация.** Перемешивание (тестам годится любой корректный алгоритм, этот —
   простой):
   1. `random`-перестановка входа.
   2. `forbidden` — последние `m` записей `tail`, которые есть во входе.
   3. Каждую `forbidden` на месте `i < m` поменять с первой карточкой на месте `j >= m`, которой нет
      в `forbidden`. Она есть всегда: `m <= N/2`.
-- [ ] **Step 4: Run:** `./gradlew :domain:test` → `BUILD SUCCESSFUL`.
-- [ ] **Step 5: Commit** — «domain: старт прохода».
+- [x] **Step 4: Run:** `./gradlew :domain:test` → `BUILD SUCCESSFUL`.
+- [x] **Step 5: Commit** — «domain: старт прохода».
 
 ### Task 5: действия с карточкой и их доступность
 
@@ -314,7 +314,7 @@
 - Предусловия (`require`): оценка и перенос — только в начатом проходе открытой активной эпохи;
   оценка — при `answerRevealed`; `returnToNew` — только из эпох.
 
-- [ ] **Step 1: Тесты `PassActionsTest`.**
+- [x] **Step 1: Тесты `PassActionsTest`.**
   - `knewAddsSuccessAndMovesOn`: `successes` 1 → 2, `lastSuccessDay = today`, `passCursor` 0 → 1.
   - `didNotKnowKeepsZeroInFirstEpoch` (проверка 5): 0 → 0. 2 → 1. В эпохе 3 — `failed = true`,
     успехи те же.
@@ -332,7 +332,7 @@
   - `revealOutsideActivePassChangesNothing`: открыта неактивная эпоха — `revealAnswer` возвращает то
     же состояние.
 
-- [ ] **Step 2: Тесты `CardActionsTest`** (проверка 12 и таблица действий).
+- [x] **Step 2: Тесты `CardActionsTest`** (проверка 12 и таблица действий).
   - `postponeAvailableBeforeReveal`: в начатом проходе непоследняя неотложенная карточка, ответ не
     открыт — `POSTPONE` доступен.
   - `revealBlocksPostponeEvenOnFront`: после `revealAnswer` и при `visibleSide = FRONT` —
@@ -349,10 +349,10 @@
     - выученные — `DELETE`, `BROWSE`, `FLIP`;
     - пустая неактивная секция — пустая карта.
 
-- [ ] **Step 3: Run:** `./gradlew :domain:test` → новые тесты не компилируются.
-- [ ] **Step 4: Реализация.**
-- [ ] **Step 5: Run:** `./gradlew :domain:test` → `BUILD SUCCESSFUL`.
-- [ ] **Step 6: Commit** — «domain: действия с карточкой и их доступность».
+- [x] **Step 3: Run:** `./gradlew :domain:test` → новые тесты не компилируются.
+- [x] **Step 4: Реализация.**
+- [x] **Step 5: Run:** `./gradlew :domain:test` → `BUILD SUCCESSFUL`.
+- [x] **Step 6: Commit** — «domain: действия с карточкой и их доступность».
 
 ### Task 6: движок обучения
 
@@ -386,7 +386,7 @@
     - `fun applyAction(state: DeckState, action: ReviewAction, today: Int, random: Random): ReviewResult`;
     - `fun computeCurrentOutcome(state: DeckState): ReviewOutcome` — что показать после перезапуска.
 
-- [ ] **Step 1: Тесты `ReviewEngineTest`.** Каждый строит колоду через `Fixtures` и действует
+- [x] **Step 1: Тесты `ReviewEngineTest`.** Каждый строит колоду через `Fixtures` и действует
   только через `applyAction`.
   - `emptySecondEpochPassesSilently` (проверка 6): `pass1 = 4`, эпоха 1 непустая, эпоха 2 пустая. Все
     карточки эпохи 1 оценены, последняя — `Knew`. Тогда `pass2` +1, итог — `Transition(1, …, REGULAR)`,
@@ -438,7 +438,7 @@
   - `restartShowsCurrentCard`: `computeCurrentOutcome` для начатого прохода — `ShowCard` по
     `passCursor`; для открытой пустой секции — `EmptySection`.
 
-- [ ] **Step 2: Тест `ReviewSimulationTest.cardReachesLearnedNotBeforeDay38`** (проверка 14).
+- [x] **Step 2: Тест `ReviewSimulationTest.cardReachesLearnedNotBeforeDay38`** (проверка 14).
   - В колоде одна карточка в пуле.
   - Дни 0…60. Каждый день:
     1. `OpenSection(EPOCH_1)` или `OpenSection` текущей эпохи;
@@ -449,9 +449,9 @@
     - карточка не покидает эпоху 1 в день попадания;
     - в `LEARNED` она оказывается в день 38.
 
-- [ ] **Step 3: Run:** `./gradlew :domain:test` → новые тесты не компилируются.
+- [x] **Step 3: Run:** `./gradlew :domain:test` → новые тесты не компилируются.
 
-- [ ] **Step 4: Реализация `ReviewEngine`.** Порядок решений не определяется ни сигнатурами, ни
+- [x] **Step 4: Реализация `ReviewEngine`.** Порядок решений не определяется ни сигнатурами, ни
   тестами, поэтому зафиксирован здесь:
   - **Цепочка старта** (`OpenSection` активной эпохи при `passStarted = false` и после каждого
     конца прохода), до 100 итераций, потом `IllegalStateException`:
@@ -477,8 +477,8 @@
       карточки → `Transition(epoch, remaining, RESUMED)`, иначе конец этого прохода;
     - обычный → `finishPass`, `passCount + 1`, `chooseNextEpoch`, цепочка старта.
 
-- [ ] **Step 5: Run:** `./gradlew :domain:test` → `BUILD SUCCESSFUL`.
-- [ ] **Step 6: Commit** — «domain: движок обучения».
+- [x] **Step 5: Run:** `./gradlew :domain:test` → `BUILD SUCCESSFUL`.
+- [x] **Step 6: Commit** — «domain: движок обучения».
 
 ### Task 7: редактор и черновик
 
@@ -513,7 +513,7 @@
       `sectionDay = today`, `createdAt = now`, id `newCardId`;
     - правка — карточка не меняется, меняется только `CardContent`; `newCardId` не используется.
 
-- [ ] **Step 1: Тесты.**
+- [x] **Step 1: Тесты.**
   - `strokeAddedAndUndone`: штрих на лицевой стороне, отмена — сторона пуста.
   - `eraseRemovesWholeTouchedStrokes`: из трёх штрихов путь задевает два — удалены оба целиком,
     третий на месте. Одна отмена возвращает оба на прежние места (порядок списка прежний).
@@ -533,14 +533,14 @@
   - `emptySidesAreAllowed`: черновик с двумя пустыми сторонами сохраняется.
   - `editingOnlyFromPool`: `startEditing` карточки эпохи бросает `IllegalArgumentException`.
 
-- [ ] **Step 2: Run:** `./gradlew :domain:test` → новые тесты не компилируются.
-- [ ] **Step 3: Реализация.**
+- [x] **Step 2: Run:** `./gradlew :domain:test` → новые тесты не компилируются.
+- [x] **Step 3: Реализация.**
   - Расстояние «отрезок — отрезок»: 0 при пересечении, иначе минимум из четырёх расстояний
     «точка — отрезок».
   - Штрих и путь из одной точки — вырожденные отрезки.
   - Шаг отмены хранит сторону и удалённые штрихи с их индексами.
-- [ ] **Step 4: Run:** `./gradlew :domain:test && ./gradlew build` → `BUILD SUCCESSFUL`.
-- [ ] **Step 5: Commit** — «domain: редактор и черновик».
+- [x] **Step 4: Run:** `./gradlew :domain:test && ./gradlew build` → `BUILD SUCCESSFUL`.
+- [x] **Step 5: Commit** — «domain: редактор и черновик».
 
 ---
 
