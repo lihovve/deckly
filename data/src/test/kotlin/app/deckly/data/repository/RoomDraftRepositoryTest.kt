@@ -162,6 +162,17 @@ class RoomDraftRepositoryTest {
     }
 
     @Test
+    fun allocatedCardIdBatchesAreConsecutiveAndDisjoint() = runTest {
+        assertEquals(listOf(1L, 2L, 3L), repos.drafts.allocateCardIds(3))
+        assertEquals(emptyList<Long>(), repos.drafts.allocateCardIds(0))
+
+        repos.reopen()
+
+        assertEquals(listOf(4L, 5L), repos.drafts.allocateCardIds(2))
+        assertEquals(6L, repos.drafts.allocateCardId())
+    }
+
+    @Test
     fun cardIdsAreNeverReused() = runTest {
         seedDeck(repos, baseState)
         val draft = buildNewCardDraft()

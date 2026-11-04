@@ -81,9 +81,15 @@ fun buildTestStroke(seed: Int): Stroke = Stroke(
     ),
 )
 
-/** Содержимое, которое [seedDeck] кладёт в файл карточки: один штрих на лице, пустой оборот. */
-fun buildSeedContent(cardId: Long): CardContent =
-    CardContent(cardId, listOf(buildTestStroke(cardId.toInt())), emptyList())
+/**
+ * Содержимое, которое [seedDeck] кладёт в файл карточки: штрих на лице; у карточек с чётным id
+ * ещё штрих на обороте, у остальных оборот пустой.
+ */
+fun buildSeedContent(cardId: Long): CardContent = CardContent(
+    cardId,
+    listOf(buildTestStroke(cardId.toInt())),
+    if (cardId % 2 == 0L) listOf(buildTestStroke(cardId.toInt() + 1000)) else emptyList(),
+)
 
 /** День, на который рассчитаны сценарии ниже. */
 const val SCENARIO_DAY = 200

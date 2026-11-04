@@ -75,12 +75,17 @@ class RoomDraftRepository(
         deleteFiles(listOfNotNull(draftFile))
     }
 
-    override suspend fun allocateCardId(): Long =
-        database.withWriteTransaction {
+    override suspend fun allocateCardId(): Long = allocateCardIds(1).single()
+
+    /** Выдаёт [count] подряд идущих id одной транзакцией: импорту колоды нужны сразу все. */
+    suspend fun allocateCardIds(count: Int): List<Long> {
+        require(count >= 0) { "Число id не может быть отрицательным: $count" }
+        return database.withWriteTransaction {
             val appState = checkNotNull(database.appStateDao().findAppState()) { "В базе нет строки app_state" }
-            database.appStateDao().updateNextCardId(appState.nextCardId + 1)
-            appState.nextCardId
+            if (count > 0) database.appStateDao().updateNextCardId(appState.nextCardId + count)
+            List(count) { appState.nextCardId + it }
         }
+    }
 
     /**
      * Карточка — та, что есть в `changes.upsertedCards` и нет в базе (вставляется), либо правленая
