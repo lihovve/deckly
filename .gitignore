@@ -1,1 +1,5 @@
 .remember/
+local.properties
+.gradle/
+.kotlin/
+build/
