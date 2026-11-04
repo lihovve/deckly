@@ -5,6 +5,7 @@ import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.findEpochSection
 
 fun buildCard(
     id: Long,
@@ -69,3 +70,15 @@ fun buildDeckState(deck: Deck, vararg cards: Card): DeckState = DeckState(deck, 
 fun buildDeckState(deck: Deck, cards: List<Card>): DeckState = DeckState(deck, cards)
 
 fun DeckState.findCard(id: Long): Card = cards.single { it.id == id }
+
+/** Колода в начатом проходе эпохи [epoch]: эта эпоха открыта и активна, курсор на [passCursor]. */
+fun buildPassDeck(epoch: Int, passCursor: Int = 0): Deck = buildDeck(
+    activeSection = findEpochSection(epoch),
+    currentEpoch = epoch,
+    passStarted = true,
+    passCursor = passCursor,
+)
+
+/** Карточки эпохи с позициями 0, 1, … в порядке [ids]. */
+fun buildEpochCards(epoch: Int, vararg ids: Long): List<Card> =
+    ids.mapIndexed { index, id -> buildCard(id, findEpochSection(epoch), position = index) }
