@@ -1,6 +1,7 @@
 package app.deckly.domain.review
 
 import app.deckly.domain.buildCard
+import app.deckly.domain.buildDeck
 import app.deckly.domain.buildDeckState
 import app.deckly.domain.buildEpochRange
 import app.deckly.domain.buildPassDeck
@@ -449,6 +450,85 @@ class ReviewEngineTest {
             assertEquals(3, result.state.deck.currentEpoch)
             assertEquals(40, result.state.deck.passCursor)
         }
+    }
+
+    @Test
+    fun deletingRatedCardDuringInsertKeepsPortionOfForty() {
+        checkPortionOfFortySurvivesRemovalDuringInsert(::DeleteCard, expectedInsertSize = 2)
+    }
+
+    @Test
+    fun returningRatedCardToNewDuringInsertKeepsPortionOfForty() {
+        // Возвращённая карточка лежит в пуле, и следующий вставной проход подтянет её в эпоху 1.
+        checkPortionOfFortySurvivesRemovalDuringInsert(::ReturnToNew, expectedInsertSize = 3)
+    }
+
+    @Test
+    fun emptyInsertStartsNextPortionOfForty() {
+        // Эпоха 1 и пул пусты: на границе 40 вставки нет, следующая порция идёт сразу.
+        val state = buildDeckState(buildPassDeck(4), buildEpochRange(4, 1, 100))
+        var result = ReviewResult(state, ReviewEngine.computeCurrentOutcome(state))
+
+        for (rating in 1..79) {
+            // После 50-й оценки в пуле появилась карточка (например, владелец дописал её).
+            if (rating == 51) {
+                result = result.copy(state = result.state.copy(cards = result.state.cards + buildCard(201, Section.NEW)))
+            }
+            result = playKnew(result.state)
+            assertTrue(result.outcome is ShowCard, "оценка $rating: ${result.outcome}")
+        }
+        result = playKnew(result.state)
+
+        assertEquals(Transition(1, 1, INSERTED), result.outcome)
+    }
+
+    @Test
+    fun onlyRatingsOfEpochsTwoToFourCountTowardPortion() {
+        val third = buildDeckState(buildPassDeck(3), buildEpochRange(3, 1, 5))
+        val thirdRated = playDidNotKnow(playKnew(third).state)
+        assertEquals(2, thirdRated.state.deck.portionRatedCount)
+
+        val first = buildDeckState(buildPassDeck(1), buildEpochRange(1, 1, 5))
+        assertEquals(0, playKnewTimes(first, 2).state.deck.portionRatedCount)
+    }
+
+    @Test
+    fun newPassStartsWithEmptyPortion() {
+        val deck = buildDeck(currentEpoch = 4, portionRatedCount = 17)
+        val state = buildDeckState(deck, buildEpochRange(4, 1, 3))
+
+        val result = act(state, OpenSection(Section.EPOCH_4))
+
+        assertEquals(Transition(4, 3, REGULAR), result.outcome)
+        assertEquals(0, result.state.deck.portionRatedCount)
+    }
+
+    /**
+     * Во время вставки владелец открывает прерванную эпоху 4 и убирает уже оценённую карточку 1
+     * ([removal]). Порция в 40 оценок от этого не сдвигается: следующая вставка приходит на 40-й
+     * оценке после возврата, а не раньше.
+     */
+    private fun checkPortionOfFortySurvivesRemovalDuringInsert(
+        removal: (Long) -> ReviewAction,
+        expectedInsertSize: Int,
+    ) {
+        val state = buildDeckState(buildPassDeck(4), buildEpochRange(4, 1, 100) + buildEpochRange(1, 201, 2))
+        var result = playKnewTimes(state, 40)
+        assertEquals(Transition(1, 2, INSERTED), result.outcome)
+
+        result = act(result.state, OpenSection(Section.EPOCH_4))
+        result = act(result.state, removal(1))
+        result = act(result.state, OpenSection(Section.EPOCH_1))
+        result = playKnewTimes(result.state, 2)
+        assertEquals(Transition(4, 60, RESUMED), result.outcome)
+
+        repeat(39) {
+            result = playKnew(result.state)
+            assertTrue(result.outcome is ShowCard, "оценка ${it + 1} после возврата: ${result.outcome}")
+        }
+        result = playKnew(result.state)
+
+        assertEquals(Transition(1, expectedInsertSize, INSERTED), result.outcome)
     }
 
     @Test

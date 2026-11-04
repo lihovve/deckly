@@ -50,6 +50,7 @@ fun buildDeck(
     waitingEpoch: Int = 0,
     pausedEpoch: Int = 0,
     pausedCursor: Int = 0,
+    portionRatedCount: Int = 0,
     tail: EpochValues<List<Long>> = EpochValues(emptyList(), emptyList(), emptyList(), emptyList()),
 ): Deck = Deck(
     id = id,
@@ -64,6 +65,7 @@ fun buildDeck(
     waitingEpoch = waitingEpoch,
     pausedEpoch = pausedEpoch,
     pausedCursor = pausedCursor,
+    portionRatedCount = portionRatedCount,
     tail = tail,
 )
 

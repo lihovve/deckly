@@ -1,5 +1,6 @@
 package app.deckly.domain.review
 
+import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.findEpochSection
@@ -73,11 +74,16 @@ object ReviewEngine {
         return showCurrent(browseSection(state, step))
     }
 
-    /** После оценки: проход исчерпан — его конец; граница порции — вставной проход; иначе следующая карточка. */
-    private fun continueAfterRating(state: DeckState, today: Int, random: Random): ReviewResult {
+    /**
+     * После оценки: оценка идёт в счётчик порции; проход исчерпан — его конец; порция полна — вставной
+     * проход, а если вставлять нечего, следующая порция начинается сразу; иначе следующая карточка.
+     */
+    private fun continueAfterRating(rated: DeckState, today: Int, random: Random): ReviewResult {
+        val state = countRatingInPortion(rated)
         if (isPassExhausted(state)) return endPass(state, today, random)
-        if (isPortionBoundary(state)) return startInsertedPass(state, today, random)
-        return showCurrent(state)
+        if (!isPortionFull(state.deck)) return showCurrent(state)
+        if (hasCardsToInsert(state)) return startInsertedPass(state, today, random)
+        return showCurrent(state.copy(deck = state.deck.copy(portionRatedCount = 0)))
     }
 
     /** После удаления или возврата в пул: удаление ничего не оценивает, поэтому границу порции не проверяем. */
@@ -89,14 +95,20 @@ object ReviewEngine {
     private fun isPassExhausted(state: DeckState): Boolean =
         state.deck.passCursor >= listPassCards(state, state.deck.currentEpoch).size
 
-    /** Каждые 40 оценённых карточек эпохи 2–4 (без прерывания), если есть что вставить. */
-    private fun isPortionBoundary(state: DeckState): Boolean {
+    /** Оценки считаются в порцию только в проходе эпохи 2–4 без прерывания. */
+    private fun isPortionCounting(deck: Deck): Boolean = deck.pausedEpoch == 0 && deck.currentEpoch in 2..4
+
+    private fun countRatingInPortion(state: DeckState): DeckState {
         val deck = state.deck
-        return deck.pausedEpoch == 0 &&
-            deck.currentEpoch in 2..4 &&
-            deck.passCursor % PORTION_SIZE == 0 &&
-            state.cards.any { it.section == Section.EPOCH_1 || it.section == Section.NEW }
+        if (!isPortionCounting(deck)) return state
+        return state.copy(deck = deck.copy(portionRatedCount = deck.portionRatedCount + 1))
     }
+
+    /** Порция полна после каждых 40 оценённых карточек. Курсор прохода здесь ни при чём: удаления его сдвигают. */
+    private fun isPortionFull(deck: Deck): Boolean = isPortionCounting(deck) && deck.portionRatedCount == PORTION_SIZE
+
+    private fun hasCardsToInsert(state: DeckState): Boolean =
+        state.cards.any { it.section == Section.EPOCH_1 || it.section == Section.NEW }
 
     /** Прерывает проход эпохи 2–4 и стартует вставной проход эпохи 1; пустую вставку проскакивает молча. */
     private fun startInsertedPass(state: DeckState, today: Int, random: Random): ReviewResult {
@@ -142,6 +154,7 @@ object ReviewEngine {
                 passCursor = deck.pausedCursor,
                 pausedEpoch = 0,
                 pausedCursor = 0,
+                portionRatedCount = 0,
                 browseCursor = 0,
                 activeSection = findEpochSection(epoch),
             ),
@@ -197,6 +210,7 @@ internal fun runStartChain(
                 activeSection = findEpochSection(epoch),
                 passStarted = true,
                 passCursor = 0,
+                portionRatedCount = 0,
                 browseCursor = 0,
             )
             return ReviewResult(

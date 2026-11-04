@@ -4,6 +4,10 @@ package app.deckly.domain.model
  * Колода. Поле `cursor` из ТЗ разделено на [passCursor] (позиция в проходе активной эпохи) и
  * [browseCursor] (позиция при листании открытой неактивной секции); [passStarted] — начат ли проход
  * активной эпохи. Оба решения плана 2.
+ *
+ * [portionRatedCount] — сколько карточек оценено в текущей порции прохода эпохи 2–4. Границу порции
+ * (40 оценок) задаёт этот счётчик, а не [passCursor]: удаление оценённой карточки сдвигает курсоры,
+ * но не отменяет оценку.
  */
 data class Deck(
     val id: Long,
@@ -18,6 +22,7 @@ data class Deck(
     val waitingEpoch: Int,
     val pausedEpoch: Int,
     val pausedCursor: Int,
+    val portionRatedCount: Int,
     val tail: EpochValues<List<Long>>,
 )
 
@@ -35,5 +40,6 @@ fun createDeck(id: Long, name: String): Deck = Deck(
     waitingEpoch = 0,
     pausedEpoch = 0,
     pausedCursor = 0,
-    tail = EpochValues(emptyList(), emptyList(), emptyList(), emptyList()),
+    portionRatedCount = 0,
+    tail =EpochValues(emptyList(), emptyList(), emptyList(), emptyList()),
 )
