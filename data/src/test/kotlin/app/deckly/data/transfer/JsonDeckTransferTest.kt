@@ -1,5 +1,7 @@
 package app.deckly.data.transfer
 
+import app.deckly.data.CancelAfterWriteStrokeFiles
+import app.deckly.data.CancelWhenDatabaseDispatcher
 import app.deckly.data.FailingAfterStrokeFiles
 import app.deckly.data.Scenario
 import app.deckly.data.TestRepositories
@@ -24,6 +26,10 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -350,6 +356,45 @@ class JsonDeckTransferTest {
         assertEquals("колода откатилась вместе с первой карточкой", decksBefore, repos.decks.listDecks())
         assertEquals(listOf(102L), repos.decks.loadDeckState(1).cards.map { it.id })
         assertEquals("файлы убраны после отката", filesBefore, listStrokeFileNames(repos.storage))
+    }
+
+    @Test
+    fun cancelledImportAfterTransactionKeepsFiles() = runBlocking {
+        val scenario = buildWaitingEpochScenario()
+        saveScenario(scenario)
+        val text = exportToText(scenario.after.deck.id)
+        // Колода появляется в той же транзакции, что и ссылки на файлы: две колоды в базе значит «коммит прошёл».
+        val dispatcher = CancelWhenDatabaseDispatcher(repos.storage.databaseFile, "SELECT COUNT(*) FROM deck") { it >= 2 }
+
+        val job = launch(dispatcher) { repos.transfer.importDeck(asStream(text)) }
+        job.join()
+        dispatcher.close()
+
+        assertTrue("сценарий не дошёл до отмены после коммита", dispatcher.cancelled && job.isCancelled)
+        repos.reopen()
+        val deckIds = repos.decks.listDecks().map { it.id }
+        assertEquals(2, deckIds.size)
+        for (deckId in deckIds) {
+            for (card in repos.decks.loadDeckState(deckId).cards) {
+                assertEquals(card.id, repos.contents.loadContent(card.id).cardId)
+            }
+        }
+    }
+
+    @Test
+    fun cancelledImportBeforeTransactionLeavesNothing() = runBlocking {
+        val filesBefore = listStrokeFileNames(repos.storage)
+        val files = CancelAfterWriteStrokeFiles(repos.storage.strokesDir)
+        val transfer = JsonDeckTransfer(repos.database, files, repos.drafts)
+
+        val job = launch(Dispatchers.Default, start = CoroutineStart.LAZY) { transfer.importDeck(asStream(VALID_FILE)) }
+        files.job = job
+        job.start()
+        job.join()
+
+        assertTrue(job.isCancelled)
+        assertEquals(emptyList<Any>(), repos.decks.listDecks())
+        assertEquals(filesBefore, listStrokeFileNames(repos.storage))
     }
 
     private fun damage(name: String, old: String, new: String): Pair<String, String> =

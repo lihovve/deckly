@@ -4,7 +4,11 @@ import app.deckly.data.db.DecklyDatabase
 import app.deckly.data.db.mapCardEntity
 import app.deckly.data.db.mapCardState
 import app.deckly.data.db.mapDeckEntity
+import app.deckly.data.strokes.StrokeFiles
 import app.deckly.domain.model.DeckChanges
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 /** Карточка, которой ещё нет в базе: её вставляют с этим файлом штрихов, а не обновляют. */
 internal class NewCardFile(val cardId: Long, val contentFile: String)
@@ -29,4 +33,25 @@ internal suspend fun DecklyDatabase.writeDeckChanges(changes: DeckChanges, newCa
     val files = cardDao().listContentFiles(changes.deletedCardIds)
     cardDao().deleteCards(changes.deletedCardIds)
     return files
+}
+
+/**
+ * Удаляет [names] после сорвавшейся записи, но только когда [wasCommitted] под `NonCancellable` подтвердил,
+ * что транзакция не прошла: отмена может прийти уже после коммита, и тогда файлы нужны базе. Если
+ * проверить исход не удалось, файлы остаются: лишний файл уберёт уборка при открытии, а нужный вернуть нельзя.
+ */
+internal suspend fun deleteFilesUnlessCommitted(
+    files: StrokeFiles,
+    names: List<String>,
+    wasCommitted: suspend () -> Boolean,
+) {
+    if (names.isEmpty()) return
+    withContext(NonCancellable + Dispatchers.IO) {
+        val isCommitted = try {
+            wasCommitted()
+        } catch (unknown: Exception) {
+            true
+        }
+        if (!isCommitted) names.forEach(files::deleteContentFile)
+    }
 }

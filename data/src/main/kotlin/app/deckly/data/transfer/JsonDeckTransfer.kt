@@ -8,6 +8,7 @@ import app.deckly.data.db.mapCardEntity
 import app.deckly.data.db.mapDeck
 import app.deckly.data.db.mapDeckEntity
 import app.deckly.data.repository.RoomDraftRepository
+import app.deckly.data.repository.deleteFilesUnlessCommitted
 import app.deckly.data.strokes.StrokeFiles
 import app.deckly.domain.model.CardContent
 import app.deckly.domain.model.Deck
@@ -16,7 +17,6 @@ import app.deckly.domain.port.DeckTransfer
 import java.io.InputStream
 import java.io.OutputStream
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.encodeToStream
@@ -65,6 +65,7 @@ class JsonDeckTransfer(
         val newIdByFileId = parsed.cards.map { it.card.id }.zip(newIds).toMap()
         val deck = parsed.deck.copy(tail = renumberTail(parsed.deck.tail, newIdByFileId))
         val writtenFiles = mutableListOf<String>()
+        var createdDeckId: Long? = null
         try {
             withContext(Dispatchers.IO) {
                 parsed.cards.forEachIndexed { index, parsedCard ->
@@ -73,6 +74,7 @@ class JsonDeckTransfer(
             }
             return database.withWriteTransaction<Deck> {
                 val deckId = database.deckDao().insertDeck(mapDeckEntity(deck))
+                createdDeckId = deckId
                 parsed.cards.forEachIndexed { index, parsedCard ->
                     val card = parsedCard.card.copy(id = newIds[index])
                     database.cardDao().insertCard(mapCardEntity(card, deckId, writtenFiles[index]))
@@ -80,7 +82,10 @@ class JsonDeckTransfer(
                 deck.copy(id = deckId)
             }
         } catch (failure: Throwable) {
-            withContext(NonCancellable + Dispatchers.IO) { writtenFiles.forEach(files::deleteContentFile) }
+            // Отмена может прийти после коммита: тогда колода есть, и её файлы нужны.
+            deleteFilesUnlessCommitted(files, writtenFiles) {
+                createdDeckId?.let { database.deckDao().findDeck(it) != null } ?: false
+            }
             throw failure
         }
     }
