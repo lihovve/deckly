@@ -1,0 +1,39 @@
+package app.deckly.domain.model
+
+/**
+ * Колода. Поле `cursor` из ТЗ разделено на [passCursor] (позиция в проходе активной эпохи) и
+ * [browseCursor] (позиция при листании открытой неактивной секции); [passStarted] — начат ли проход
+ * активной эпохи. Оба решения плана 2.
+ */
+data class Deck(
+    val id: Long,
+    val name: String,
+    val activeSection: Section,
+    val currentEpoch: Int,
+    val passStarted: Boolean,
+    val passCount: EpochValues<Int>,
+    val passCursor: Int,
+    val browseCursor: Int,
+    val lastPassDay: EpochValues<Int?>,
+    val waitingEpoch: Int,
+    val pausedEpoch: Int,
+    val pausedCursor: Int,
+    val tail: EpochValues<List<Long>>,
+)
+
+/** Новая колода: открыт пул новых, проход эпохи 1 не начат, счётчики нулевые. */
+fun createDeck(id: Long, name: String): Deck = Deck(
+    id = id,
+    name = name,
+    activeSection = Section.NEW,
+    currentEpoch = 1,
+    passStarted = false,
+    passCount = EpochValues(0, 0, 0, 0),
+    passCursor = 0,
+    browseCursor = 0,
+    lastPassDay = EpochValues(null, null, null, null),
+    waitingEpoch = 0,
+    pausedEpoch = 0,
+    pausedCursor = 0,
+    tail = EpochValues(emptyList(), emptyList(), emptyList(), emptyList()),
+)
