@@ -321,6 +321,38 @@
   Expected: `9 passed, 0 failed` (шесть тестов шага 2, седьмой `test_bad_assembly_reported` на код 4 и
   два новых).
 
+- [ ] **Дополнение к задаче 2 (после прогона на планшете): пакет включён и есть доступ к файлам** — отдельный коммит
+
+  3 ноября прошивка Boox после `pm install` отключала пакет (`enabled=3`) и сбрасывала доступ ко всем
+  файлам. 4 ноября пакет остался `enabled=0`, но и `pm enable`, и `appops` делались руками после каждой
+  установки. Скрипт делает это сам.
+  - Использование: `tools/install-apk.sh <файл.apk> [пакет]`. Без пакета поведение прежнее.
+  - С пакетом, после `Success`:
+    1. всегда `pm enable --user 0 <пакет>`, повторять незачем;
+    2. `appops set --uid <пакет> MANAGE_EXTERNAL_STORAGE allow`;
+    3. проверка: в `dumpsys package <пакет>` у пользователя 0 `enabled=0` или `enabled=1`, а
+       `appops get --uid <пакет> MANAGE_EXTERNAL_STORAGE` содержит `allow`.
+  - Каждая из трёх операций идёт через `run_adb` с `wait-for-device` и повтором до `MAX_TRIES`, как
+    остальные шаги.
+  - Новый код 6: пакет не включился или доступ не выдан за `MAX_TRIES` попыток.
+  - Вывод: строки `Пакет включён: <пакет>` и `Доступ ко всем файлам: allow`.
+  - Шум `adb push` («1 file pushed …») в вывод не попадает; при неудаче куска текст ошибки показывается.
+  - Заголовок скрипта (использование, коды выхода) обновить.
+  - Подменный `adb`: `pm enable`, `dumpsys package` с `enabled=N` из `FAKE_ENABLED_AFTER_INSTALL`
+    (по умолчанию 3, после `pm enable` — 1), `appops set/get`. `FAKE_ENABLE_REFUSED=1` — `pm enable`
+    состояние не меняет.
+  - Новые тесты:
+    - `test_package_enabled_and_access_granted` — код 0, обе строки вывода, `enabled=1`, `allow`;
+    - `test_without_package_skips_post_install` — `pm enable` и `appops` не вызывались;
+    - `test_enable_refused_reported` — код 6.
+  - Задача 5, шаг 4, и `tools/spike-db-killtest.sh`: если там есть ручные `pm enable` и `appops` после
+    установки, заменить их пакетом в аргументе.
+
+  Run: `bash tools/test/install-apk-test.sh && bash tools/test/spike-db-killtest-test.sh`
+  Expected: `12 passed, 0 failed`; `13 passed, 0 failed`.
+  На планшете: `tools/install-apk.sh spike/build/outputs/apk/debug/spike-debug.apk app.deckly.spike` →
+  код 0, обе строки, приложение запускается без ручных шагов.
+
 ### Task 3: прототип пера
 
 **Files:**
