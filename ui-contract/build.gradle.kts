@@ -18,4 +18,6 @@ android {
 dependencies {
     api(platform(libs.compose.bom))
     api(libs.compose.runtime)
+    // Слоты холста в Design принимают Modifier, он из compose-ui.
+    api(libs.compose.ui)
 }
