@@ -506,6 +506,33 @@
   Run: `./gradlew :domain:cleanTest :domain:test build`
   Expected: `BUILD SUCCESSFUL`, два новых теста падают до правки.
 
+- [ ] **Дополнение к задачам 5 и 6 (решение владельца 4 ноября): видимая сторона — в модели** — отдельный коммит
+
+  Владелец: видимая сторона однозначно следует из действий. Новая карточка показывается лицом, каждое
+  нажатие «перевернуть» меняет сторону. Значит, правило «пока видно лицо, оценка недоступна»
+  держит модель, а не интерфейс.
+  - Новое поле `Deck.visibleSide: Side`. `createDeck` ставит `FRONT`.
+  - `ReviewAction.RevealAnswer` заменяется на `ReviewAction.Flip`:
+    - меняет `visibleSide`;
+    - если стала `BACK` в начатом проходе открытой активной эпохи, у текущей карточки
+      `answerRevealed = true`;
+    - в любой другой секции только переворачивает (просмотр флаг не меняет).
+    `revealAnswer` становится `flipCard(state: DeckState): DeckState`.
+  - Любое другое действие движка ставит `visibleSide = FRONT`: любая карточка после него
+    показывается лицом. Это все оценки, перенос, удаление, возврат в пул, листание, открытие секции,
+    переходы и возврат из вставки.
+  - `rateKnew` и `rateDidNotKnow` требуют `visibleSide == BACK`.
+  - `computeCardActions(state: DeckState)` — без параметра `visibleSide`, сторона берётся из колоды.
+  - Тесты:
+    - `flipShowsBackAndRevealsAnswer`;
+    - `flippingBackToFrontBlocksRating`: `Knew` бросает, в `computeCardActions` причина `FRONT_VISIBLE`;
+    - `nextCardStartsOnFront`: после `Knew`, `Postpone`, `Browse` и `OpenSection` — `FRONT`;
+    - `flipInInactiveSectionDoesNotRevealAnswer`.
+  - Прежние тесты переводятся с `RevealAnswer` на `Flip`; по смыслу они не меняются.
+
+  Run: `./gradlew :domain:cleanTest :domain:test build`
+  Expected: `BUILD SUCCESSFUL`.
+
 ### Task 7: редактор и черновик
 
 **Files:**
