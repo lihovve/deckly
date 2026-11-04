@@ -3,6 +3,7 @@ package app.deckly.domain.review
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Side
 import app.deckly.domain.model.findEpochSection
 import kotlin.random.Random
 
@@ -12,7 +13,7 @@ private const val PORTION_SIZE = 40
 sealed interface ReviewAction {
     data class OpenSection(val section: Section) : ReviewAction
     data class Browse(val step: Int) : ReviewAction
-    data object RevealAnswer : ReviewAction
+    data object Flip : ReviewAction
     data object Knew : ReviewAction
     data object DidNotKnow : ReviewAction
     data object Postpone : ReviewAction
@@ -39,11 +40,23 @@ data class ReviewResult(val state: DeckState, val outcome: ReviewOutcome)
  */
 object ReviewEngine {
 
-    fun applyAction(state: DeckState, action: ReviewAction, today: Int, random: Random): ReviewResult =
+    /** Любое действие, кроме переворота, оставляет карточку лицом: после него показывается лицевая сторона. */
+    fun applyAction(state: DeckState, action: ReviewAction, today: Int, random: Random): ReviewResult {
+        val result = applyActionOnCurrentSide(state, action, today, random)
+        if (action == ReviewAction.Flip) return result
+        return result.copy(state = result.state.copy(deck = result.state.deck.copy(visibleSide = Side.FRONT)))
+    }
+
+    private fun applyActionOnCurrentSide(
+        state: DeckState,
+        action: ReviewAction,
+        today: Int,
+        random: Random,
+    ): ReviewResult =
         when (action) {
             is ReviewAction.OpenSection -> openSection(state, action.section, today, random)
             is ReviewAction.Browse -> browse(state, action.step)
-            ReviewAction.RevealAnswer -> showCurrent(revealAnswer(state))
+            ReviewAction.Flip -> showCurrent(flipCard(state))
             ReviewAction.Knew -> continueAfterRating(rateKnew(state, today), today, random)
             ReviewAction.DidNotKnow -> continueAfterRating(rateDidNotKnow(state), today, random)
             ReviewAction.Postpone -> showCurrent(postponeCard(state))

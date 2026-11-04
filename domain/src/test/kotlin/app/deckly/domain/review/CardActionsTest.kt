@@ -30,21 +30,22 @@ class CardActionsTest {
 
     @Test
     fun postponeAvailableBeforeReveal() {
-        val actions = computeCardActions(buildPassOfThree(), Side.FRONT)
+        val actions = computeCardActions(buildPassOfThree())
 
         assertEquals(Available, actions[POSTPONE])
     }
 
     @Test
     fun revealBlocksPostponeEvenOnFront() {
-        val revealed = revealAnswer(buildPassOfThree())
+        val revealed = flipCard(buildPassOfThree())
+        val flippedBack = flipCard(revealed)
 
-        val onFront = computeCardActions(revealed, Side.FRONT)
+        val onFront = computeCardActions(flippedBack)
         assertEquals(Unavailable(UnavailableReason.ANSWER_REVEALED), onFront[POSTPONE])
         assertEquals(Unavailable(UnavailableReason.FRONT_VISIBLE), onFront[KNEW])
         assertEquals(Unavailable(UnavailableReason.FRONT_VISIBLE), onFront[DID_NOT_KNOW])
 
-        val onBack = computeCardActions(revealed, Side.BACK)
+        val onBack = computeCardActions(revealed)
         assertEquals(Available, onBack[KNEW])
         assertEquals(Available, onBack[DID_NOT_KNOW])
         assertEquals(Unavailable(UnavailableReason.ANSWER_REVEALED), onBack[POSTPONE])
@@ -53,7 +54,7 @@ class CardActionsTest {
     @Test
     fun postponeUnavailableForLastAndPostponed() {
         val last = buildPassOfThree(passCursor = 2)
-        assertEquals(Unavailable(UnavailableReason.LAST_IN_PASS), computeCardActions(last, Side.FRONT)[POSTPONE])
+        assertEquals(Unavailable(UnavailableReason.LAST_IN_PASS), computeCardActions(last)[POSTPONE])
 
         val alreadyPostponed = buildDeckState(
             buildPassDeck(2),
@@ -61,7 +62,7 @@ class CardActionsTest {
         )
         assertEquals(
             Unavailable(UnavailableReason.ALREADY_POSTPONED),
-            computeCardActions(alreadyPostponed, Side.FRONT)[POSTPONE],
+            computeCardActions(alreadyPostponed)[POSTPONE],
         )
     }
 
@@ -74,41 +75,41 @@ class CardActionsTest {
 
         assertEquals(
             Unavailable(UnavailableReason.ALREADY_POSTPONED),
-            computeCardActions(postponedLast, Side.FRONT)[POSTPONE],
+            computeCardActions(postponedLast)[POSTPONE],
         )
     }
 
     @Test
     fun revealedPostponedLastCardIsReportedAsAnswerRevealed() {
         val state = buildDeckState(
-            buildPassDeck(2, passCursor = 2),
+            buildPassDeck(2, passCursor = 2, visibleSide = Side.BACK),
             buildEpochCards(2, 1, 2, 3).map { if (it.id == 3L) it.copy(postponed = true, answerRevealed = true) else it },
         )
 
         assertEquals(
             Unavailable(UnavailableReason.ANSWER_REVEALED),
-            computeCardActions(state, Side.BACK)[POSTPONE],
+            computeCardActions(state)[POSTPONE],
         )
     }
 
     @Test
     fun sectionsOfferTheirActions() {
-        val activePass = computeCardActions(buildPassOfThree(), Side.FRONT)
+        val activePass = computeCardActions(buildPassOfThree())
         assertEquals(setOf(DELETE, RETURN_TO_NEW, KNEW, DID_NOT_KNOW, POSTPONE, FLIP), activePass.keys)
 
         val pool = buildDeckState(buildDeck(activeSection = Section.NEW), listOf(buildCard(1, Section.NEW)))
-        val poolActions = computeCardActions(pool, Side.FRONT)
+        val poolActions = computeCardActions(pool)
         assertEquals(setOf(DELETE, EDIT, CREATE, BROWSE, FLIP), poolActions.keys)
         assertTrue(poolActions.values.all { it == Available })
 
         val emptyPool = buildDeckState(buildDeck(activeSection = Section.NEW), emptyList())
-        assertEquals(setOf(CREATE), computeCardActions(emptyPool, Side.FRONT).keys)
+        assertEquals(setOf(CREATE), computeCardActions(emptyPool).keys)
 
         val inactiveEpoch = buildDeckState(
             buildDeck(activeSection = Section.EPOCH_3, currentEpoch = 1, passStarted = true),
             buildEpochCards(3, 1, 2),
         )
-        val inactiveActions = computeCardActions(inactiveEpoch, Side.FRONT)
+        val inactiveActions = computeCardActions(inactiveEpoch)
         assertEquals(setOf(DELETE, RETURN_TO_NEW, BROWSE, FLIP), inactiveActions.keys)
         assertTrue(inactiveActions.values.all { it == Available })
 
@@ -116,13 +117,13 @@ class CardActionsTest {
             buildDeck(activeSection = Section.LEARNED),
             listOf(buildCard(1, Section.LEARNED)),
         )
-        assertEquals(setOf(DELETE, BROWSE, FLIP), computeCardActions(learned, Side.FRONT).keys)
+        assertEquals(setOf(DELETE, BROWSE, FLIP), computeCardActions(learned).keys)
 
         val emptyInactive = buildDeckState(
             buildDeck(activeSection = Section.EPOCH_4, currentEpoch = 1, passStarted = true),
             buildEpochCards(1, 1, 2),
         )
-        assertEquals(emptyMap<CardAction, Availability>(), computeCardActions(emptyInactive, Side.FRONT))
+        assertEquals(emptyMap<CardAction, Availability>(), computeCardActions(emptyInactive))
     }
 
     @Test
@@ -134,10 +135,11 @@ class CardActionsTest {
                 passStarted = true,
                 pausedEpoch = 4,
                 pausedCursor = 1,
+                visibleSide = Side.BACK,
             ),
             buildEpochCards(4, 1, 2, 3) + buildCard(9, Section.EPOCH_1),
         )
 
-        assertEquals(setOf(DELETE, RETURN_TO_NEW, BROWSE, FLIP), computeCardActions(paused, Side.BACK).keys)
+        assertEquals(setOf(DELETE, RETURN_TO_NEW, BROWSE, FLIP), computeCardActions(paused).keys)
     }
 }

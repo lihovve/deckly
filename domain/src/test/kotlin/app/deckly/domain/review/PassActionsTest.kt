@@ -8,6 +8,7 @@ import app.deckly.domain.buildPassDeck
 import app.deckly.domain.findCard
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Side
 import app.deckly.domain.model.findEpochSection
 import app.deckly.domain.model.listSectionCards
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -22,7 +23,7 @@ class PassActionsTest {
     @Test
     fun knewAddsSuccessAndMovesOn() {
         val state = buildDeckState(
-            buildPassDeck(2),
+            buildPassDeck(2, visibleSide = Side.BACK),
             listOf(
                 buildCard(1, Section.EPOCH_2, position = 0, successes = 1, answerRevealed = true),
                 buildCard(2, Section.EPOCH_2, position = 1),
@@ -42,7 +43,7 @@ class PassActionsTest {
         fun rateInEpoch(epoch: Int, successes: Int): DeckState {
             val section = findEpochSection(epoch)
             val state = buildDeckState(
-                buildPassDeck(epoch),
+                buildPassDeck(epoch, visibleSide = Side.BACK),
                 listOf(
                     buildCard(1, section, position = 0, successes = successes, answerRevealed = true),
                     buildCard(2, section, position = 1),
@@ -219,27 +220,38 @@ class PassActionsTest {
     }
 
     @Test
-    fun revealMarksOnlyCurrentCardOfActivePass() {
+    fun flipMarksOnlyCurrentCardOfActivePass() {
         val state = buildDeckState(buildPassDeck(2, passCursor = 1), buildEpochCards(2, 1, 2, 3))
 
-        val after = revealAnswer(state)
+        val after = flipCard(state)
 
+        assertEquals(Side.BACK, after.deck.visibleSide)
         assertEquals(listOf(false, true, false), listOf(1L, 2L, 3L).map { after.findCard(it).answerRevealed })
     }
 
     @Test
-    fun revealOutsideActivePassChangesNothing() {
+    fun flippingBackKeepsAnswerRevealed() {
+        val state = buildDeckState(buildPassDeck(2), buildEpochCards(2, 1, 2, 3))
+
+        val onFront = flipCard(flipCard(state))
+
+        assertEquals(Side.FRONT, onFront.deck.visibleSide)
+        assertTrue(onFront.findCard(1).answerRevealed)
+    }
+
+    @Test
+    fun flipOutsideActivePassOnlyTurnsTheSide() {
         val browsing = buildDeckState(
             buildDeck(activeSection = Section.EPOCH_3, currentEpoch = 1, passStarted = true),
             buildEpochCards(3, 1, 2),
         )
-        assertEquals(browsing, revealAnswer(browsing))
+        assertEquals(browsing.copy(deck = browsing.deck.copy(visibleSide = Side.BACK)), flipCard(browsing))
 
         val notStarted = buildDeckState(
             buildPassDeck(2).copy(passStarted = false),
             buildEpochCards(2, 1, 2),
         )
-        assertEquals(notStarted, revealAnswer(notStarted))
+        assertEquals(notStarted.copy(deck = notStarted.deck.copy(visibleSide = Side.BACK)), flipCard(notStarted))
     }
 
     @Test
@@ -270,6 +282,17 @@ class PassActionsTest {
     @Test
     fun ratingBeforeAnswerRevealIsRejected() {
         val state = buildDeckState(buildPassDeck(2), buildEpochCards(2, 1, 2))
+
+        assertThrows<IllegalArgumentException> { rateKnew(state, today = 5) }
+        assertThrows<IllegalArgumentException> { rateDidNotKnow(state) }
+    }
+
+    @Test
+    fun ratingOnFrontAfterRevealIsRejected() {
+        val state = buildDeckState(
+            buildPassDeck(2, visibleSide = Side.FRONT),
+            buildEpochCards(2, 1, 2).map { it.copy(answerRevealed = true) },
+        )
 
         assertThrows<IllegalArgumentException> { rateKnew(state, today = 5) }
         assertThrows<IllegalArgumentException> { rateDidNotKnow(state) }

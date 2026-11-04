@@ -5,6 +5,7 @@ import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Side
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
 import app.deckly.domain.model.findEpochSection
@@ -46,6 +47,7 @@ fun buildDeck(
     passCount: EpochValues<Int> = EpochValues(0, 0, 0, 0),
     passCursor: Int = 0,
     browseCursor: Int = 0,
+    visibleSide: Side = Side.FRONT,
     lastPassDay: EpochValues<Int?> = EpochValues(null, null, null, null),
     waitingEpoch: Int = 0,
     pausedEpoch: Int = 0,
@@ -61,6 +63,7 @@ fun buildDeck(
     passCount = passCount,
     passCursor = passCursor,
     browseCursor = browseCursor,
+    visibleSide = visibleSide,
     lastPassDay = lastPassDay,
     waitingEpoch = waitingEpoch,
     pausedEpoch = pausedEpoch,
@@ -76,11 +79,12 @@ fun buildDeckState(deck: Deck, cards: List<Card>): DeckState = DeckState(deck, c
 fun DeckState.findCard(id: Long): Card = cards.single { it.id == id }
 
 /** Колода в начатом проходе эпохи [epoch]: эта эпоха открыта и активна, курсор на [passCursor]. */
-fun buildPassDeck(epoch: Int, passCursor: Int = 0): Deck = buildDeck(
+fun buildPassDeck(epoch: Int, passCursor: Int = 0, visibleSide: Side = Side.FRONT): Deck = buildDeck(
     activeSection = findEpochSection(epoch),
     currentEpoch = epoch,
     passStarted = true,
     passCursor = passCursor,
+    visibleSide = visibleSide,
 )
 
 /** Карточки эпохи с позициями 0, 1, … в порядке [ids]. */

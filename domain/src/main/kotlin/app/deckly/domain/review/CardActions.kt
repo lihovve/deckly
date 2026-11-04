@@ -28,12 +28,12 @@ sealed interface Availability {
  * Действия, которые открытая секция предлагает по таблице «Действия с карточкой» ТЗ, и доступность
  * каждого. Действий, которых секция не предлагает, в карте нет.
  */
-fun computeCardActions(state: DeckState, visibleSide: Side): Map<CardAction, Availability> {
+fun computeCardActions(state: DeckState): Map<CardAction, Availability> {
     val deck = state.deck
     val card = findCurrentCard(state)
     if (isActivePassOpen(deck)) {
         if (card == null) return emptyMap()
-        val ratingAvailability = if (visibleSide == Side.FRONT) Unavailable(UnavailableReason.FRONT_VISIBLE) else Available
+        val ratingAvailability = if (deck.visibleSide == Side.FRONT) Unavailable(UnavailableReason.FRONT_VISIBLE) else Available
         val postponeAvailability = findPostponeBlock(state, card)?.let(::Unavailable) ?: Available
         return mapOf(
             DELETE to Available,

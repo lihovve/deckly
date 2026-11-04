@@ -4,6 +4,7 @@ import app.deckly.domain.model.Card
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Side
 import app.deckly.domain.model.epochNumber
 import app.deckly.domain.model.findEpochSection
 import app.deckly.domain.model.listSectionCards
@@ -40,11 +41,18 @@ fun findCurrentCard(state: DeckState): Card? {
     }
 }
 
-/** Первое открытие ответа в проходе блокирует перенос. Вне начатого прохода активной эпохи — без изменений. */
-fun revealAnswer(state: DeckState): DeckState {
-    if (!isActivePassOpen(state.deck)) return state
+/**
+ * Переворот: меняет видимую сторону. Первый показ обратной стороны в начатом проходе открытой активной
+ * эпохи открывает ответ у текущей карточки и блокирует её перенос; в любой другой секции — только
+ * переворот, флаг не меняется. Нет текущей карточки — переворачивать нечего, состояние прежнее.
+ */
+fun flipCard(state: DeckState): DeckState {
     val card = findCurrentCard(state) ?: return state
-    return replaceCard(state, card.copy(answerRevealed = true))
+    val deck = state.deck
+    val side = if (deck.visibleSide == Side.FRONT) Side.BACK else Side.FRONT
+    val flipped = state.copy(deck = deck.copy(visibleSide = side))
+    if (side == Side.FRONT || !isActivePassOpen(deck)) return flipped
+    return replaceCard(flipped, card.copy(answerRevealed = true))
 }
 
 fun rateKnew(state: DeckState, today: Int): DeckState {
@@ -113,6 +121,7 @@ private fun requireCurrentPassCard(state: DeckState): Card {
 
 private fun requireRatableCard(state: DeckState): Card {
     val card = requireCurrentPassCard(state)
+    require(state.deck.visibleSide == Side.BACK) { "Оценка возможна только при видимой обратной стороне" }
     require(card.answerRevealed) { "Оценка возможна только после открытия ответа" }
     return card
 }

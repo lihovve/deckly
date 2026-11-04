@@ -3,16 +3,25 @@ package app.deckly.domain.review
 import app.deckly.domain.buildCard
 import app.deckly.domain.buildDeck
 import app.deckly.domain.buildDeckState
+import app.deckly.domain.buildEpochCards
 import app.deckly.domain.buildEpochRange
 import app.deckly.domain.buildPassDeck
 import app.deckly.domain.findCard
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Side
 import app.deckly.domain.model.createDeck
 import app.deckly.domain.model.listSectionCards
+import app.deckly.domain.review.Availability.Available
+import app.deckly.domain.review.Availability.Unavailable
+import app.deckly.domain.review.CardAction.DID_NOT_KNOW
+import app.deckly.domain.review.CardAction.KNEW
 import app.deckly.domain.review.ReviewAction.Browse
 import app.deckly.domain.review.ReviewAction.DeleteCard
+import app.deckly.domain.review.ReviewAction.DidNotKnow
+import app.deckly.domain.review.ReviewAction.Flip
+import app.deckly.domain.review.ReviewAction.Knew
 import app.deckly.domain.review.ReviewAction.OpenSection
 import app.deckly.domain.review.ReviewAction.Postpone
 import app.deckly.domain.review.ReviewAction.ReturnToNew
@@ -24,6 +33,7 @@ import app.deckly.domain.review.ReviewOutcome.Transition
 import app.deckly.domain.review.TransitionKind.INSERTED
 import app.deckly.domain.review.TransitionKind.REGULAR
 import app.deckly.domain.review.TransitionKind.RESUMED
+import app.deckly.domain.review.UnavailableReason.FRONT_VISIBLE
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -42,12 +52,12 @@ class ReviewEngineTest {
 
     /** Открыть ответ текущей карточки и оценить «знал». */
     private fun playKnew(state: DeckState, day: Int = today): ReviewResult {
-        val revealed = act(state, ReviewAction.RevealAnswer, day)
+        val revealed = act(state, ReviewAction.Flip, day)
         return act(revealed.state, ReviewAction.Knew, day)
     }
 
     private fun playDidNotKnow(state: DeckState, day: Int = today): ReviewResult {
-        val revealed = act(state, ReviewAction.RevealAnswer, day)
+        val revealed = act(state, ReviewAction.Flip, day)
         return act(revealed.state, ReviewAction.DidNotKnow, day)
     }
 
@@ -565,6 +575,103 @@ class ReviewEngineTest {
 
         assertEquals(ShowCard(2), result.outcome)
         assertEquals(0, result.state.deck.passCursor)
+    }
+
+    @Test
+    fun flipShowsBackAndRevealsAnswer() {
+        val state = buildDeckState(buildPassDeck(2), buildEpochCards(2, 1, 2, 3))
+
+        val result = act(state, Flip)
+
+        assertEquals(Side.BACK, result.state.deck.visibleSide)
+        assertEquals(listOf(true, false, false), listOf(1L, 2L, 3L).map { result.state.findCard(it).answerRevealed })
+        assertEquals(ShowCard(1), result.outcome)
+    }
+
+    @Test
+    fun flippingBackToFrontBlocksRating() {
+        val state = buildDeckState(buildPassDeck(2), buildEpochCards(2, 1, 2, 3))
+        val onBack = act(state, Flip).state
+        assertEquals(Available, computeCardActions(onBack)[KNEW])
+        assertEquals(Available, computeCardActions(onBack)[DID_NOT_KNOW])
+
+        val onFront = act(onBack, Flip).state
+
+        assertEquals(Side.FRONT, onFront.deck.visibleSide)
+        assertEquals(Unavailable(FRONT_VISIBLE), computeCardActions(onFront)[KNEW])
+        assertEquals(Unavailable(FRONT_VISIBLE), computeCardActions(onFront)[DID_NOT_KNOW])
+        assertThrows<IllegalArgumentException> { act(onFront, Knew) }
+        assertThrows<IllegalArgumentException> { act(onFront, DidNotKnow) }
+        // Ответ уже открывали, поэтому перенос остаётся закрытым.
+        assertTrue(onFront.findCard(1).answerRevealed)
+    }
+
+    @Test
+    fun nextCardStartsOnFront() {
+        val pass = buildDeckState(buildPassDeck(2), buildEpochCards(2, 1, 2, 3))
+        val browsing = buildDeckState(buildDeck(activeSection = Section.EPOCH_3), buildEpochCards(3, 11, 12))
+        // Перенос доступен только на лице; сторону BACK задаём руками, чтобы проверить сброс.
+        val backWithoutReveal = pass.copy(deck = pass.deck.copy(visibleSide = Side.BACK))
+        val scenarios = listOf<Triple<String, DeckState, ReviewAction>>(
+            Triple("Knew", act(pass, Flip).state, Knew),
+            Triple("DidNotKnow", act(pass, Flip).state, DidNotKnow),
+            Triple("Postpone", backWithoutReveal, Postpone),
+            Triple("Browse", act(browsing, Flip).state, Browse(+1)),
+            Triple("OpenSection", act(pass, Flip).state, OpenSection(Section.EPOCH_3)),
+            Triple("DeleteCard", act(pass, Flip).state, DeleteCard(2)),
+            Triple("ReturnToNew", act(pass, Flip).state, ReturnToNew(2)),
+        )
+
+        for ((name, state, action) in scenarios) {
+            assertEquals(Side.BACK, state.deck.visibleSide, "$name: до действия")
+
+            val result = act(state, action)
+
+            assertEquals(Side.FRONT, result.state.deck.visibleSide, "$name: после действия")
+        }
+    }
+
+    @Test
+    fun transitionsAndResumeStartOnFront() {
+        val state = buildDeckState(buildPassDeck(3), buildEpochRange(3, 1, 45) + buildEpochRange(1, 201, 2))
+        var result = ReviewResult(state, ReviewEngine.computeCurrentOutcome(state))
+        val kinds = mutableListOf<TransitionKind>()
+
+        repeat(42) {
+            val flipped = act(result.state, Flip)
+            assertEquals(Side.BACK, flipped.state.deck.visibleSide)
+            result = act(flipped.state, Knew)
+            (result.outcome as? Transition)?.let { kinds += it.kind }
+            assertEquals(Side.FRONT, result.state.deck.visibleSide, "после оценки ${it + 1}: ${result.outcome}")
+        }
+
+        assertEquals(listOf(INSERTED, RESUMED), kinds)
+    }
+
+    @Test
+    fun flipInInactiveSectionDoesNotRevealAnswer() {
+        val browsing = buildDeckState(
+            buildDeck(activeSection = Section.EPOCH_3, currentEpoch = 1, passStarted = true),
+            buildEpochCards(3, 1, 2),
+        )
+        val notStarted = buildDeckState(buildPassDeck(2).copy(passStarted = false), buildEpochCards(2, 1, 2))
+
+        for (state in listOf(browsing, notStarted)) {
+            val result = act(state, Flip)
+
+            assertEquals(Side.BACK, result.state.deck.visibleSide)
+            assertEquals(state.cards, result.state.cards)
+        }
+    }
+
+    @Test
+    fun flipWithoutCurrentCardChangesNothing() {
+        val state = buildDeckState(buildDeck(activeSection = Section.EPOCH_3))
+
+        val result = act(state, Flip)
+
+        assertEquals(state, result.state)
+        assertEquals(EmptySection, result.outcome)
     }
 
     /** Сворачивает подряд идущие `ShowCard` в «ShowCard×N»; переходы остаются как есть. */

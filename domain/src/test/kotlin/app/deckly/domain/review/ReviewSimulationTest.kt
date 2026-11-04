@@ -34,7 +34,7 @@ class ReviewSimulationTest {
             observeCard(day)
             var actions = 0
             while ((result.outcome is Transition || result.outcome is ShowCard) && actions < maxActionsPerDay) {
-                state = ReviewEngine.applyAction(state, ReviewAction.RevealAnswer, day, random).state
+                state = ReviewEngine.applyAction(state, ReviewAction.Flip, day, random).state
                 result = ReviewEngine.applyAction(state, ReviewAction.Knew, day, random)
                 state = result.state
                 observeCard(day)
