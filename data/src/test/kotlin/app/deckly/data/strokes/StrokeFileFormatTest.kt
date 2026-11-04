@@ -78,6 +78,45 @@ class StrokeFileFormatTest {
         assertDamaged(valid.copyOf().also { it[4] = 2 })
     }
 
+    private fun buildFileWithOnePoint(width: Float, x: Float, y: Float, pressure: Float): ByteArray =
+        ByteBuffer.allocate(8 + 4 + (4 + 4 + 12) + 4).order(ByteOrder.LITTLE_ENDIAN)
+            .put("DKS1".toByteArray(Charsets.US_ASCII)).putInt(1)
+            .putInt(1).putFloat(width).putInt(1)
+            .putFloat(x).putFloat(y).putFloat(pressure)
+            .putInt(0)
+            .array()
+
+    private fun describeReading(bytes: ByteArray): String =
+        try {
+            readFromBytes(bytes)
+            "read"
+        } catch (damaged: StrokeFileException) {
+            "damaged"
+        } catch (other: Exception) {
+            "crash ${other::class.simpleName}"
+        }
+
+    @Test
+    fun strokeFileWithInvalidValuesIsDamaged() {
+        assertEquals("контрольный файл читается", "read", describeReading(buildFileWithOnePoint(2f, 1f, 1f, 0.5f)))
+        val invalid = mapOf(
+            "pressure 1.0001" to buildFileWithOnePoint(2f, 1f, 1f, 1.0001f),
+            "pressure -0.1" to buildFileWithOnePoint(2f, 1f, 1f, -0.1f),
+            "pressure NaN" to buildFileWithOnePoint(2f, 1f, 1f, Float.NaN),
+            "pressure Infinity" to buildFileWithOnePoint(2f, 1f, 1f, Float.POSITIVE_INFINITY),
+            "width 0" to buildFileWithOnePoint(0f, 1f, 1f, 0.5f),
+            "width -1" to buildFileWithOnePoint(-1f, 1f, 1f, 0.5f),
+            "width NaN" to buildFileWithOnePoint(Float.NaN, 1f, 1f, 0.5f),
+            "width Infinity" to buildFileWithOnePoint(Float.POSITIVE_INFINITY, 1f, 1f, 0.5f),
+            "x NaN" to buildFileWithOnePoint(2f, Float.NaN, 1f, 0.5f),
+            "y -Infinity" to buildFileWithOnePoint(2f, 1f, Float.NEGATIVE_INFINITY, 0.5f),
+        )
+
+        val outcomes = invalid.mapValues { (_, bytes) -> describeReading(bytes) }
+
+        assertEquals(invalid.mapValues { "damaged" }, outcomes)
+    }
+
     @Test
     fun implausibleCountsAreReportedWithoutAllocating() {
         val valid = writeToBytes(listOf(buildTestStroke(1)), emptyList())

@@ -14,6 +14,7 @@ import app.deckly.domain.model.CardContent
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.port.DeckTransfer
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +51,9 @@ class JsonDeckTransfer(
             buildDeckFile(mapDeck(deckEntity), cardEntities.map(::mapCard), contents)
         }
         withContext(Dispatchers.IO) {
-            STRICT_JSON.encodeToStream(DeckFile.serializer(), file, output)
+            // Сначала весь файл в память, потом в поток одним вызовом: сбой кодирования не оставит в потоке половину файла.
+            val bytes = ByteArrayOutputStream().also { STRICT_JSON.encodeToStream(DeckFile.serializer(), file, it) }
+            output.write(bytes.toByteArray())
             output.flush()
         }
     }

@@ -4,6 +4,7 @@ import app.deckly.data.CancelAfterWriteStrokeFiles
 import app.deckly.data.CancelWhenDatabaseDispatcher
 import app.deckly.data.FailingAfterStrokeFiles
 import app.deckly.data.Scenario
+import app.deckly.data.SCENARIO_DAY
 import app.deckly.data.TestRepositories
 import app.deckly.data.assertSuspendThrows
 import app.deckly.data.buildFlaggedCard
@@ -16,9 +17,14 @@ import app.deckly.data.listStrokeFileNames
 import app.deckly.data.loadNormalizedDeck
 import app.deckly.data.seedDeck
 import app.deckly.data.strokes.StrokeFileException
+import app.deckly.domain.editor.Draft
+import app.deckly.domain.editor.saveDraft
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Side
+import app.deckly.domain.model.Stroke
+import app.deckly.domain.model.StrokePoint
 import app.deckly.domain.model.collectDeckChanges
 import app.deckly.domain.model.createDeck
 import app.deckly.domain.port.ImportException
@@ -26,6 +32,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.io.OutputStream
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -165,6 +172,59 @@ class JsonDeckTransferTest {
     }
 
     @Test
+    fun exportOfAnySavedDeckImports() = runTest {
+        val edge = Stroke(
+            Float.MIN_VALUE,
+            listOf(
+                StrokePoint(0f, 0f, 0f),
+                StrokePoint(-5.5f, 7f, 1f),
+                StrokePoint(Float.MAX_VALUE, -Float.MAX_VALUE, Math.nextUp(0f)),
+                StrokePoint(1e-7f, -1e-7f, Math.nextDown(1f)),
+            ),
+        )
+        val wide = Stroke(Float.MAX_VALUE, listOf(StrokePoint(1f / 3f, 2f / 3f, 0.5f)))
+        val deck = createDeck(1, "Края")
+        val before = DeckState(deck, emptyList())
+        seedDeck(repos, before)
+        val draft = Draft(null, listOf(edge, wide), listOf(wide), Side.FRONT, Section.NEW)
+        val cardId = repos.drafts.allocateCardId()
+        val (after, content) = saveDraft(before, draft, cardId, SCENARIO_DAY, now = 1_000L)
+        repos.drafts.commitDraft(collectDeckChanges(before, after), content)
+
+        val imported = repos.transfer.importDeck(asStream(exportToText(1)))
+
+        assertEquals(loadNormalizedDeck(repos, 1), loadNormalizedDeck(repos, imported.id))
+        val importedCard = repos.decks.loadDeckState(imported.id).cards.single()
+        assertEquals(listOf(edge, wide), repos.contents.loadContent(importedCard.id).front)
+    }
+
+    @Test
+    fun exportWritesTheWholeFileInOneCall() = runTest {
+        val manyPoints = List(5_000) { StrokePoint(it.toFloat(), -it.toFloat(), 0.5f) }
+        val deck = createDeck(1, "Большая")
+        val before = DeckState(deck, emptyList())
+        seedDeck(repos, before)
+        val draft = Draft(null, listOf(Stroke(2f, manyPoints)), emptyList(), Side.FRONT, Section.NEW)
+        val (after, content) = saveDraft(before, draft, repos.drafts.allocateCardId(), SCENARIO_DAY, now = 1_000L)
+        repos.drafts.commitDraft(collectDeckChanges(before, after), content)
+        val writes = mutableListOf<Int>()
+        val recording = object : OutputStream() {
+            override fun write(b: Int) {
+                writes += 1
+            }
+
+            override fun write(b: ByteArray, off: Int, len: Int) {
+                writes += len
+            }
+        }
+
+        repos.transfer.exportDeck(1, recording)
+
+        assertEquals("файл целиком одним вызовом: $writes", 1, writes.size)
+        assertTrue(writes.single() > 100_000)
+    }
+
+    @Test
     fun exportStartsWithFormatAndVersion() = runTest {
         val deck = repos.decks.createDeck("Пустая")
 
@@ -198,7 +258,7 @@ class JsonDeckTransferTest {
     }
 
     @Test
-    fun exportWithMissingStrokeFileWritesNothing() = runTest {
+    fun failedExportWritesNothing() = runTest {
         seedDeck(repos, DeckState(createDeck(1, "Колода"), listOf(buildPlainCard(101), buildPlainCard(102, 1))))
         File(repos.storage.strokesDir, repos.database.cardDao().findCard(102)!!.contentFile).delete()
         val output = ByteArrayOutputStream()
@@ -263,6 +323,8 @@ class JsonDeckTransferTest {
             damage("zero width", """"width":6.0""", """"width":0.0"""),
             damage("negative width", """"width":6.0""", """"width":-2.0"""),
             damage("textual width", """"width":6.0""", """"width":"wide""""),
+            damage("infinite coordinate", "[1.0,2.0,0.5]", "[1e999,2.0,0.5]"),
+            damage("infinite width", """"width":6.0""", """"width":1e999"""),
             damage("point of two numbers", "[1.0,2.0,0.5]", "[1.0,2.0]"),
             damage("point of four numbers", "[1.0,2.0,0.5]", "[1.0,2.0,0.5,0.1]"),
             damage("three pass counts", """"passCount":[5,1,0,0]""", """"passCount":[5,1,0]"""),

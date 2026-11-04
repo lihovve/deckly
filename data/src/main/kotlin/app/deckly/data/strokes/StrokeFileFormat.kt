@@ -66,7 +66,12 @@ private fun readStroke(buffer: ByteBuffer): Stroke {
     if (buffer.remaining() < STROKE_HEADER_BYTES) throw StrokeFileException("Файл оборван посреди штриха")
     val width = buffer.getFloat()
     val count = readPointCount(buffer)
-    return Stroke(width, List(count) { StrokePoint(buffer.getFloat(), buffer.getFloat(), buffer.getFloat()) })
+    return try {
+        Stroke(width, List(count) { StrokePoint(buffer.getFloat(), buffer.getFloat(), buffer.getFloat()) })
+    } catch (invalid: IllegalArgumentException) {
+        // Нажим вне 0..1, не число или нулевая толщина: модель такой штрих создать не даёт.
+        throw StrokeFileException("Недопустимое значение в штрихе: ${invalid.message}", invalid)
+    }
 }
 
 private fun readPointCount(buffer: ByteBuffer): Int {

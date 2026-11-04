@@ -177,16 +177,19 @@ private fun parseCard(dto: CardDto): ParsedCard {
     return ParsedCard(card, dto.front.map { parseStroke(it, dto.id) }, dto.back.map { parseStroke(it, dto.id) })
 }
 
-private fun parseStroke(dto: StrokeDto, cardId: Long): Stroke {
-    requireValid(dto.width.isFinite() && dto.width > 0f) { "Карточка $cardId: толщина ${dto.width}" }
-    val points = dto.points.map { values ->
-        requireValid(values.size == POINT_VALUES) { "Карточка $cardId: в точке ${values.size} чисел вместо трёх" }
-        requireValid(values.all { it.isFinite() }) { "Карточка $cardId: координата или нажим не число" }
-        requireValid(values[2] in 0f..1f) { "Карточка $cardId: нажим ${values[2]} вне 0..1" }
-        StrokePoint(values[0], values[1], values[2])
+/** Допустимость значений (толщина, конечные координаты, нажим 0..1) решает модель: она не создаёт плохой штрих. */
+private fun parseStroke(dto: StrokeDto, cardId: Long): Stroke =
+    try {
+        Stroke(
+            dto.width,
+            dto.points.map { values ->
+                requireValid(values.size == POINT_VALUES) { "Карточка $cardId: в точке ${values.size} чисел вместо трёх" }
+                StrokePoint(values[0], values[1], values[2])
+            },
+        )
+    } catch (invalid: IllegalArgumentException) {
+        throw ImportException(ImportError.DAMAGED, IllegalArgumentException("Карточка $cardId: ${invalid.message}", invalid))
     }
-    return Stroke(dto.width, points)
-}
 
 private inline fun <reified T : Enum<T>> parseEnum(name: String, what: String): T =
     enumValues<T>().firstOrNull { it.name == name } ?: throw buildDamaged("Неизвестное значение $what: $name")
