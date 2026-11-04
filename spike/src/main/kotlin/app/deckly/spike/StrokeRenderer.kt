@@ -166,14 +166,15 @@ object StrokeRenderer {
     }
 
     // Что SDK делает с нажимом: до CURVE_MAX_PAIRS равномерных точек результата как «нажим:толщина».
+    // Точки результата нажима не несут (на планшете там 0), поэтому нажим берётся из входной точки с
+    // индексом round(i * (in - 1) / (out - 1)); при in == out это тот же индекс.
     private fun logFountainCurve(stroke: SpikeStroke) {
         try {
-            val maxPressure = SdkStatus.maxTouchPressure
             val result = NeoFountainPenWrapper.computeStrokePoints(
                 toTouchPoints(stroke),
                 SDK_SCALE,
                 stroke.width,
-                maxPressure,
+                SdkStatus.maxTouchPressure,
             )
             if (result.isNullOrEmpty()) {
                 SpikeLog.write("PEN_FOUNTAIN_CURVE", "width" to stroke.width, "pairs" to "none", "in" to stroke.pointCount, "out" to 0)
@@ -182,8 +183,8 @@ object StrokeRenderer {
             val count = minOf(CURVE_MAX_PAIRS, result.size)
             val pairs = (0 until count).joinToString(",") { slot ->
                 val index = if (count == 1) 0 else (slot * (result.size - 1).toDouble() / (count - 1)).roundToInt()
-                val point = result[index]
-                "${format(point.pressure / maxPressure)}:${format(point.size)}"
+                val inputIndex = if (result.size == 1) 0 else (index * (stroke.pointCount - 1).toDouble() / (result.size - 1)).roundToInt()
+                "${format(stroke.pressure(inputIndex))}:${format(result[index].size)}"
             }
             SpikeLog.write(
                 "PEN_FOUNTAIN_CURVE",
