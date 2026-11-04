@@ -1,5 +1,6 @@
 package app.deckly.data.db
 
+import androidx.room3.ColumnInfo
 import androidx.room3.Dao
 import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
@@ -8,6 +9,9 @@ import androidx.room3.Update
 
 /** Колонки `id` и `name` колоды: список колод не читает остальное. */
 data class DeckNameRow(val id: Long, val name: String)
+
+/** Какой файл штрихов у карточки: всё, что нужно уборке. */
+data class CardFileRow(val id: Long, @ColumnInfo(name = "content_file") val contentFile: String)
 
 @Dao
 abstract class DeckDao {
@@ -93,10 +97,11 @@ abstract class CardDao {
     abstract suspend fun listDeckContentFiles(deckId: Long): List<String>
 
     @Query(
-        "SELECT card.content_file\n" +
+        "SELECT card.id,\n" +
+        "       card.content_file\n" +
         "  FROM card",
     )
-    abstract suspend fun listAllContentFiles(): List<String>
+    abstract suspend fun listCardFiles(): List<CardFileRow>
 
     /** Подменяет ссылку на файл штрихов, не трогая состояние алгоритма. Возвращает число строк. */
     @Query(

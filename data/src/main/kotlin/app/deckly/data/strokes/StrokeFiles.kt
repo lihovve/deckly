@@ -5,6 +5,8 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.channels.FileChannel
+import java.nio.file.StandardOpenOption
 import kotlin.random.Random
 
 private const val CONTENT_SUFFIX = ".dks"
@@ -12,10 +14,24 @@ private const val TEMPORARY_SUFFIX = ".tmp"
 private const val CARD_PREFIX = "card-"
 private const val DRAFT_PREFIX = "draft-"
 
+/** `card-<id>-<что угодно>.dks`: id карточки выделяется только из таких имён. */
+private val CARD_FILE_NAME = Regex("""^card-(\d+)-.*\.dks$""")
+
+/**
+ * Что база помнит о файлах штрихов: файл каждой карточки (`id → имя`), файл черновика и счётчик
+ * `next_card_id`. Уборка удаляет только то, что по этим данным доказуемо лишнее.
+ */
+class StrokeReferences(
+    val cardFiles: Map<Long, String>,
+    val draftFile: String?,
+    val nextCardId: Long,
+)
+
 /**
  * Файлы штрихов в папке [strokesDir]: `card-<cardId>-<16 hex>.dks` и `draft-<16 hex>.dks`. У каждой
- * записи новое имя. Запись идёт в `<имя>.tmp`, потом `renameTo`, поэтому полуфайла под настоящим
- * именем не бывает. Возвращаются имена без пути. Всё, что не названо здесь, чужое и не трогается.
+ * записи новое имя. Запись идёт в `<имя>.tmp`, потом `renameTo`, потом сбрасывается на диск сама папка
+ * ([syncDirectory]): иначе после сбоя питания переименование могло бы потеряться, а база уже ссылалась
+ * бы на файл. Возвращаются имена без пути. Всё, что не названо здесь, чужое и не трогается.
  *
  * [onFileChanged] получает каждый записанный и каждый удалённый файл (после того, как это случилось):
  * так MediaStore узнаёт обо всех изменениях папки.
@@ -23,6 +39,7 @@ private const val DRAFT_PREFIX = "draft-"
 open class StrokeFiles(
     private val strokesDir: File,
     private val onFileChanged: (File) -> Unit = {},
+    private val syncDirectory: (File) -> Unit = ::forceDirectoryToDisk,
 ) {
 
     // Запись открыта для переопределения ради тестов: сбой записи при настоящем удалении.
@@ -42,6 +59,17 @@ open class StrokeFiles(
         }
     }
 
+    /** Есть ли в папке обычный файл с таким именем. Имя с путём — всегда нет. */
+    fun hasFile(name: String): Boolean = findOwnFile(name)?.isFile == true
+
+    /** Самый новый по времени изменения файл карточки [cardId] или `null`: запасное чтение, если файл по ссылке пропал. */
+    fun findNewestCardFile(cardId: Long): String? =
+        findNewestFile { CARD_FILE_NAME.matchEntire(it)?.groupValues?.get(1) == cardId.toString() }
+
+    /** Самый новый по времени изменения файл черновика или `null`. */
+    fun findNewestDraftFile(): String? =
+        findNewestFile { it.startsWith(DRAFT_PREFIX) && it.endsWith(CONTENT_SUFFIX) }
+
     /** Удаляет файл, если он есть. Имя не из этой папки игнорируется: чужое не трогаем никогда. */
     fun deleteContentFile(name: String) {
         val file = findOwnFile(name)?.takeIf { it.isFile } ?: return
@@ -49,16 +77,47 @@ open class StrokeFiles(
     }
 
     /**
-     * Удаляет в [strokesDir] все `*.tmp` и файлы `card-*.dks` и `draft-*.dks`, которых нет в
-     * [referenced]. Остальное не трогает. Вызывается при открытии хранилища, пока никто не пишет.
+     * Уборка при открытии хранилища, пока никто не пишет. Удаляет только доказуемо лишнее.
+     * - `X.tmp`: если база ссылается на `X`, а `X` нет, это записанный до конца файл, у которого потерялось
+     *   переименование (данные сброшены на диск раньше его) — его переименовывают в `X`. Иначе `X.tmp` удаляется.
+     * - `card-<id>-*.dks`: удаляется, если карточка есть в базе, ссылается на другой файл и тот существует
+     *   (старая версия), или если карточки нет, а `id < next_card_id` (удалённая карточка или неудавшееся
+     *   создание). Файл карточки новее базы (`id >= next_card_id`) и единственная копия при пропавшем файле по
+     *   ссылке остаются.
+     * - `draft-*.dks`: удаляется, если строки черновика нет или она ссылается на другой существующий файл.
+     * Остальное, в том числе имена не нашего вида, не трогается.
      */
-    fun cleanUpStrokeFiles(referenced: Set<String>) {
-        val candidates = strokesDir.listFiles()?.filter { it.isFile } ?: return
-        for (file in candidates) {
-            val isObsolete = file.name.endsWith(TEMPORARY_SUFFIX) ||
-                (isContentFileName(file.name) && file.name !in referenced)
+    fun cleanUpStrokeFiles(references: StrokeReferences) {
+        val referencedNames = references.cardFiles.values.toSet() + listOfNotNull(references.draftFile)
+        recoverCommittedTemporaryFiles(referencedNames)
+        val files = strokesDir.listFiles()?.filter { it.isFile } ?: return
+        for (file in files) {
+            val name = file.name
+            val isObsolete = when {
+                name.endsWith(TEMPORARY_SUFFIX) -> true
+                !isContentFileName(name) || name in referencedNames -> false
+                name.startsWith(CARD_PREFIX) -> isObsoleteCardFile(name, references)
+                else -> references.draftFile == null || File(strokesDir, references.draftFile).isFile
+            }
             if (isObsolete && file.delete()) onFileChanged(file)
         }
+    }
+
+    private fun recoverCommittedTemporaryFiles(referencedNames: Set<String>) {
+        val temporaries = strokesDir.listFiles()?.filter { it.isFile && it.name.endsWith(TEMPORARY_SUFFIX) } ?: return
+        for (temporary in temporaries) {
+            val target = File(strokesDir, temporary.name.removeSuffix(TEMPORARY_SUFFIX))
+            if (target.name in referencedNames && !target.exists() && temporary.renameTo(target)) {
+                syncDirectoryBestEffort()
+                onFileChanged(target)
+            }
+        }
+    }
+
+    private fun isObsoleteCardFile(name: String, references: StrokeReferences): Boolean {
+        val cardId = CARD_FILE_NAME.matchEntire(name)?.groupValues?.get(1)?.toLongOrNull() ?: return false
+        val referencedFile = references.cardFiles[cardId]
+        return if (referencedFile != null) File(strokesDir, referencedFile).isFile else cardId < references.nextCardId
     }
 
     private fun writeNewFile(prefix: String, front: List<Stroke>, back: List<Stroke>): String {
@@ -78,8 +137,21 @@ open class StrokeFiles(
             temporary.delete()
             throw failure
         }
+        syncDirectoryBestEffort()
         onFileChanged(File(strokesDir, name))
         return name
+    }
+
+    /**
+     * Сбрасывает папку на диск, чтобы переименование пережило сбой питания. Если файловая система этого не
+     * умеет, запись не падает: данные файла уже на диске, а потерянное переименование восстановит уборка.
+     */
+    private fun syncDirectoryBestEffort() {
+        try {
+            syncDirectory(strokesDir)
+        } catch (unsupported: IOException) {
+            // см. выше
+        }
     }
 
     private fun generateFreeName(prefix: String): String {
@@ -89,6 +161,12 @@ open class StrokeFiles(
         }
     }
 
+    private fun findNewestFile(isWanted: (String) -> Boolean): String? =
+        strokesDir.listFiles()
+            ?.filter { it.isFile && isWanted(it.name) && !it.name.endsWith(TEMPORARY_SUFFIX) }
+            ?.maxByOrNull { it.lastModified() }
+            ?.name
+
     /** Файл в [strokesDir] по простому имени; имя с путём, `.` и `..` — не наш файл. */
     private fun findOwnFile(name: String): File? {
         if (name.isEmpty() || name == "." || name == ".." || name != File(name).name) return null
@@ -97,4 +175,15 @@ open class StrokeFiles(
 
     private fun isContentFileName(name: String): Boolean =
         name.endsWith(CONTENT_SUFFIX) && (name.startsWith(CARD_PREFIX) || name.startsWith(DRAFT_PREFIX))
+}
+
+/** Сколько в [strokesDir] файлов карточек `card-*.dks`. Папки нет — ноль. */
+fun countCardFiles(strokesDir: File): Int =
+    strokesDir.listFiles()?.count {
+        it.isFile && it.name.startsWith(CARD_PREFIX) && it.name.endsWith(CONTENT_SUFFIX)
+    } ?: 0
+
+/** Сбрасывает на диск саму папку: `fsync` её дескриптора (на Linux и Android каталог открывается только на чтение). */
+fun forceDirectoryToDisk(dir: File) {
+    FileChannel.open(dir.toPath(), StandardOpenOption.READ).use { it.force(true) }
 }

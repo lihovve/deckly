@@ -3,6 +3,7 @@ package app.deckly.data
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import app.deckly.data.db.DatabaseDamagedException
+import app.deckly.data.db.DatabaseMissingException
 import app.deckly.domain.editor.Draft
 import app.deckly.domain.editor.saveDraft
 import app.deckly.domain.model.DeckChanges
@@ -42,18 +43,74 @@ class DecklyDataTest {
 
     @Test
     fun openingCreatesFoldersAndCleansStrokes() = runTest {
-        storage.ensureDirectories()
+        // База, в которой выдан id 1 и 2, но карточек нет: так выглядит неудавшееся создание.
+        openDecklyData(context, rootDir).use { data ->
+            data.drafts.allocateCardId()
+            data.drafts.allocateCardId()
+            assertTrue(storage.strokesDir.isDirectory)
+            assertTrue(storage.databaseFile.isFile)
+        }
         val temporary = File(storage.strokesDir, "x.tmp").apply { writeText("недописан") }
-        val orphan = File(storage.strokesDir, "card-9-0123456789abcdef.dks").apply { writeText("ничей") }
+        val orphan = File(storage.strokesDir, "card-1-0123456789abcdef.dks").apply { writeText("ничей") }
         val foreign = File(storage.strokesDir, "README").apply { writeText("не трогать") }
 
         openDecklyData(context, rootDir).use {
-            assertTrue(storage.strokesDir.isDirectory)
-            assertTrue(storage.databaseFile.isFile)
             assertFalse(temporary.exists())
             assertFalse(orphan.exists())
             assertTrue(foreign.isFile)
         }
+    }
+
+    @Test
+    fun freshInstallOpensNormally() = runTest {
+        openDecklyData(context, rootDir).use { data ->
+            assertEquals(emptyList<Any>(), data.decks.listDecks())
+            assertTrue(storage.strokesDir.isDirectory)
+            assertTrue(storage.databaseFile.isFile)
+        }
+    }
+
+    @Test
+    fun missingDatabaseWithCardFilesRefusesToOpen() = runTest {
+        storage.ensureDirectories()
+        writeSeedFile(storage, "card-5-0123456789abcdef.dks", buildSeedContent(5))
+        writeSeedFile(storage, "card-6-0123456789abcdef.dks", buildSeedContent(6))
+        writeSeedFile(storage, "draft-0123456789abcdef.dks", buildSeedContent(7))
+        val filesBefore = listStrokeFileNames(storage)
+        val rootBefore = rootDir.list().orEmpty().toSet()
+
+        val failure = assertSuspendThrows<DatabaseMissingException> { openDecklyData(context, rootDir) }
+
+        assertEquals(2, failure.cardFileCount)
+        assertEquals(rootDir, failure.dir)
+        assertEquals(filesBefore, listStrokeFileNames(storage))
+        assertEquals("база не должна создаваться", rootBefore, rootDir.list().orEmpty().toSet())
+    }
+
+    @Test
+    fun emptyDatabaseFileWithCardFilesRefusesToOpen() = runTest {
+        storage.ensureDirectories()
+        writeSeedFile(storage, "card-5-0123456789abcdef.dks", buildSeedContent(5))
+        writeSeedFile(storage, "card-6-0123456789abcdef.dks", buildSeedContent(6))
+        storage.databaseFile.writeBytes(ByteArray(0))
+        val filesBefore = listStrokeFileNames(storage)
+
+        val failure = assertSuspendThrows<DatabaseMissingException> { openDecklyData(context, rootDir) }
+
+        assertEquals(2, failure.cardFileCount)
+        assertEquals(filesBefore, listStrokeFileNames(storage))
+        assertEquals("пустой файл остался пустым", 0L, storage.databaseFile.length())
+    }
+
+    @Test
+    fun missingDatabaseWithoutCardFilesOpens() = runTest {
+        storage.ensureDirectories()
+        writeSeedFile(storage, "draft-0123456789abcdef.dks", buildSeedContent(7))
+
+        openDecklyData(context, rootDir).use { data ->
+            assertEquals(emptyList<Any>(), data.decks.listDecks())
+        }
+        assertEquals("черновик без базы убирается как лишний", emptySet<String>(), listStrokeFileNames(storage))
     }
 
     @Test

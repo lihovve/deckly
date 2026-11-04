@@ -5,9 +5,11 @@ import app.deckly.data.assertSuspendThrows
 import app.deckly.data.buildPlainCard
 import app.deckly.data.buildSeedContent
 import app.deckly.data.buildSeedContentFile
+import app.deckly.data.buildTestStroke
 import app.deckly.data.createTestStorage
 import app.deckly.data.seedDeck
 import app.deckly.data.strokes.StrokeFileException
+import app.deckly.domain.model.CardContent
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.createDeck
 import java.io.File
@@ -43,6 +45,33 @@ class FileCardContentRepositoryTest {
     fun missingStrokeFileIsReported() = runTest {
         seedDeck(repos, state)
         File(repos.storage.strokesDir, buildSeedContentFile(1)).delete()
+
+        assertSuspendThrows<StrokeFileException> { repos.contents.loadContent(1) }
+    }
+
+    @Test
+    fun loadContentFallsBackToNewestFileOfTheCard() = runTest {
+        seedDeck(repos, state)
+        File(repos.storage.strokesDir, buildSeedContentFile(1)).delete()
+        val older = repos.files.writeCardFile(1, listOf(buildTestStroke(30)), emptyList())
+        val newer = repos.files.writeCardFile(1, listOf(buildTestStroke(31)), emptyList())
+        // Файл другой карточки (id 12, начало то же) самый новый, но чужой.
+        val foreign = repos.files.writeCardFile(12, listOf(buildTestStroke(32)), emptyList())
+        File(repos.storage.strokesDir, older).setLastModified(1_000)
+        File(repos.storage.strokesDir, newer).setLastModified(5_000)
+        File(repos.storage.strokesDir, foreign).setLastModified(9_000)
+
+        val content = repos.contents.loadContent(1)
+
+        assertEquals(CardContent(1, listOf(buildTestStroke(31)), emptyList()), content)
+    }
+
+    @Test
+    fun damagedReferencedFileDoesNotFallBack() = runTest {
+        seedDeck(repos, state)
+        val damaged = File(repos.storage.strokesDir, buildSeedContentFile(1))
+        damaged.writeBytes(damaged.readBytes().copyOf(10))
+        repos.files.writeCardFile(1, listOf(buildTestStroke(30)), emptyList())
 
         assertSuspendThrows<StrokeFileException> { repos.contents.loadContent(1) }
     }

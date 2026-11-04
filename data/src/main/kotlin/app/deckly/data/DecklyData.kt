@@ -2,6 +2,7 @@ package app.deckly.data
 
 import android.content.Context
 import app.deckly.data.db.checkDatabaseIntegrity
+import app.deckly.data.db.checkDatabaseIsNotMissing
 import app.deckly.data.db.openDecklyDatabase
 import app.deckly.data.repository.FileCardContentRepository
 import app.deckly.data.repository.RoomAppStateRepository
@@ -43,14 +44,18 @@ class DecklyData(
 
 /**
  * Открывает хранение в папке [rootDir] (в приложении `Environment.getExternalStorageDirectory()/Deckly`):
- * проверяет целостность базы, создаёт папки, открывает базу, убирает файлы штрихов, на которые никто
+ * проверяет целостность базы и то, что у файлов карточек есть база ([app.deckly.data.db.DatabaseMissingException]),
+ * создаёт папки, открывает базу, убирает файлы штрихов, на которые никто
  * не ссылается, и недописанные `*.tmp`, собирает репозитории. Звать один раз при старте, пока никто
  * ничего не пишет. Повреждённая база — [app.deckly.data.db.DatabaseDamagedException], файл не тронут.
  */
 suspend fun openDecklyData(context: Context, rootDir: File): DecklyData {
     val storage = DecklyStorage(rootDir)
     // До Room и до любых папок: повреждённая база не открывается и ничего вокруг себя не создаёт.
-    withContext(Dispatchers.IO) { checkDatabaseIntegrity(storage.databaseFile) }
+    withContext(Dispatchers.IO) {
+        checkDatabaseIntegrity(storage.databaseFile)
+        checkDatabaseIsNotMissing(storage)
+    }
     storage.ensureDirectories()
     val mediaStore = MediaStoreNotifier(context, storage)
     val database = openDecklyDatabase(context, storage)

@@ -3,12 +3,14 @@ package app.deckly.data.repository
 import androidx.room3.withWriteTransaction
 import app.deckly.data.db.DecklyDatabase
 import app.deckly.data.db.DraftEntity
+import app.deckly.data.strokes.StrokeFileException
 import app.deckly.data.strokes.StrokeFiles
 import app.deckly.domain.editor.Draft
 import app.deckly.domain.model.CardContent
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
+import app.deckly.domain.model.Stroke
 import app.deckly.domain.port.DraftRepository
 import app.deckly.domain.port.StoredDraft
 import kotlinx.coroutines.Dispatchers
@@ -27,8 +29,10 @@ class RoomDraftRepository(
 
     /**
      * Черновик правки карточки, которой уже нет (убили между удалением карточки и удалением
-     * черновика), отбрасывается: возвращается `null`, строка и файл удалены. Файл штрихов пропал
-     * или повреждён — `StrokeFileException`.
+     * черновика), отбрасывается: возвращается `null`, строка и файл удалены. Файл по ссылке пропал
+     * (копия снята посреди сохранения): читается самый новый из оставшихся файлов черновика. Если
+     * читать нечего или файл повреждён, строка черновика удаляется и возвращается `null`: иначе
+     * приложение падало бы при каждом запуске.
      */
     override suspend fun loadDraft(): StoredDraft? {
         val row = database.draftDao().findDraft() ?: return null
@@ -37,9 +41,24 @@ class RoomDraftRepository(
             discardDraft()
             return null
         }
-        val (front, back) = withContext(Dispatchers.IO) { files.readFile(row.contentFile) }
+        val strokes = withContext(Dispatchers.IO) { readDraftStrokesOrNull(row.contentFile) }
+        if (strokes == null) {
+            discardDraft()
+            return null
+        }
+        val (front, back) = strokes
         val draft = Draft(editedCardId, front, back, Side.valueOf(row.visibleSide), Section.valueOf(row.returnSection))
         return StoredDraft(row.deckId, draft)
+    }
+
+    private fun readDraftStrokesOrNull(referencedFile: String): Pair<List<Stroke>, List<Stroke>>? {
+        val name = if (files.hasFile(referencedFile)) referencedFile else files.findNewestDraftFile()
+        if (name == null) return null
+        return try {
+            files.readFile(name)
+        } catch (damaged: StrokeFileException) {
+            null
+        }
     }
 
     override suspend fun storeDraft(stored: StoredDraft) {

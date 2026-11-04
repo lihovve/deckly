@@ -301,6 +301,82 @@ class RoomDraftRepositoryTest {
     }
 
     @Test
+    fun killBeforeCreationTransactionLeavesNoOrphan() = runTest {
+        seedDeck(repos, baseState)
+        // Выдан id новой карточки и записан её файл, до транзакции убили.
+        val cardId = repos.drafts.allocateCardId()
+        val orphan = repos.files.writeCardFile(cardId, listOf(buildTestStroke(50)), emptyList())
+
+        repos.reopen()
+        removeUnreferencedStrokeFiles(repos.database, repos.files)
+
+        assertFalse(hasStrokeFile(repos.storage, orphan))
+        assertEquals(baseState, repos.decks.loadDeckState(1))
+    }
+
+    @Test
+    fun staleStrokesAreKeptAndRead() = runTest {
+        seedDeck(repos, baseState)
+        val oldFile = buildSeedContentFile(101)
+        val oldBytes = File(repos.storage.strokesDir, oldFile).readBytes()
+        val draft = buildEditDraft(101)
+        val (after, content) = saveDraft(baseState, draft, newCardId = 0, today = SCENARIO_DAY, now = 1_000L)
+        repos.drafts.commitDraft(collectDeckChanges(baseState, after), content)
+        val newFile = repos.database.cardDao().findCard(101)!!.contentFile
+        // Копия снята посреди правки: база уже ссылается на новый файл, а в strokes/ ещё старый.
+        File(repos.storage.strokesDir, newFile).delete()
+        File(repos.storage.strokesDir, oldFile).writeBytes(oldBytes)
+
+        repos.reopen()
+        removeUnreferencedStrokeFiles(repos.database, repos.files)
+
+        assertTrue("старый файл — единственная копия, его нельзя удалять", hasStrokeFile(repos.storage, oldFile))
+        assertEquals(buildSeedContent(101), repos.contents.loadContent(101))
+    }
+
+    @Test
+    fun missingDraftFileFallsBackToNewestDraftFile() = runTest {
+        seedDeck(repos, baseState)
+        repos.drafts.storeDraft(StoredDraft(1, buildNewCardDraft(seed = 1)))
+        val referenced = repos.database.draftDao().findDraft()!!.contentFile
+        File(repos.storage.strokesDir, referenced).delete()
+        val older = repos.files.writeDraftFile(listOf(buildTestStroke(40)), emptyList())
+        val newer = repos.files.writeDraftFile(listOf(buildTestStroke(41)), emptyList())
+        File(repos.storage.strokesDir, older).setLastModified(1_000)
+        File(repos.storage.strokesDir, newer).setLastModified(5_000)
+
+        val loaded = repos.drafts.loadDraft()!!
+
+        assertEquals(listOf(buildTestStroke(41)), loaded.draft.front)
+        assertNotNull(repos.database.draftDao().findDraft())
+    }
+
+    @Test
+    fun missingDraftFileWithoutAnyOtherDropsTheDraft() = runTest {
+        seedDeck(repos, baseState)
+        repos.drafts.storeDraft(StoredDraft(1, buildNewCardDraft()))
+        File(repos.storage.strokesDir, repos.database.draftDao().findDraft()!!.contentFile).delete()
+
+        assertNull(repos.drafts.loadDraft())
+
+        assertNull(repos.database.draftDao().findDraft())
+        assertNull("следующий запуск не должен падать снова", repos.drafts.loadDraft())
+    }
+
+    @Test
+    fun damagedDraftFileDropsTheDraft() = runTest {
+        seedDeck(repos, baseState)
+        repos.drafts.storeDraft(StoredDraft(1, buildNewCardDraft()))
+        val file = File(repos.storage.strokesDir, repos.database.draftDao().findDraft()!!.contentFile)
+        file.writeBytes(file.readBytes().copyOf(10))
+
+        assertNull(repos.drafts.loadDraft())
+
+        assertNull(repos.database.draftDao().findDraft())
+        assertEquals(emptyList<String>(), listDraftFiles())
+    }
+
+    @Test
     fun cleanUpKeepsFilesOfCardsAndDraft() = runTest {
         seedDeck(repos, baseState)
         repos.drafts.storeDraft(StoredDraft(1, buildNewCardDraft()))
