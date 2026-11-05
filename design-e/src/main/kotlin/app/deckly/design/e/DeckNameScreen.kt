@@ -15,7 +15,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -23,6 +26,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import app.deckly.ui.contract.DeckNameAction
 import app.deckly.ui.contract.DeckNameState
 
@@ -49,6 +53,10 @@ fun DeckNameScreen(state: DeckNameState, onAction: (DeckNameAction) -> Unit) {
 
 @Composable
 private fun NameField(state: DeckNameState, onAction: (DeckNameAction) -> Unit) {
+    // Буфер ввода принадлежит полю и обновляется синхронно в onValueChange. Состояние формы возвращается через поток
+    // с отставанием на кадр, и поле, которое показывало бы его, на клавиатуре с подсказками теряло бы буквы, а курсор
+    // прыгал бы. Состояние решает только canSave: правило «имя не пустое» остаётся в ViewModel.
+    var text by remember { mutableStateOf(TextFieldValue(state.name)) }
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) {
@@ -58,8 +66,11 @@ private fun NameField(state: DeckNameState, onAction: (DeckNameAction) -> Unit) 
     Column(Modifier.padding(top = Tokens.FieldMarginTop), verticalArrangement = Arrangement.spacedBy(Tokens.FieldGap)) {
         BasicText(DeckNameTexts.FIELD_LABEL, style = buildTextStyle(Tokens.FieldLabelText))
         BasicTextField(
-            value = state.name,
-            onValueChange = { onAction(DeckNameAction.ChangeName(it)) },
+            value = text,
+            onValueChange = {
+                text = it
+                onAction(DeckNameAction.ChangeName(it.text))
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(Tokens.InputHeight)
@@ -75,7 +86,7 @@ private fun NameField(state: DeckNameState, onAction: (DeckNameAction) -> Unit) 
             keyboardActions = KeyboardActions(onDone = { if (state.canSave) onAction(DeckNameAction.Save) }),
             decorationBox = { innerTextField ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
-                    if (state.name.isEmpty()) {
+                    if (text.text.isEmpty()) {
                         BasicText(DeckNameTexts.PLACEHOLDER, style = buildTextStyle(Tokens.InputText, color = Tokens.Unavailable))
                     }
                     innerTextField()

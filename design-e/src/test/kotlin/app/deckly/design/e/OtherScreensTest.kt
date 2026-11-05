@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
@@ -313,6 +314,20 @@ class OtherScreensTest {
     }
 
     @Test
+    fun typedTextStaysWhenStateLags() {
+        // Хост получает ChangeName, но состояние не возвращает (имя в нём навсегда пустое).
+        showFrame { DeckNameScreen(buildNameState(""), { nameActions += it }) }
+
+        composeRule.onNode(hasSetTextAction()).performTextInput("Немецкий")
+
+        // Поле держит набранное само: оно не откатывается к устаревшему состоянию, а VM получил копию в том же вызове.
+        assertEquals("Немецкий", readFieldText())
+        assertEquals(listOf<DeckNameAction>(DeckNameAction.ChangeName("Немецкий")), nameActions)
+        // Подсказка по набранному тексту, а не по состоянию.
+        composeRule.onNodeWithText("Немецкий A2").assertDoesNotExist()
+    }
+
+    @Test
     fun fieldIsSingleLine() {
         formName = ""
         showFrame {
@@ -448,6 +463,10 @@ class OtherScreensTest {
             Box(Modifier.size(Tokens.FrameWidth, Tokens.FrameHeight).background(Color.White).testTag("frame")) { content() }
         }
     }
+
+    // Текст в поле ввода без подсказки.
+    private fun readFieldText(): String =
+        composeRule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.EditableText].text
 
     // Ширина чёрной рамки у левого края узла на середине высоты.
     private fun measureBorder(node: SemanticsNodeInteraction): Int {
