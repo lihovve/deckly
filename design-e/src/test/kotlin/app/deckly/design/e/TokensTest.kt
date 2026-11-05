@@ -31,8 +31,8 @@ class TokensTest {
         assertDp(findCssNumber(".metric", "min-width"), Tokens.MetricMinWidth)
         assertDp(findCssNumber(".metric", "padding-left"), Tokens.MetricPadding)
         assertDp(findCssNumber(".metric", "gap"), Tokens.MetricGap)
-        assertSp(findCssNumber(".metric span", "font-size"), Tokens.LabelText)
-        assertSp(findCssNumber(".metric strong", "font-size"), Tokens.ValueText)
+        assertSp(findCssNumber(".metric>span", "font-size"), Tokens.LabelText)
+        assertSp(findCssNumber(".metric-value", "font-size"), Tokens.ValueText)
     }
 
     @Test
@@ -147,7 +147,7 @@ class TokensTest {
         assertDp(findCssNumber(".line-sample", "border-radius"), Tokens.LineSampleRadius)
         assertSp(findCssNumber(".heading h1", "letter-spacing"), Tokens.HeadingSpacing)
         // Высоты образцов линии заданы в build.py, а не в стилях.
-        assertTrue(buildScript.contains("[('Тонкая', 2), ('Средняя', 7), ('Толстая', 15)]"))
+        assertTrue(buildScript.contains("[('Thin', 2), ('Medium', 7), ('Thick', 15)]"))
         assertEquals(listOf(2f, 7f, 15f), listOf(Tokens.LineThin, Tokens.LineMedium, Tokens.LineThick).map { it.value })
     }
 
@@ -158,8 +158,8 @@ class TokensTest {
             assertThrows(property, IllegalStateException::class.java) { findCssValue(".thickness", property) }
         }
         assertFalse(buildScript.contains("icon('eraser')"))
-        assertFalse(buildScript.contains("aria-label=\"Ластик\""))
-        assertFalse(buildScript.contains("aria-label=\"Перо\""))
+        assertFalse(buildScript.contains("aria-label=\"Eraser\""))
+        assertFalse(buildScript.contains("aria-label=\"Pen\""))
     }
 
     @Test

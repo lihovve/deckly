@@ -181,10 +181,7 @@ fun SectionTabs(tabs: List<TabState>, onOpen: (SectionTab) -> Unit, modifier: Mo
 
 @Composable
 private fun SectionTabCell(tab: TabState, onOpen: (SectionTab) -> Unit, modifier: Modifier) {
-    val description = buildString {
-        append(tab.section.toLabel()).append(", ").append(formatCardCount(tab.count))
-        if (tab.isActive) append(", сейчас обучение")
-    }
+    val description = DeckTexts.describeTab(tab.section.toLabel(), tab.count, tab.isActive)
     val weight = if (tab.isOpen) FontWeight.Bold else FontWeight.Normal
     Column(
         modifier

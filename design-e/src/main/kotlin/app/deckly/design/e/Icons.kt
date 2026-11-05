@@ -34,6 +34,8 @@ enum class IconId(val key: String, val shapes: List<IconShape>) {
     // rect x=6 y=6 width=14 height=16 rx=2 и контур задней карточки.
     CARDS("cards", listOf(IconShape("M8 6h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"), IconShape("M16 3H5a2 2 0 0 0-2 2v13"))),
     EXPORT("export", listOf(IconShape("M12 15V3m-4 4 4-4 4 4M4 13v8h16v-8"))),
+    // circle cx=7 cy=8 r=4 двумя дугами от самой левой точки и контур треугольника с уголком.
+    SHAPES("shapes", listOf(IconShape("M3 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0"), IconShape("m16 5 6 12H10Z M3 16v5h6"))),
 }
 
 // Круг радиуса 1 с центром (центр, 12) двумя дугами: так же, как `<circle cx r="1">` в макете.
@@ -62,6 +64,7 @@ object DecklyIcons {
     val File get() = get(IconId.FILE)
     val Cards get() = get(IconId.CARDS)
     val Export get() = get(IconId.EXPORT)
+    val Shapes get() = get(IconId.SHAPES)
 }
 
 // Цвет в векторе чёрный: на экран значок выводится через ColorFilter.tint, чтобы недоступные были серыми.

@@ -63,13 +63,13 @@ class EditorScreenTest {
         showScreen(buildState())
 
         val described = listOf(
-            "Толщина пера", "Тонкая линия", "Средняя линия", "Толстая линия", "Отменить штрих",
-            "Сторона карточки", "Инструменты рисования", "Холст. Рисование только пером",
+            "Pen width", "Thin line", "Medium line", "Thick line", "Undo stroke",
+            "Card side", "Drawing tools", "Canvas. Draw with the pen only",
         )
         for (description in described) composeRule.onNodeWithContentDescription(description).assertExists()
-        composeRule.onNodeWithText("Вопрос").assertExists()
-        composeRule.onNodeWithText("Ответ").assertExists()
-        composeRule.onNodeWithText("Сохранить").assertExists()
+        composeRule.onNodeWithText("Question").assertExists()
+        composeRule.onNodeWithText("Answer").assertExists()
+        composeRule.onNodeWithText("Save").assertExists()
     }
 
     @Test
@@ -77,38 +77,38 @@ class EditorScreenTest {
         showScreen(buildState())
 
         // Переключателя инструмента нет: пишет кончик пера, стирает боковая кнопка стилуса.
-        composeRule.onNodeWithContentDescription("Перо").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Ластик").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Толщина пера").assertExists()
-        composeRule.onNodeWithContentDescription("Отменить штрих").assertExists()
+        composeRule.onNodeWithContentDescription("Pen").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Eraser").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Pen width").assertExists()
+        composeRule.onNodeWithContentDescription("Undo stroke").assertExists()
     }
 
     @Test
     fun newAndEditHaveDifferentLeftAction() {
         showScreen(buildState(isNewCard = true))
 
-        composeRule.onNodeWithText("Новая карточка").assertExists()
-        composeRule.onNodeWithText("Редактирование").assertDoesNotExist()
-        composeRule.onNodeWithText("Удалить").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Удалить карточку").assertDoesNotExist()
+        composeRule.onNodeWithText("New card").assertExists()
+        composeRule.onNodeWithText("Edit card").assertDoesNotExist()
+        composeRule.onNodeWithText("Delete").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Delete card").assertDoesNotExist()
         // «Отменить» без значка: левее подписи чернил нет.
-        val cancel = composeRule.onNodeWithText("Отменить")
+        val cancel = composeRule.onNodeWithText("Cancel")
         val cancelBounds = cancel.getUnclippedBoundsInRoot()
-        val textLeft = composeRule.onNodeWithText("Отменить", useUnmergedTree = true).getUnclippedBoundsInRoot().left.value - cancelBounds.left.value
+        val textLeft = composeRule.onNodeWithText("Cancel", useUnmergedTree = true).getUnclippedBoundsInRoot().left.value - cancelBounds.left.value
         val bitmap = cancel.captureToImage().asAndroidBitmap()
         assertNull(measureInkBox(bitmap, 0 until textLeft.toInt() - 1, 0 until bitmap.height))
-        composeRule.onNodeWithContentDescription("Отменить создание").performClick()
+        composeRule.onNodeWithContentDescription("Cancel card creation").performClick()
         assertEquals(listOf<EditorAction>(EditorAction.Cancel), actions)
 
         actions.clear()
         showScreen(buildState(isNewCard = false))
 
-        composeRule.onNodeWithText("Редактирование").assertExists()
-        composeRule.onNodeWithText("Новая карточка").assertDoesNotExist()
-        composeRule.onNodeWithText("Отменить").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Отменить создание").assertDoesNotExist()
-        composeRule.assertIconBeforeLabel("Удалить", IconId.TRASH, borderMargin = 8)
-        composeRule.onNodeWithContentDescription("Удалить карточку").performClick()
+        composeRule.onNodeWithText("Edit card").assertExists()
+        composeRule.onNodeWithText("New card").assertDoesNotExist()
+        composeRule.onNodeWithText("Cancel").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Cancel card creation").assertDoesNotExist()
+        composeRule.assertIconBeforeLabel("Delete", IconId.TRASH, borderMargin = 8)
+        composeRule.onNodeWithContentDescription("Delete card").performClick()
         assertEquals(listOf<EditorAction>(EditorAction.Delete), actions)
     }
 
@@ -116,9 +116,9 @@ class EditorScreenTest {
     fun saveIsPrimaryWithCheckAtRightEdge() {
         showScreen(buildState())
 
-        val save = composeRule.onNodeWithText("Сохранить")
+        val save = composeRule.onNodeWithText("Save")
         assertEquals(960f, save.getUnclippedBoundsInRoot().right.value, 0.5f)
-        composeRule.assertIconBeforeLabel("Сохранить", IconId.CHECK, borderMargin = 8)
+        composeRule.assertIconBeforeLabel("Save", IconId.CHECK, borderMargin = 8)
         // Главное действие: рамка 3 px.
         assertEquals(3, measureBorder(save))
         save.performClick()
@@ -129,15 +129,15 @@ class EditorScreenTest {
     fun titleIsBoldHeadingBetweenTheButtons() {
         showScreen(buildState(isNewCard = true))
 
-        val title = composeRule.onNodeWithText("Новая карточка", useUnmergedTree = true)
+        val title = composeRule.onNodeWithText("New card", useUnmergedTree = true)
         val style = readTextStyle(title)
         assertEquals(28f, style.fontSize.value, 0.01f)
         assertEquals(33.6f, style.lineHeight.value, 0.01f)
         assertEquals(FontWeight.Bold, style.fontWeight)
         assertEquals(-0.6f, style.letterSpacing.value, 0.01f)
         val bounds = title.getUnclippedBoundsInRoot()
-        val cancel = composeRule.onNodeWithText("Отменить").getUnclippedBoundsInRoot()
-        val save = composeRule.onNodeWithText("Сохранить").getUnclippedBoundsInRoot()
+        val cancel = composeRule.onNodeWithText("Cancel").getUnclippedBoundsInRoot()
+        val save = composeRule.onNodeWithText("Save").getUnclippedBoundsInRoot()
         // Промежуток между элементами шапки 24 dp; шапка начинается в 32 dp и занимает 64 dp.
         assertEquals(32f, cancel.left.value, 0.5f)
         assertEquals(cancel.right.value + 24f, bounds.left.value, 0.5f)
@@ -151,16 +151,16 @@ class EditorScreenTest {
     fun sideTabsFollowStateAndSwitchSide() {
         showScreen(buildState(side = CardSideShown.FRONT))
 
-        composeRule.onNodeWithText("Вопрос").assertIsSelected()
-        composeRule.onNodeWithText("Ответ").assertIsNotSelected()
-        composeRule.onNodeWithText("Ответ").performClick()
+        composeRule.onNodeWithText("Question").assertIsSelected()
+        composeRule.onNodeWithText("Answer").assertIsNotSelected()
+        composeRule.onNodeWithText("Answer").performClick()
         assertEquals(listOf<EditorAction>(EditorAction.SelectSide(CardSideShown.BACK)), actions)
 
         showScreen(buildState(side = CardSideShown.BACK))
 
-        composeRule.onNodeWithText("Ответ").assertIsSelected()
-        composeRule.onNodeWithText("Вопрос").assertIsNotSelected()
-        composeRule.onNodeWithText("Вопрос").performClick()
+        composeRule.onNodeWithText("Answer").assertIsSelected()
+        composeRule.onNodeWithText("Question").assertIsNotSelected()
+        composeRule.onNodeWithText("Question").performClick()
         assertEquals(EditorAction.SelectSide(CardSideShown.FRONT), actions.last())
     }
 
@@ -169,16 +169,16 @@ class EditorScreenTest {
         showScreen(buildState(side = CardSideShown.FRONT))
 
         // Две колонки по (928 − 32) / 2 = 448 с промежутком 32; высота полосы 72, линия 1 внизу.
-        val front = composeRule.onNodeWithText("Вопрос").getUnclippedBoundsInRoot()
-        val back = composeRule.onNodeWithText("Ответ").getUnclippedBoundsInRoot()
+        val front = composeRule.onNodeWithText("Question").getUnclippedBoundsInRoot()
+        val back = composeRule.onNodeWithText("Answer").getUnclippedBoundsInRoot()
         assertEquals(32f, front.left.value, 0.5f)
         assertEquals(448f, front.right.value - front.left.value, 0.5f)
         assertEquals(32f + 448f + 32f, back.left.value, 0.5f)
         assertEquals(448f, back.right.value - back.left.value, 0.5f)
         assertEquals(112f, front.top.value, 0.5f)
         assertEquals(112f + 71f, front.bottom.value, 0.5f)
-        val frontImage = composeRule.onNodeWithText("Вопрос").captureToImage().asAndroidBitmap()
-        val backImage = composeRule.onNodeWithText("Ответ").captureToImage().asAndroidBitmap()
+        val frontImage = composeRule.onNodeWithText("Question").captureToImage().asAndroidBitmap()
+        val backImage = composeRule.onNodeWithText("Answer").captureToImage().asAndroidBitmap()
         // Подчёркивание 4 px у выбранной вкладки; у второй полоса прозрачна.
         assertEquals(4, (0 until 8).count { offset -> frontImage.isInkAt(200, frontImage.height - 1 - offset) })
         assertEquals(0, (0 until 8).count { offset -> backImage.isInkAt(200, backImage.height - 1 - offset) })
@@ -192,8 +192,8 @@ class EditorScreenTest {
     fun sideTabLabelsAre24spAndSelectedIsBold() {
         showScreen(buildState(side = CardSideShown.BACK))
 
-        val selected = readTextStyle(composeRule.onNodeWithText("Ответ", useUnmergedTree = true))
-        val other = readTextStyle(composeRule.onNodeWithText("Вопрос", useUnmergedTree = true))
+        val selected = readTextStyle(composeRule.onNodeWithText("Answer", useUnmergedTree = true))
+        val other = readTextStyle(composeRule.onNodeWithText("Question", useUnmergedTree = true))
         assertEquals(24f, selected.fontSize.value, 0.01f)
         assertEquals(24f, other.fontSize.value, 0.01f)
         assertEquals(FontWeight.Bold, selected.fontWeight)
@@ -213,8 +213,8 @@ class EditorScreenTest {
             assertEquals(928f, slot.right.value - slot.left.value, 0.5f)
             assertEquals(963f, slot.bottom.value - slot.top.value, 0.5f)
         }
-        val group = composeRule.onNodeWithContentDescription("Толщина пера").getUnclippedBoundsInRoot()
-        val undo = composeRule.onNodeWithContentDescription("Отменить штрих").getUnclippedBoundsInRoot()
+        val group = composeRule.onNodeWithContentDescription("Pen width").getUnclippedBoundsInRoot()
+        val undo = composeRule.onNodeWithContentDescription("Undo stroke").getUnclippedBoundsInRoot()
         // Группа толщин прижата влево, без черт и боковых полей: три кнопки по 80 с зазором 4 = 248; высота 112 − 2·12.
         assertEquals(32f, group.left.value, 0.5f)
         assertEquals(248f, group.right.value - group.left.value, 0.5f)
@@ -231,14 +231,14 @@ class EditorScreenTest {
     fun undoButtonCarriesItsIcon() {
         showScreen(buildState())
 
-        assertIconInButton("отмена штриха", composeRule.onNodeWithContentDescription("Отменить штрих"), IconId.UNDO)
+        assertIconInButton("отмена штриха", composeRule.onNodeWithContentDescription("Undo stroke"), IconId.UNDO)
     }
 
     @Test
     fun thicknessSamplesHaveMockupHeightsAndSelectionBorder() {
         showScreen(buildState(thickness = Thickness.MEDIUM))
 
-        val heights = listOf("Тонкая линия" to 2f, "Средняя линия" to 7f, "Толстая линия" to 15f)
+        val heights = listOf("Thin line" to 2f, "Medium line" to 7f, "Thick line" to 15f)
         for ((description, height) in heights) {
             val button = composeRule.onNodeWithContentDescription(description)
             button.assertWidthIsEqualTo(80.dp).assertHeightIsEqualTo(72.dp)
@@ -250,27 +250,27 @@ class EditorScreenTest {
             assertEquals(description, height, sample.height, 1.5f)
         }
         // Концы образца скруглены: у самой толстой линии угловой пиксель не закрашен.
-        val thick = composeRule.onNodeWithContentDescription("Толстая линия").captureToImage().asAndroidBitmap()
+        val thick = composeRule.onNodeWithContentDescription("Thick line").captureToImage().asAndroidBitmap()
         val columns = (0 until thick.width).filter { x -> (0 until thick.height).any { y -> y in 6 until thick.height - 6 && thick.isInkAt(x, y) } }
         val rows = (6 until thick.height - 6).filter { y -> (6 until thick.width - 6).any { x -> thick.isInkAt(x, y) } }
         assertTrue(!thick.isInkAt(columns.first(), rows.first()))
         assertTrue(thick.isInkAt(columns.first() + 4, rows.first() + 4))
         // Выбранная толщина в рамке 3 px, остальные без видимой рамки.
-        assertEquals(3, measureBorder(composeRule.onNodeWithContentDescription("Средняя линия")))
-        assertEquals(0, measureBorder(composeRule.onNodeWithContentDescription("Тонкая линия")))
-        assertEquals(0, measureBorder(composeRule.onNodeWithContentDescription("Толстая линия")))
-        composeRule.onNodeWithContentDescription("Средняя линия").assertIsSelected()
-        composeRule.onNodeWithContentDescription("Тонкая линия").assertIsNotSelected()
+        assertEquals(3, measureBorder(composeRule.onNodeWithContentDescription("Medium line")))
+        assertEquals(0, measureBorder(composeRule.onNodeWithContentDescription("Thin line")))
+        assertEquals(0, measureBorder(composeRule.onNodeWithContentDescription("Thick line")))
+        composeRule.onNodeWithContentDescription("Medium line").assertIsSelected()
+        composeRule.onNodeWithContentDescription("Thin line").assertIsNotSelected()
     }
 
     @Test
     fun thicknessButtonsSelectTheirThickness() {
         showScreen(buildState(thickness = Thickness.THIN))
 
-        composeRule.onNodeWithContentDescription("Тонкая линия").assertIsSelected()
-        composeRule.onNodeWithContentDescription("Средняя линия").performClick()
-        composeRule.onNodeWithContentDescription("Толстая линия").performClick()
-        composeRule.onNodeWithContentDescription("Тонкая линия").performClick()
+        composeRule.onNodeWithContentDescription("Thin line").assertIsSelected()
+        composeRule.onNodeWithContentDescription("Medium line").performClick()
+        composeRule.onNodeWithContentDescription("Thick line").performClick()
+        composeRule.onNodeWithContentDescription("Thin line").performClick()
 
         assertEquals(
             listOf<EditorAction>(
@@ -286,7 +286,7 @@ class EditorScreenTest {
     fun thicknessGroupHasNoSideLines() {
         showScreen(buildState())
 
-        val bitmap = composeRule.onNodeWithContentDescription("Толщина пера").captureToImage().asAndroidBitmap()
+        val bitmap = composeRule.onNodeWithContentDescription("Pen width").captureToImage().asAndroidBitmap()
         val middle = bitmap.height / 2
         // Разделять больше нечего: ни черт по краям группы, ни поля между чертой и кнопкой. Крайние кнопки без рамки.
         assertTrue(!bitmap.isInkAt(0, middle))
@@ -299,12 +299,12 @@ class EditorScreenTest {
     fun undoIsGreyWhenUnavailable() {
         showScreen(buildState(canUndo = false))
 
-        composeRule.onNodeWithContentDescription("Отменить штрих").assertIsNotEnabled().performClick()
+        composeRule.onNodeWithContentDescription("Undo stroke").assertIsNotEnabled().performClick()
         assertTrue(actions.isEmpty())
 
         showScreen(buildState(canUndo = true))
 
-        composeRule.onNodeWithContentDescription("Отменить штрих").assertIsEnabled().performClick()
+        composeRule.onNodeWithContentDescription("Undo stroke").assertIsEnabled().performClick()
         assertEquals(listOf<EditorAction>(EditorAction.Undo), actions)
     }
 
@@ -314,11 +314,11 @@ class EditorScreenTest {
     fun discardDraftDialogUsesMockupTexts() {
         showScreen(buildState(isNewCard = true, dialog = EditorDialog.DISCARD_DRAFT))
 
-        composeRule.onNodeWithText("Удалить черновик?").assertExists()
-        composeRule.onNodeWithText("Рисунки на обеих сторонах не сохранятся.").assertExists()
-        assertEquals(3, measureBorder(composeRule.onNodeWithText("Продолжить")))
-        composeRule.onNodeWithText("Продолжить").performClick()
-        composeRule.onNodeWithText("Удалить черновик").performClick()
+        composeRule.onNodeWithText("Discard this draft?").assertExists()
+        composeRule.onNodeWithText("Your drawings on both sides won't be saved.").assertExists()
+        assertEquals(3, measureBorder(composeRule.onNodeWithText("Keep editing")))
+        composeRule.onNodeWithText("Keep editing").performClick()
+        composeRule.onNodeWithText("Discard draft").performClick()
 
         assertEquals(listOf<EditorAction>(EditorAction.DismissDialog, EditorAction.ConfirmDialog), actions)
     }
@@ -327,11 +327,11 @@ class EditorScreenTest {
     fun deleteCardDialogUsesMockupTexts() {
         showScreen(buildState(isNewCard = false, dialog = EditorDialog.DELETE_CARD))
 
-        composeRule.onNodeWithText("Удалить карточку?").assertExists()
-        composeRule.onNodeWithText("Вопрос и ответ будут удалены безвозвратно.").assertExists()
-        composeRule.onNodeWithText("Продолжить").performClick()
+        composeRule.onNodeWithText("Delete card?").assertExists()
+        composeRule.onNodeWithText("Both sides will be deleted. You can't undo this.").assertExists()
+        composeRule.onNodeWithText("Keep editing").performClick()
         // В правке «Удалить» есть и в шапке под окном, у неё есть описание; кнопка окна без описания.
-        composeRule.onNode(hasText("Удалить") and !hasContentDescription("Удалить карточку")).performClick()
+        composeRule.onNode(hasText("Delete") and !hasContentDescription("Delete card")).performClick()
 
         assertEquals(listOf<EditorAction>(EditorAction.DismissDialog, EditorAction.ConfirmDialog), actions)
     }
@@ -340,11 +340,11 @@ class EditorScreenTest {
     fun saveOnBackDialogHasTitleOnlyAndTwoButtons() {
         showScreen(buildState(dialog = EditorDialog.SAVE_ON_BACK))
 
-        composeRule.onNodeWithText("Сохранить и выйти?").assertExists()
+        composeRule.onNodeWithText("Save and exit?").assertExists()
         // Текста у окна нет: между заголовком и кнопками ничего, кроме подписей двух кнопок.
-        composeRule.onNodeWithText("Рисунки на обеих сторонах не сохранятся.").assertDoesNotExist()
-        composeRule.onNodeWithText("Продолжить").performClick()
-        composeRule.onNodeWithText("Сохранить и выйти").performClick()
+        composeRule.onNodeWithText("Your drawings on both sides won't be saved.").assertDoesNotExist()
+        composeRule.onNodeWithText("Keep editing").performClick()
+        composeRule.onNodeWithText("Save and exit").performClick()
 
         assertEquals(listOf<EditorAction>(EditorAction.DismissDialog, EditorAction.ConfirmDialog), actions)
     }

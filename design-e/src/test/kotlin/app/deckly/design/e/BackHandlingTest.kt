@@ -41,12 +41,12 @@ class BackHandlingTest {
     @Test
     fun backClosesOpenCardMenuWithoutActionsAndStaysInApp() {
         showDeckScreen()
-        composeRule.onNode(hasContentDescription("Действия с карточкой") and hasClickAction()).performClick()
-        composeRule.onNodeWithText("Удалить карточку").assertExists()
+        composeRule.onNode(hasContentDescription("Card actions") and hasClickAction()).performClick()
+        composeRule.onNodeWithText("Delete card").assertExists()
 
         pressBack()
 
-        composeRule.onNodeWithText("Удалить карточку").assertDoesNotExist()
+        composeRule.onNodeWithText("Delete card").assertDoesNotExist()
         assertTrue("меню закрывается без действий", actions.isEmpty())
         assertFalse("приложение не уходит", composeRule.activity.isFinishing)
     }
@@ -65,7 +65,7 @@ class BackHandlingTest {
     @Test
     fun backAfterMenuIsClosedIsLeftToTheSystem() {
         showDeckScreen()
-        composeRule.onNode(hasContentDescription("Действия с карточкой") and hasClickAction()).performClick()
+        composeRule.onNode(hasContentDescription("Card actions") and hasClickAction()).performClick()
         pressBack()
         assertFalse(composeRule.activity.isFinishing)
 
@@ -83,7 +83,7 @@ class BackHandlingTest {
 
     private fun showDeckScreen() {
         val state = DeckScreenState(
-            header = DeckHeader("Немецкий A2", null, null, canCreateCard = false, cardMenu = listOf(CardMenuItem.DELETE)),
+            header = DeckHeader("English A2", null, null, canCreateCard = false, cardMenu = listOf(CardMenuItem.DELETE)),
             tabs = emptyList(),
             body = DeckBody.Card(CardSideShown.FRONT, isContentDamaged = false),
             footer = DeckFooter.None,

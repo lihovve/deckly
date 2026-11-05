@@ -42,7 +42,7 @@ class IconsTest {
     @Test
     fun everyIconOfMockupHasAnImageVectorAndNothingExtra() {
         assertEquals(listIconElements().keys, IconId.entries.map { it.key }.toSet())
-        assertEquals(16, IconId.entries.size)
+        assertEquals(17, IconId.entries.size)
         // Ластика на экране больше нет (стирает боковая кнопка стилуса), значок «перо» остаётся в меню карточки.
         assertTrue("eraser" !in listIconElements().keys)
         assertTrue("pen" in listIconElements().keys)
@@ -71,6 +71,9 @@ class IconsTest {
             assertTrue(shape, shape.startsWith("M${centerX - 1} 12"))
         }
         assertTrue(IconId.CARDS.shapes.first().pathData.startsWith("M8 6"))
+        // shapes: круг r=4 с центром (7, 8) — две дуги от самой левой точки (3, 8) — и контур треугольника с уголком.
+        assertTrue(IconId.SHAPES.shapes.first().pathData.startsWith("M3 8a4 4 0 1 0 8 0"))
+        assertEquals(2, IconId.SHAPES.shapes.size)
     }
 
     @Test
@@ -109,6 +112,7 @@ class IconsTest {
         assertEquals(DecklyIcons.get(IconId.PLUS), DecklyIcons.Plus)
         assertEquals(DecklyIcons.get(IconId.ACTIVE), DecklyIcons.Active)
         assertEquals(DecklyIcons.get(IconId.EXPORT), DecklyIcons.Export)
+        assertEquals(DecklyIcons.get(IconId.SHAPES), DecklyIcons.Shapes)
     }
 
     // --- как значки рисуются -------------------------------------------------------------------

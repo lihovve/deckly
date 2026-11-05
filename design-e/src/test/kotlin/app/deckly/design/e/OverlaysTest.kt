@@ -61,7 +61,7 @@ class OverlaysTest {
     fun dialogBackgroundIgnoresTouches() {
         showFrame {
             Box(Modifier.fillMaxSize().clickable { backgroundClicks++ })
-            Dialog("Удалить карточку?", "Вопрос и ответ будут удалены безвозвратно.", buildTwoActions())
+            Dialog("Delete card?", "Both sides will be deleted. You can't undo this.", buildTwoActions())
         }
 
         // Касание фона за окном не доходит до экрана под ним: углы, середина левого края и место рядом с окном.
@@ -74,28 +74,28 @@ class OverlaysTest {
     @Test
     fun dialogActionsWorkAndTheyAreReported() {
         showFrame {
-            Dialog("Удалить карточку?", "Вопрос и ответ будут удалены безвозвратно.", buildTwoActions())
+            Dialog("Delete card?", "Both sides will be deleted. You can't undo this.", buildTwoActions())
         }
 
-        composeRule.onNodeWithText("Удалить").performClick()
-        composeRule.onNodeWithText("Оставить").performClick()
+        composeRule.onNodeWithText("Delete").performClick()
+        composeRule.onNodeWithText("Keep").performClick()
 
-        assertEquals(listOf("Удалить", "Оставить"), answers)
+        assertEquals(listOf("Delete", "Keep"), answers)
     }
 
     @Test
     fun dialogShowsTitleAndTextAndIsAnnouncedAsPane() {
-        showFrame { Dialog("На сегодня всё", null, listOf(DialogAction("Открыть новые", isPrimary = true, onClick = {}))) }
+        showFrame { Dialog("All done for today", null, listOf(DialogAction("Open New", isPrimary = true, onClick = {}))) }
 
-        composeRule.onNodeWithText("На сегодня всё").assertExists()
-        composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "На сегодня всё")).assertExists()
+        composeRule.onNodeWithText("All done for today").assertExists()
+        composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "All done for today")).assertExists()
     }
 
     @Test
     fun dialogIsCenteredAndAsWideAsInMockup() {
-        showFrame { Dialog("Удалить карточку?", "Вопрос и ответ будут удалены безвозвратно.", buildTwoActions()) }
+        showFrame { Dialog("Delete card?", "Both sides will be deleted. You can't undo this.", buildTwoActions()) }
 
-        val dialog = composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Удалить карточку?"))
+        val dialog = composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Delete card?"))
         dialog.assertWidthIsEqualTo(736.dp).assertLeftPositionInRootIsEqualTo(128.dp)
         val bounds = dialog.getUnclippedBoundsInRoot()
         // По вертикали по центру кадра с точностью до пикселя.
@@ -105,10 +105,10 @@ class OverlaysTest {
     @Test
     fun dialogDoesNotDimTheScreenAndKeepsWhiteRing() {
         showFrame(background = Color.Black) {
-            Dialog("Удалить карточку?", "Вопрос и ответ будут удалены безвозвратно.", buildTwoActions())
+            Dialog("Delete card?", "Both sides will be deleted. You can't undo this.", buildTwoActions())
         }
 
-        val dialog = composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Удалить карточку?"))
+        val dialog = composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Delete card?"))
         val bounds = dialog.getUnclippedBoundsInRoot()
         val frame = capture("frame")
         val middle = ((bounds.top.value + bounds.bottom.value) / 2).toInt()
@@ -123,7 +123,7 @@ class OverlaysTest {
 
     @Test
     fun dialogDoesNotDimWhiteScreen() {
-        showFrame { Dialog("Удалить карточку?", "Вопрос и ответ будут удалены безвозвратно.", buildTwoActions()) }
+        showFrame { Dialog("Delete card?", "Both sides will be deleted. You can't undo this.", buildTwoActions()) }
 
         val frame = capture("frame")
         assertEquals(AndroidColor.WHITE, frame.getPixel(5, 5))
@@ -133,10 +133,10 @@ class OverlaysTest {
     @Test
     fun dialogBorderIsExactlyThreePixels() {
         showFrame(background = Color.Black) {
-            Dialog("Удалить карточку?", "Вопрос и ответ будут удалены безвозвратно.", buildTwoActions())
+            Dialog("Delete card?", "Both sides will be deleted. You can't undo this.", buildTwoActions())
         }
 
-        val bounds = composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Удалить карточку?")).getUnclippedBoundsInRoot()
+        val bounds = composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Delete card?")).getUnclippedBoundsInRoot()
         val frame = capture("frame")
         val middle = ((bounds.top.value + bounds.bottom.value) / 2).toInt()
         val left = bounds.left.value.toInt()
@@ -151,15 +151,15 @@ class OverlaysTest {
     fun menuAndScrimDoNotDrawIndicationWhenPressed() {
         showFrame {
             CompositionLocalProvider(LocalIndication provides IndicationProbe) {
-                Popup("Действия с карточкой", buildPopupItems(), onDismiss = {})
+                Popup("Card actions", buildPopupItems(), onDismiss = {})
             }
         }
 
         IndicationProbe.reset()
-        composeRule.onNodeWithText("Вернуть в новые").performTouchInput { down(center) }
+        composeRule.onNodeWithText("Return to New").performTouchInput { down(center) }
         composeRule.waitForIdle()
-        val pressed = composeRule.onNodeWithText("Вернуть в новые").captureToImage().asAndroidBitmap()
-        composeRule.onNodeWithText("Вернуть в новые").performTouchInput { up() }
+        val pressed = composeRule.onNodeWithText("Return to New").captureToImage().asAndroidBitmap()
+        composeRule.onNodeWithText("Return to New").performTouchInput { up() }
         composeRule.onNodeWithTag("frame").performTouchInput { down(Offset(100f, 800f)) }
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("frame").performTouchInput { up() }
@@ -171,32 +171,32 @@ class OverlaysTest {
 
     @Test
     fun primaryActionHasThickerBorderThanOrdinaryOne() {
-        showFrame { Dialog("Удалить карточку?", "Вопрос и ответ будут удалены безвозвратно.", buildTwoActions()) }
+        showFrame { Dialog("Delete card?", "Both sides will be deleted. You can't undo this.", buildTwoActions()) }
 
         fun measureBorderWidth(label: String): Int {
             val bitmap = composeRule.onNodeWithText(label).captureToImage().asAndroidBitmap()
             return (0 until 8).takeWhile { bitmap.isInk(it, bitmap.height / 2) }.size
         }
-        assertEquals(3, measureBorderWidth("Оставить"))
-        assertEquals(2, measureBorderWidth("Удалить"))
+        assertEquals(3, measureBorderWidth("Keep"))
+        assertEquals(2, measureBorderWidth("Delete"))
     }
 
     @Test
     fun singleActionTakesWholeWidthAndTwoShareIt() {
-        showFrame { Dialog("На сегодня всё", null, listOf(DialogAction("Открыть новые", true) {})) }
+        showFrame { Dialog("All done for today", null, listOf(DialogAction("Open New", true) {})) }
         // Внутри окна 736 - 2 × 3 (рамка) - 2 × 40 (поля) = 650.
-        composeRule.onNodeWithText("Открыть новые").assertWidthIsEqualTo(650.dp)
+        composeRule.onNodeWithText("Open New").assertWidthIsEqualTo(650.dp)
     }
 
     @Test
     fun dialogActionMayCarryAnIcon() {
         showFrame {
-            Dialog("На сегодня всё", null, listOf(DialogAction("Открыть новые", isPrimary = true, onClick = {}, icon = DecklyIcons.Right)))
+            Dialog("All done for today", null, listOf(DialogAction("Open New", isPrimary = true, onClick = {}, icon = DecklyIcons.Right)))
         }
 
         // Кнопка на всю ширину; стрелка 26 dp стоит левее подписи, внутри рамки.
-        val label = composeRule.onNodeWithText("Открыть новые", useUnmergedTree = true).getUnclippedBoundsInRoot()
-        val buttonNode = composeRule.onNodeWithText("Открыть новые")
+        val label = composeRule.onNodeWithText("Open New", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val buttonNode = composeRule.onNodeWithText("Open New")
         val button = buttonNode.getUnclippedBoundsInRoot()
         val bitmap = buttonNode.captureToImage().asAndroidBitmap()
         val textLeft = (label.left.value - button.left.value).toInt()
@@ -205,21 +205,21 @@ class OverlaysTest {
 
     @Test
     fun twoActionsShareTheWidthWithGap() {
-        showFrame { Dialog("Удалить карточку?", "Вопрос и ответ будут удалены безвозвратно.", buildTwoActions()) }
+        showFrame { Dialog("Delete card?", "Both sides will be deleted. You can't undo this.", buildTwoActions()) }
 
         // (650 - 16) / 2 = 317; высота нижней строки окна 88.
-        composeRule.onNodeWithText("Оставить").assertWidthIsEqualTo(317.dp).assertHeightIsEqualTo(88.dp)
-        composeRule.onNodeWithText("Удалить").assertWidthIsEqualTo(317.dp).assertLeftPositionInRootIsEqualTo(128.dp + 3.dp + 40.dp + 317.dp + 16.dp)
+        composeRule.onNodeWithText("Keep").assertWidthIsEqualTo(317.dp).assertHeightIsEqualTo(88.dp)
+        composeRule.onNodeWithText("Delete").assertWidthIsEqualTo(317.dp).assertLeftPositionInRootIsEqualTo(128.dp + 3.dp + 40.dp + 317.dp + 16.dp)
     }
 
     @Test
     fun dialogPartsAreSpacedLikeInMockup() {
-        showFrame { Dialog("Удалить карточку?", "Вопрос и ответ будут удалены безвозвратно.", buildTwoActions()) }
+        showFrame { Dialog("Delete card?", "Both sides will be deleted. You can't undo this.", buildTwoActions()) }
 
-        val dialog = composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Удалить карточку?")).getUnclippedBoundsInRoot()
-        val title = composeRule.onNodeWithText("Удалить карточку?").getUnclippedBoundsInRoot()
-        val text = composeRule.onNodeWithText("Вопрос и ответ будут удалены безвозвратно.").getUnclippedBoundsInRoot()
-        val button = composeRule.onNodeWithText("Оставить").getUnclippedBoundsInRoot()
+        val dialog = composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Delete card?")).getUnclippedBoundsInRoot()
+        val title = composeRule.onNodeWithText("Delete card?").getUnclippedBoundsInRoot()
+        val text = composeRule.onNodeWithText("Both sides will be deleted. You can't undo this.").getUnclippedBoundsInRoot()
+        val button = composeRule.onNodeWithText("Keep").getUnclippedBoundsInRoot()
         // Рамка 3 и поля 40 сверху и снизу, между заголовком и текстом 24, до кнопок ещё 12 сверх промежутка.
         assertEquals(3f + 40f, title.top.value - dialog.top.value, 1f)
         assertEquals(24f, text.top.value - title.bottom.value, 1f)
@@ -232,9 +232,9 @@ class OverlaysTest {
 
     @Test
     fun popupSitsAtTopRightAndIsAsWideAsInMockup() {
-        showFrame { Popup("Действия с карточкой", buildPopupItems(), onDismiss = {}) }
+        showFrame { Popup("Card actions", buildPopupItems(), onDismiss = {}) }
 
-        composeRule.onNodeWithContentDescription("Действия с карточкой")
+        composeRule.onNodeWithContentDescription("Card actions")
             .assertWidthIsEqualTo(432.dp)
             .assertLeftPositionInRootIsEqualTo((992 - 32 - 432).dp)
             .assertTopPositionInRootIsEqualTo(108.dp)
@@ -242,27 +242,27 @@ class OverlaysTest {
 
     @Test
     fun popupCanBeLowerForDeckMenus() {
-        showFrame { Popup("Немецкий A2", buildPopupItems(), onDismiss = {}, top = 206.dp) }
+        showFrame { Popup("English A2", buildPopupItems(), onDismiss = {}, top = 206.dp) }
 
-        composeRule.onNodeWithContentDescription("Немецкий A2").assertTopPositionInRootIsEqualTo(206.dp)
+        composeRule.onNodeWithContentDescription("English A2").assertTopPositionInRootIsEqualTo(206.dp)
     }
 
     @Test
     fun popupItemsAreTallEnoughAndReportClicks() {
-        showFrame { Popup("Действия с карточкой", buildPopupItems(), onDismiss = {}) }
+        showFrame { Popup("Card actions", buildPopupItems(), onDismiss = {}) }
 
-        composeRule.onNodeWithText("Вернуть в новые").assertHeightIsAtLeast(80.dp)
-        composeRule.onNodeWithText("Удалить карточку").assertHeightIsAtLeast(80.dp)
-        composeRule.onNodeWithText("Вернуть в новые").performClick()
-        composeRule.onNodeWithText("Удалить карточку").performClick()
+        composeRule.onNodeWithText("Return to New").assertHeightIsAtLeast(80.dp)
+        composeRule.onNodeWithText("Delete card").assertHeightIsAtLeast(80.dp)
+        composeRule.onNodeWithText("Return to New").performClick()
+        composeRule.onNodeWithText("Delete card").performClick()
 
-        assertEquals(listOf("Вернуть в новые", "Удалить карточку"), answers)
+        assertEquals(listOf("Return to New", "Delete card"), answers)
     }
 
     @Test
     fun touchOutsidePopupDismissesIt() {
         var dismissed = 0
-        showFrame { Popup("Действия с карточкой", buildPopupItems(), onDismiss = { dismissed++ }) }
+        showFrame { Popup("Card actions", buildPopupItems(), onDismiss = { dismissed++ }) }
 
         composeRule.onNodeWithTag("frame").performTouchInput { click(Offset(100f, 800f)) }
         composeRule.onNodeWithTag("frame").performTouchInput { click(Offset(20f, 20f)) }
@@ -273,9 +273,9 @@ class OverlaysTest {
     @Test
     fun touchInsidePopupOutsideItemsDoesNotDismissIt() {
         var dismissed = 0
-        showFrame { Popup("Действия с карточкой", buildPopupItems(), onDismiss = { dismissed++ }) }
+        showFrame { Popup("Card actions", buildPopupItems(), onDismiss = { dismissed++ }) }
 
-        composeRule.onNodeWithText("Действия с карточкой").performClick()
+        composeRule.onNodeWithText("Card actions").performClick()
 
         assertEquals(0, dismissed)
         assertTrue(answers.isEmpty())
@@ -283,7 +283,7 @@ class OverlaysTest {
 
     @Test
     fun popupDoesNotDimTheScreen() {
-        showFrame { Popup("Действия с карточкой", buildPopupItems(), onDismiss = {}) }
+        showFrame { Popup("Card actions", buildPopupItems(), onDismiss = {}) }
 
         val frame = capture("frame")
         assertEquals(AndroidColor.WHITE, frame.getPixel(10, 10))
@@ -292,12 +292,12 @@ class OverlaysTest {
 
     @Test
     fun popupTitleIsUnderlinedAndItemsFollow() {
-        showFrame { Popup("Действия с карточкой", buildPopupItems(), onDismiss = {}) }
+        showFrame { Popup("Card actions", buildPopupItems(), onDismiss = {}) }
 
-        val popup = composeRule.onNodeWithContentDescription("Действия с карточкой").getUnclippedBoundsInRoot()
-        val title = composeRule.onNodeWithText("Действия с карточкой").getUnclippedBoundsInRoot()
-        val firstItem = composeRule.onNodeWithText("Вернуть в новые").getUnclippedBoundsInRoot()
-        val image = composeRule.onNodeWithContentDescription("Действия с карточкой").captureToImage().asAndroidBitmap()
+        val popup = composeRule.onNodeWithContentDescription("Card actions").getUnclippedBoundsInRoot()
+        val title = composeRule.onNodeWithText("Card actions").getUnclippedBoundsInRoot()
+        val firstItem = composeRule.onNodeWithText("Return to New").getUnclippedBoundsInRoot()
+        val image = composeRule.onNodeWithContentDescription("Card actions").captureToImage().asAndroidBitmap()
         // Узел текста не включает отступ под ним (16): линия лежит на нижнем краю отступа, пункты идут сразу за ней.
         val titleBottom = title.bottom.value + 16f
         val lineY = (titleBottom - popup.top.value).toInt() - 1
@@ -311,10 +311,10 @@ class OverlaysTest {
 
     @Test
     fun dangerousItemIsSeparatedByLine() {
-        showFrame { Popup("Действия с карточкой", buildPopupItems(), onDismiss = {}) }
+        showFrame { Popup("Card actions", buildPopupItems(), onDismiss = {}) }
 
-        val danger = composeRule.onNodeWithText("Удалить карточку").captureToImage().asAndroidBitmap()
-        val ordinary = composeRule.onNodeWithText("Вернуть в новые").captureToImage().asAndroidBitmap()
+        val danger = composeRule.onNodeWithText("Delete card").captureToImage().asAndroidBitmap()
+        val ordinary = composeRule.onNodeWithText("Return to New").captureToImage().asAndroidBitmap()
         // У опасного пункта сверху линия в 1 пиксель на всю ширину, у обычного её нет.
         assertTrue(danger.isInk(200, 0))
         assertFalse(ordinary.isInk(200, 0))
@@ -332,13 +332,13 @@ class OverlaysTest {
     private fun capture(tag: String): Bitmap = composeRule.onNodeWithTag(tag).captureToImage().asAndroidBitmap()
 
     private fun buildTwoActions() = listOf(
-        DialogAction("Оставить", isPrimary = true) { answers += "Оставить" },
-        DialogAction("Удалить", isPrimary = false) { answers += "Удалить" },
+        DialogAction("Keep", isPrimary = true) { answers += "Keep" },
+        DialogAction("Delete", isPrimary = false) { answers += "Delete" },
     )
 
     private fun buildPopupItems() = listOf(
-        PopupItem("Вернуть в новые", DecklyIcons.Undo, isDanger = false) { answers += "Вернуть в новые" },
-        PopupItem("Удалить карточку", DecklyIcons.Trash, isDanger = true) { answers += "Удалить карточку" },
+        PopupItem("Return to New", DecklyIcons.Undo, isDanger = false) { answers += "Return to New" },
+        PopupItem("Delete card", DecklyIcons.Trash, isDanger = true) { answers += "Delete card" },
     )
 
     private fun Bitmap.isInk(x: Int, y: Int): Boolean = AndroidColor.red(getPixel(x, y)) < 128

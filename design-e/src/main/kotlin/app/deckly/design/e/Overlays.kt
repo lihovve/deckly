@@ -114,7 +114,7 @@ fun Popup(title: String, items: List<PopupItem>, onDismiss: () -> Unit, modifier
             Modifier
                 .fillMaxSize()
                 .clickSilently(true, Role.Button, onDismiss)
-                .semantics { contentDescription = "Закрыть меню" },
+                .semantics { contentDescription = DeckTexts.CLOSE_MENU },
         )
         Column(
             Modifier

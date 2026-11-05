@@ -35,12 +35,12 @@ class InkSheetSlotsTest {
     @Test
     fun deckSheetKeepsDescriptionOfDesign() {
         composeRule.setContent {
-            InkSheetSlots.DeckSheet(emptyList(), Modifier.size(200.dp).semantics { contentDescription = "Вопрос" })
+            InkSheetSlots.DeckSheet(emptyList(), Modifier.size(200.dp).semantics { contentDescription = "Question" })
         }
 
-        val descriptions = composeRule.onNodeWithContentDescription("Вопрос").fetchSemanticsNode().config
+        val descriptions = composeRule.onNodeWithContentDescription("Question").fetchSemanticsNode().config
             .getOrNull(SemanticsProperties.ContentDescription)
-        assertEquals(listOf("Вопрос"), descriptions)
+        assertEquals(listOf("Question"), descriptions)
     }
 
     @Test
@@ -59,11 +59,11 @@ class InkSheetSlotsTest {
                 canvas = canvas,
                 onStroke = {},
                 onErase = { _, _ -> },
-                modifier = Modifier.size(200.dp).semantics { contentDescription = "Холст. Рисование только пером" },
+                modifier = Modifier.size(200.dp).semantics { contentDescription = "Canvas. Draw with the pen only" },
             )
         }
 
-        composeRule.onNodeWithContentDescription("Холст. Рисование только пером").assertExists()
+        composeRule.onNodeWithContentDescription("Canvas. Draw with the pen only").assertExists()
     }
 
     @Test

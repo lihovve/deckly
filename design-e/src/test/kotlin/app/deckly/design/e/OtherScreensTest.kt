@@ -72,12 +72,12 @@ class OtherScreensTest {
     fun emptyDeckListShowsNoDecks() {
         showFrame { DeckListScreen(buildListState(emptyList()), { listActions += it }) }
 
-        composeRule.onNodeWithText("Колоды").assertExists()
-        composeRule.onNodeWithText("Нет колод").assertExists()
-        composeRule.onNodeWithContentDescription("К карточкам").assertDoesNotExist()
-        composeRule.onNodeWithText("Новая колода").assertExists()
+        composeRule.onNodeWithText("Decks").assertExists()
+        composeRule.onNodeWithText("No decks").assertExists()
+        composeRule.onNodeWithContentDescription("Back to cards").assertDoesNotExist()
+        composeRule.onNodeWithText("New deck").assertExists()
         // Значок «карточки» над заголовком, как в пустой секции: сверху лист, снизу нижняя строка.
-        val title = composeRule.onNodeWithText("Нет колод", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val title = composeRule.onNodeWithText("No decks", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val bitmap = composeRule.onNodeWithTag("frame").captureToImage().asAndroidBitmap()
         val iconTop = (title.top.value - 28f - 68f).toInt()
         assertIconShape("нет колод", bitmap, 464 until 528, iconTop until iconTop + 64, IconId.CARDS, 64f, Tokens.IconEmptyStroke, tolerance = 1.2f)
@@ -88,15 +88,15 @@ class OtherScreensTest {
     @Test
     fun backToCardsOnlyWhenThereIsCurrentDeck() {
         showFrame { DeckListScreen(buildListState(buildDecks(), canGoBack = false), { listActions += it }) }
-        composeRule.onNodeWithContentDescription("К карточкам").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Back to cards").assertDoesNotExist()
         showFrame { DeckListScreen(buildListState(buildDecks(), canGoBack = true), { listActions += it }) }
 
-        val back = composeRule.onNodeWithContentDescription("К карточкам")
+        val back = composeRule.onNodeWithContentDescription("Back to cards")
         back.assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(64.dp)
         assertEquals(32f, back.getUnclippedBoundsInRoot().left.value, 0.5f)
         assertIconInButton("к карточкам", back, IconId.LEFT)
         // Название следует за кнопкой через промежуток шапки 24.
-        assertEquals(32f + 64f + 24f, composeRule.onNodeWithText("Колоды", useUnmergedTree = true).getUnclippedBoundsInRoot().left.value, 0.5f)
+        assertEquals(32f + 64f + 24f, composeRule.onNodeWithText("Decks", useUnmergedTree = true).getUnclippedBoundsInRoot().left.value, 0.5f)
         back.performClick()
         assertEquals(listOf<DeckListAction>(DeckListAction.Back), listActions)
     }
@@ -105,7 +105,7 @@ class OtherScreensTest {
     fun headingIsBoldTitleLikeInEditor() {
         showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
 
-        val style = readTextStyle(composeRule.onNodeWithText("Колоды", useUnmergedTree = true))
+        val style = readTextStyle(composeRule.onNodeWithText("Decks", useUnmergedTree = true))
         assertEquals(28f, style.fontSize.value, 0.01f)
         assertEquals(-0.6f, style.letterSpacing.value, 0.01f)
         assertEquals(FontWeight.Bold, style.fontWeight)
@@ -114,18 +114,18 @@ class OtherScreensTest {
     @Test
     fun rowsShowNumbersNamesAndCaptionsLikeMockup() {
         val decks = listOf(
-            DeckRow(1, "Немецкий A2", 245, activeEpoch = 1, isAllLearned = false, isCurrent = true),
-            DeckRow(2, "Английские времена", 86, activeEpoch = 2, isAllLearned = false, isCurrent = false),
-            DeckRow(3, "Формулы", 18, activeEpoch = null, isAllLearned = true, isCurrent = false),
-            DeckRow(4, "История искусства", 1, activeEpoch = null, isAllLearned = false, isCurrent = false),
+            DeckRow(1, "English A2", 245, activeEpoch = 1, isAllLearned = false, isCurrent = true),
+            DeckRow(2, "English tenses", 86, activeEpoch = 2, isAllLearned = false, isCurrent = false),
+            DeckRow(3, "Formulas", 18, activeEpoch = null, isAllLearned = true, isCurrent = false),
+            DeckRow(4, "Art history", 1, activeEpoch = null, isAllLearned = false, isCurrent = false),
         )
         showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
 
         for (name in decks.map { it.name }) composeRule.onNodeWithText(name).assertExists()
-        composeRule.onNodeWithText("245 карточек ·").assertExists()
-        composeRule.onNodeWithText("86 карточек ·").assertExists()
-        composeRule.onNodeWithText("18 карточек · выучены").assertExists()
-        composeRule.onNodeWithText("1 карточка").assertExists()
+        composeRule.onNodeWithText("245 cards ·").assertExists()
+        composeRule.onNodeWithText("86 cards ·").assertExists()
+        composeRule.onNodeWithText("18 cards · learned").assertExists()
+        composeRule.onNodeWithText("1 card").assertExists()
         // Эпоха — римская цифра справа от значка ▶.
         composeRule.onNode(hasText("I") and hasClickAction()).assertExists()
         composeRule.onNode(hasText("II") and hasClickAction()).assertExists()
@@ -136,17 +136,17 @@ class OtherScreensTest {
 
     @Test
     fun captionMarksActiveEpochWithArrowIcon() {
-        val decks = listOf(DeckRow(1, "Немецкий A2", 245, activeEpoch = 3, isAllLearned = false, isCurrent = false))
+        val decks = listOf(DeckRow(1, "English A2", 245, activeEpoch = 3, isAllLearned = false, isCurrent = false))
         showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
 
-        val text = composeRule.onNodeWithText("245 карточек ·", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val text = composeRule.onNodeWithText("245 cards ·", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val epoch = composeRule.onNodeWithText("III", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val bitmap = composeRule.onNodeWithTag("frame").captureToImage().asAndroidBitmap()
         // ▶ 18 dp между подписью и эпохой с зазором 8 с каждой стороны.
         assertEquals(text.right.value + 8f + 18f + 8f, epoch.left.value, 1f)
         val ink = measureInkBox(bitmap, (text.right.value + 8f).toInt() until (text.right.value + 26f).toInt(), text.top.value.toInt() until text.bottom.value.toInt())
         assertNotNull("значка ▶ нет", ink)
-        assertEquals(20f, readTextStyle(composeRule.onNodeWithText("245 карточек ·", useUnmergedTree = true)).fontSize.value, 0.01f)
+        assertEquals(20f, readTextStyle(composeRule.onNodeWithText("245 cards ·", useUnmergedTree = true)).fontSize.value, 0.01f)
     }
 
     @Test
@@ -157,8 +157,8 @@ class OtherScreensTest {
         val bitmap = composeRule.onNodeWithTag("frame").captureToImage().asAndroidBitmap()
         val numberColumn = 32 until 32 + 44
         assertIconShape("текущая колода", bitmap, numberColumn, 129 until 129 + 147, IconId.CHECK, 24f, Tokens.IconStroke)
-        val current = readTextStyle(composeRule.onNodeWithText("Немецкий A2", useUnmergedTree = true))
-        val other = readTextStyle(composeRule.onNodeWithText("Английские времена", useUnmergedTree = true))
+        val current = readTextStyle(composeRule.onNodeWithText("English A2", useUnmergedTree = true))
+        val other = readTextStyle(composeRule.onNodeWithText("English tenses", useUnmergedTree = true))
         assertEquals(FontWeight.Bold, current.fontWeight)
         assertEquals(FontWeight.Medium, other.fontWeight)
         assertEquals(30f, current.fontSize.value, 0.01f)
@@ -171,16 +171,16 @@ class OtherScreensTest {
         showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
 
         // Список начинается после шапки (96) и зазоров 16 + 16, линия 1 сверху; строка 148 с линией внизу.
-        val first = composeRule.onNode(hasText("Немецкий A2") and hasClickAction()).getUnclippedBoundsInRoot()
-        val second = composeRule.onNode(hasText("Английские времена") and hasClickAction()).getUnclippedBoundsInRoot()
+        val first = composeRule.onNode(hasText("English A2") and hasClickAction()).getUnclippedBoundsInRoot()
+        val second = composeRule.onNode(hasText("English tenses") and hasClickAction()).getUnclippedBoundsInRoot()
         assertEquals(32f + 44f + 24f, first.left.value, 0.5f)
         assertEquals(960f, first.right.value, 0.5f)
         assertEquals(112f, first.bottom.value - first.top.value, 1f)
         assertEquals(148f, second.top.value - first.top.value, 0.5f)
         assertEquals(129f + 147f / 2f, (first.top.value + first.bottom.value) / 2f, 1f)
         // Название и подпись разделены 9 dp.
-        val name = composeRule.onNodeWithText("Немецкий A2", useUnmergedTree = true).getUnclippedBoundsInRoot()
-        val caption = composeRule.onNodeWithText("245 карточек ·", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val name = composeRule.onNodeWithText("English A2", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val caption = composeRule.onNodeWithText("245 cards ·", useUnmergedTree = true).getUnclippedBoundsInRoot()
         assertEquals(9f, caption.top.value - name.bottom.value, 0.5f)
         val frame = composeRule.onNodeWithTag("frame").captureToImage().asAndroidBitmap()
         // Линия над списком и под каждой строкой, во всю ширину.
@@ -193,8 +193,8 @@ class OtherScreensTest {
     @Test
     fun checkFollowsTheCurrentDeckWhateverItsPlace() {
         val decks = listOf(
-            DeckRow(11, "Первая", 5, null, false, isCurrent = false),
-            DeckRow(22, "Вторая", 6, null, false, isCurrent = true),
+            DeckRow(11, "First", 5, null, false, isCurrent = false),
+            DeckRow(22, "Second", 6, null, false, isCurrent = true),
         )
         showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
 
@@ -207,12 +207,12 @@ class OtherScreensTest {
 
     @Test
     fun longDeckNameStaysOnOneLine() {
-        val name = "Очень длинное название колоды, которое никак не помещается в одну строку списка целиком"
-        val decks = listOf(DeckRow(1, name, 5, null, false, isCurrent = false), DeckRow(2, "Вторая", 6, null, false, isCurrent = false))
+        val name = "A very long deck name that does not fit into one row of the list at all"
+        val decks = listOf(DeckRow(1, name, 5, null, false, isCurrent = false), DeckRow(2, "Second", 6, null, false, isCurrent = false))
         showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
 
         val bounds = composeRule.onNodeWithText(name, useUnmergedTree = true).getUnclippedBoundsInRoot()
-        val second = composeRule.onNode(hasText("Вторая") and hasClickAction()).getUnclippedBoundsInRoot()
+        val second = composeRule.onNode(hasText("Second") and hasClickAction()).getUnclippedBoundsInRoot()
         val first = composeRule.onNode(hasText(name) and hasClickAction()).getUnclippedBoundsInRoot()
         // Одна строка, обрезанная многоточием: высота 36, ширина не шире колонки названия, строки остаются по 148.
         assertEquals(36f, bounds.bottom.value - bounds.top.value, 3f)
@@ -224,36 +224,36 @@ class OtherScreensTest {
     fun rowOpensItsDeck() {
         showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
 
-        composeRule.onNodeWithText("Формулы").performClick()
-        composeRule.onNodeWithText("Немецкий A2").performClick()
+        composeRule.onNodeWithText("Formulas").performClick()
+        composeRule.onNodeWithText("English A2").performClick()
 
         assertEquals(listOf<DeckListAction>(DeckListAction.OpenDeck(103), DeckListAction.OpenDeck(101)), listActions)
     }
 
     @Test
     fun listScrollsSoNoDeckIsLostBehindFooter() {
-        val decks = (1..20).map { DeckRow(it.toLong(), "Колода $it", it, null, false, it == 1) }
+        val decks = (1..20).map { DeckRow(it.toLong(), "Deck $it", it, null, false, it == 1) }
         showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
 
-        composeRule.onNodeWithText("Колода 20").assertIsNotDisplayed()
-        composeRule.onNodeWithText("Колода 20").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Deck 20").assertIsNotDisplayed()
+        composeRule.onNodeWithText("Deck 20").performScrollTo().assertIsDisplayed()
         // Нижняя строка осталась на месте: список прокручивается над ней.
-        assertEquals(1323f - 32f - 112f, composeRule.onNodeWithText("Новая колода").getUnclippedBoundsInRoot().top.value, 0.5f)
+        assertEquals(1323f - 32f - 112f, composeRule.onNodeWithText("New deck").getUnclippedBoundsInRoot().top.value, 0.5f)
     }
 
     @Test
     fun newDeckButtonFillsFooterAndCreatesDeck() {
         showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
 
-        val button = composeRule.onNodeWithText("Новая колода")
+        val button = composeRule.onNodeWithText("New deck")
         val bounds = button.getUnclippedBoundsInRoot()
         assertEquals(32f, bounds.left.value, 0.5f)
         assertEquals(928f, bounds.right.value - bounds.left.value, 0.5f)
         assertEquals(112f, bounds.bottom.value - bounds.top.value, 0.5f)
         assertEquals(1323f - 32f, bounds.bottom.value, 0.5f)
         assertEquals(3, measureBorder(button))
-        assertEquals(26f, readTextStyle(composeRule.onNodeWithText("Новая колода", useUnmergedTree = true)).fontSize.value, 0.01f)
-        composeRule.assertIconBeforeLabel("Новая колода", IconId.PLUS, borderMargin = 8)
+        assertEquals(26f, readTextStyle(composeRule.onNodeWithText("New deck", useUnmergedTree = true)).fontSize.value, 0.01f)
+        composeRule.assertIconBeforeLabel("New deck", IconId.PLUS, borderMargin = 8)
         button.performClick()
         assertEquals(listOf<DeckListAction>(DeckListAction.CreateDeck), listActions)
     }
@@ -264,27 +264,27 @@ class OtherScreensTest {
     fun createIsGreyUntilNameEntered() {
         showFrame { DeckNameScreen(buildNameState(""), { nameActions += it }) }
 
-        composeRule.onNodeWithText("Создать").assertIsNotEnabled().performClick()
+        composeRule.onNodeWithText("Create").assertIsNotEnabled().performClick()
         assertTrue(nameActions.isEmpty())
 
-        showFrame { DeckNameScreen(buildNameState("Физика"), { nameActions += it }) }
+        showFrame { DeckNameScreen(buildNameState("Physics"), { nameActions += it }) }
 
-        composeRule.onNodeWithText("Создать").assertIsEnabled().performClick()
+        composeRule.onNodeWithText("Create").assertIsEnabled().performClick()
         assertEquals(listOf<DeckNameAction>(DeckNameAction.Save), nameActions)
-        assertEquals(3, measureBorder(composeRule.onNodeWithText("Создать")))
+        assertEquals(3, measureBorder(composeRule.onNodeWithText("Create")))
     }
 
     @Test
     fun headerOfNewDeckHasCancelAndCreate() {
         showFrame { DeckNameScreen(buildNameState(""), { nameActions += it }) }
 
-        composeRule.onNodeWithText("Новая колода").assertExists()
-        val cancel = composeRule.onNodeWithText("Отмена")
+        composeRule.onNodeWithText("New deck").assertExists()
+        val cancel = composeRule.onNodeWithText("Cancel")
         assertEquals(32f, cancel.getUnclippedBoundsInRoot().left.value, 0.5f)
         // «Отмена» тихая, без рамки; «Создать» без имени серое и тоже без рамки.
         assertEquals(0, measureBorder(cancel))
-        assertEquals(0, measureBorder(composeRule.onNodeWithText("Создать")))
-        assertEquals(960f, composeRule.onNodeWithText("Создать").getUnclippedBoundsInRoot().right.value, 0.5f)
+        assertEquals(0, measureBorder(composeRule.onNodeWithText("Create")))
+        assertEquals(960f, composeRule.onNodeWithText("Create").getUnclippedBoundsInRoot().right.value, 0.5f)
         cancel.performClick()
         assertEquals(listOf<DeckNameAction>(DeckNameAction.Cancel), nameActions)
     }
@@ -306,11 +306,11 @@ class OtherScreensTest {
         composeRule.onNode(hasSetTextAction()).performImeAction()
         assertTrue("«Готово» при пустом имени ничего не делает", nameActions.isEmpty())
 
-        composeRule.onNode(hasSetTextAction()).performTextInput("Немецкий")
-        assertEquals(listOf<DeckNameAction>(DeckNameAction.ChangeName("Немецкий")), nameActions)
+        composeRule.onNode(hasSetTextAction()).performTextInput("English")
+        assertEquals(listOf<DeckNameAction>(DeckNameAction.ChangeName("English")), nameActions)
 
         composeRule.onNode(hasSetTextAction()).performImeAction()
-        assertEquals(listOf(DeckNameAction.ChangeName("Немецкий"), DeckNameAction.Save), nameActions)
+        assertEquals(listOf(DeckNameAction.ChangeName("English"), DeckNameAction.Save), nameActions)
     }
 
     @Test
@@ -318,13 +318,13 @@ class OtherScreensTest {
         // Хост получает ChangeName, но состояние не возвращает (имя в нём навсегда пустое).
         showFrame { DeckNameScreen(buildNameState(""), { nameActions += it }) }
 
-        composeRule.onNode(hasSetTextAction()).performTextInput("Немецкий")
+        composeRule.onNode(hasSetTextAction()).performTextInput("English")
 
         // Поле держит набранное само: оно не откатывается к устаревшему состоянию, а VM получил копию в том же вызове.
-        assertEquals("Немецкий", readFieldText())
-        assertEquals(listOf<DeckNameAction>(DeckNameAction.ChangeName("Немецкий")), nameActions)
+        assertEquals("English", readFieldText())
+        assertEquals(listOf<DeckNameAction>(DeckNameAction.ChangeName("English")), nameActions)
         // Подсказка по набранному тексту, а не по состоянию.
-        composeRule.onNodeWithText("Немецкий A2").assertDoesNotExist()
+        composeRule.onNodeWithText("English A2").assertDoesNotExist()
     }
 
     @Test
@@ -340,12 +340,12 @@ class OtherScreensTest {
             )
         }
 
-        composeRule.onNode(hasSetTextAction()).performTextInput("Немецкий")
+        composeRule.onNode(hasSetTextAction()).performTextInput("English")
         composeRule.onNode(hasSetTextAction()).performKeyInput { pressKey(Key.Enter) }
 
         // Enter в поле имени перевод строки не вставляет.
         val typed = nameActions.filterIsInstance<DeckNameAction.ChangeName>().last().text
-        assertEquals("Немецкий", typed)
+        assertEquals("English", typed)
     }
 
     @Test
@@ -369,7 +369,7 @@ class OtherScreensTest {
         showFrame { DeckNameScreen(buildNameState(""), { nameActions += it }) }
 
         // Подпись через 40 dp после шапки (96 + зазор 16), поле через 16 под ней: высота 88, рамка 2 px.
-        val label = composeRule.onNodeWithText("Название колоды", useUnmergedTree = true)
+        val label = composeRule.onNodeWithText("Deck name", useUnmergedTree = true)
         val labelBounds = label.getUnclippedBoundsInRoot()
         assertEquals(96f + 16f + 40f, labelBounds.top.value, 1f)
         assertEquals(20f, readTextStyle(label).fontSize.value, 0.01f)
@@ -385,7 +385,7 @@ class OtherScreensTest {
         assertTrue(!frame.isInkAt(500, top + 88))
         val inner = composeRule.onNode(hasSetTextAction()).getUnclippedBoundsInRoot()
         assertEquals(32f + 2f + 16f, inner.left.value, 0.5f)
-        val placeholder = composeRule.onNodeWithText("Немецкий A2", useUnmergedTree = true)
+        val placeholder = composeRule.onNodeWithText("English A2", useUnmergedTree = true)
         assertEquals(28f, readTextStyle(placeholder).fontSize.value, 0.01f)
         assertEquals(Tokens.Unavailable, readTextStyle(placeholder).color)
         assertEquals(32f + 2f + 16f, placeholder.getUnclippedBoundsInRoot().left.value, 1f)
@@ -393,11 +393,11 @@ class OtherScreensTest {
 
     @Test
     fun placeholderDisappearsWhenNameIsEntered() {
-        showFrame { DeckNameScreen(buildNameState("Физика"), { nameActions += it }) }
+        showFrame { DeckNameScreen(buildNameState("Physics"), { nameActions += it }) }
 
-        composeRule.onNodeWithText("Немецкий A2").assertDoesNotExist()
-        composeRule.onNodeWithText("Физика").assertExists()
-        assertEquals(28f, readTextStyle(composeRule.onNodeWithText("Физика", useUnmergedTree = true)).fontSize.value, 0.01f)
+        composeRule.onNodeWithText("English A2").assertDoesNotExist()
+        composeRule.onNodeWithText("Physics").assertExists()
+        assertEquals(28f, readTextStyle(composeRule.onNodeWithText("Physics", useUnmergedTree = true)).fontSize.value, 0.01f)
     }
 
     // --- запуск --------------------------------------------------------------------------------
@@ -405,14 +405,14 @@ class OtherScreensTest {
     @Test
     fun startupStatesHaveTheirTexts() {
         val cases = listOf(
-            Triple(StartupState.NEEDS_FILE_ACCESS, "Нужен доступ к файлам", "Колоды хранятся в папке Deckly, без доступа их не открыть."),
-            Triple(StartupState.DATABASE_DAMAGED, "База повреждена", "Файл Deckly/deckly.db не открылся, ничего не удалено."),
-            Triple(StartupState.DATABASE_MISSING, "База не найдена", "В папке Deckly нет файла deckly.db, рисунки карточек не тронуты."),
+            Triple(StartupState.NEEDS_FILE_ACCESS, "We need file access", "Your decks are in the Deckly folder. Allow file access to open them."),
+            Triple(StartupState.DATABASE_DAMAGED, "Database damaged", "Couldn't open Deckly/deckly.db. We haven't deleted anything."),
+            Triple(StartupState.DATABASE_MISSING, "Database not found", "We can't find deckly.db in the Deckly folder. Your drawings are still there."),
         )
         val buttons = mapOf(
-            StartupState.NEEDS_FILE_ACCESS to ("Открыть настройки" to StartupAction.OpenSettings),
-            StartupState.DATABASE_DAMAGED to ("Закрыть" to StartupAction.Close),
-            StartupState.DATABASE_MISSING to ("Закрыть" to StartupAction.Close),
+            StartupState.NEEDS_FILE_ACCESS to ("Open settings" to StartupAction.OpenSettings),
+            StartupState.DATABASE_DAMAGED to ("Close" to StartupAction.Close),
+            StartupState.DATABASE_MISSING to ("Close" to StartupAction.Close),
         )
         for ((state, title, text) in cases) {
             startupState = state
@@ -435,10 +435,10 @@ class OtherScreensTest {
         showFrame { StartupScreen(StartupState.DATABASE_DAMAGED, { startupActions += it }) }
 
         // Окно по центру кадра (ширина 736); шапки колоды, вкладок и нижней строки экрана нет.
-        val title = composeRule.onNodeWithText("База повреждена", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val title = composeRule.onNodeWithText("Database damaged", useUnmergedTree = true).getUnclippedBoundsInRoot()
         assertEquals((992f - 736f) / 2f + 3f + 40f, title.left.value, 1.5f)
-        composeRule.onNodeWithText("Колоды").assertDoesNotExist()
-        composeRule.onNodeWithText("Немецкий A2").assertDoesNotExist()
+        composeRule.onNodeWithText("Decks").assertDoesNotExist()
+        composeRule.onNodeWithText("English A2").assertDoesNotExist()
         val frame = composeRule.onNodeWithTag("frame").captureToImage().asAndroidBitmap()
         assertTrue(!frame.isInkAt(40, 40))
         assertTrue(!frame.isInkAt(950, 1280))
@@ -475,9 +475,9 @@ class OtherScreensTest {
     }
 
     private fun buildDecks() = listOf(
-        DeckRow(101, "Немецкий A2", 245, activeEpoch = 1, isAllLearned = false, isCurrent = true),
-        DeckRow(102, "Английские времена", 86, activeEpoch = 2, isAllLearned = false, isCurrent = false),
-        DeckRow(103, "Формулы", 18, activeEpoch = null, isAllLearned = true, isCurrent = false),
+        DeckRow(101, "English A2", 245, activeEpoch = 1, isAllLearned = false, isCurrent = true),
+        DeckRow(102, "English tenses", 86, activeEpoch = 2, isAllLearned = false, isCurrent = false),
+        DeckRow(103, "Formulas", 18, activeEpoch = null, isAllLearned = true, isCurrent = false),
     )
 
     private fun buildListState(decks: List<DeckRow>, canGoBack: Boolean = decks.isNotEmpty()) = DeckListState(decks, canGoBack)

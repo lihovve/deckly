@@ -85,9 +85,9 @@ class MainActivityTest {
     fun closeOnDamagedDatabaseFinishesTask() {
         TestWorld.openFailure = DatabaseDamagedException(File("deckly.db"), "повреждена")
         launch()
-        waitForText("База повреждена")
+        waitForText("Database damaged")
 
-        composeRule.onNodeWithText("Закрыть").performClick()
+        composeRule.onNodeWithText("Close").performClick()
 
         scenario!!.onActivity { assertTrue(it.isFinishing) }
     }
@@ -96,9 +96,9 @@ class MainActivityTest {
     fun openSettingsStartsFileAccessScreenOfThisApp() {
         TestWorld.hasFileAccess = false
         launch()
-        waitForText("Нужен доступ к файлам")
+        waitForText("We need file access")
 
-        composeRule.onNodeWithText("Открыть настройки").performClick()
+        composeRule.onNodeWithText("Open settings").performClick()
 
         scenario!!.onActivity { activity ->
             val started = shadowOf(activity).nextStartedActivity
@@ -121,9 +121,9 @@ class MainActivityTest {
         )
         TestWorld.hasFileAccess = false
         launch()
-        waitForText("Нужен доступ к файлам")
+        waitForText("We need file access")
 
-        composeRule.onNodeWithText("Открыть настройки").performClick()
+        composeRule.onNodeWithText("Open settings").performClick()
 
         scenario!!.onActivity { activity ->
             assertEquals(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION, shadowOf(activity).nextStartedActivity.action)
@@ -135,14 +135,14 @@ class MainActivityTest {
         TestWorld.hasFileAccess = false
         TestWorld.data = buildData()
         launch()
-        waitForText("Нужен доступ к файлам")
+        waitForText("We need file access")
 
         // Владелец выдал доступ и вернулся в приложение: ON_RESUME повторяет запуск сам.
         TestWorld.hasFileAccess = true
         scenario!!.moveToState(Lifecycle.State.STARTED)
         scenario!!.moveToState(Lifecycle.State.RESUMED)
 
-        waitForText("Колоды")
+        waitForText("Decks")
     }
 
     // --- системные вызовы activity -------------------------------------------------------------
@@ -167,9 +167,9 @@ class MainActivityTest {
         TestWorld.openFailure = DatabaseDamagedException(File("deckly.db"), "повреждена")
         val controller = Robolectric.buildActivity(RecordingMainActivity::class.java).setup()
         val activity = controller.get()
-        waitForText("База повреждена")
+        waitForText("Database damaged")
 
-        composeRule.onNodeWithText("Закрыть").performClick()
+        composeRule.onNodeWithText("Close").performClick()
 
         assertEquals(1, activity.removeTaskCalls)
         assertEquals(0, activity.plainFinishCalls)

@@ -47,13 +47,13 @@ class DesignETest {
     fun startupScreenIsStartupDialog() {
         showFrame { design.StartupScreen(StartupState.DATABASE_MISSING) {} }
 
-        composeRule.onNodeWithText("База не найдена").assertExists()
+        composeRule.onNodeWithText("Database not found").assertExists()
     }
 
     @Test
     fun deckScreenIsDeckScreen() {
         val state = DeckScreenState(
-            header = DeckHeader("Немецкий A2", null, null, canCreateCard = false, cardMenu = emptyList()),
+            header = DeckHeader("English A2", null, null, canCreateCard = false, cardMenu = emptyList()),
             tabs = emptyList(),
             body = DeckBody.Card(CardSideShown.FRONT, isContentDamaged = false),
             footer = DeckFooter.None,
@@ -61,7 +61,7 @@ class DesignETest {
         )
         showFrame { design.DeckScreen(state, {}) { Box(it.testTag("slot")) } }
 
-        composeRule.onNodeWithText("Немецкий A2").assertExists()
+        composeRule.onNodeWithText("English A2").assertExists()
         // Лист карточки приложения встал в слот.
         composeRule.onNodeWithTag("slot").assertExists()
     }
@@ -71,7 +71,7 @@ class DesignETest {
         val state = EditorScreenState(true, CardSideShown.FRONT, Thickness.MEDIUM, canUndo = false, dialog = null)
         showFrame { design.EditorScreen(state, {}) { Box(it.testTag("slot")) } }
 
-        composeRule.onNodeWithText("Новая карточка").assertExists()
+        composeRule.onNodeWithText("New card").assertExists()
         // Холст приложения встал в слот листа редактора.
         composeRule.onNodeWithTag("slot").assertExists()
     }
@@ -80,14 +80,14 @@ class DesignETest {
     fun deckListScreenIsDeckList() {
         showFrame { design.DeckListScreen(DeckListState(emptyList(), canGoBack = false)) {} }
 
-        composeRule.onNodeWithText("Нет колод").assertExists()
+        composeRule.onNodeWithText("No decks").assertExists()
     }
 
     @Test
     fun deckNameScreenIsDeckNameForm() {
         showFrame { design.DeckNameScreen(DeckNameState("", canSave = false)) {} }
 
-        composeRule.onNodeWithText("Название колоды").assertExists()
+        composeRule.onNodeWithText("Deck name").assertExists()
     }
 
     private fun showFrame(screen: @androidx.compose.runtime.Composable () -> Unit) {

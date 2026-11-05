@@ -23,47 +23,48 @@ class DeckTextsTest {
     }
 
     @Test
-    fun phrasesBeyondMockupAreOnlyTheDocumentedOnes() {
-        val beyond = DeckTextsBeyondMockup::class.java.declaredFields
-            .filter { Modifier.isStatic(it.modifiers) && it.type == String::class.java }
-            .map { field -> field.isAccessible = true; field.get(null) as String }
-
-        // Рисунок не открылся: решение 6 плана 4, в build.py такого нет.
-        assertEquals(listOf("Рисунок не открылся"), beyond)
-        assertTrue(!buildScript.contains("Рисунок не открылся"))
-    }
-
-    @Test
     fun composedPhrasesFollowMockupFormats() {
         assertEquals("14 / 40", DeckTexts.formatPositionValue(14, 40))
-        assertEquals("Обучение, карточка 14 из 40", DeckTexts.describePosition(PositionKind.LEARNING, 14, 40))
-        assertEquals("Просмотр, карточка 2 из 112", DeckTexts.describePosition(PositionKind.BROWSING, 2, 112))
+        assertEquals("Learning, card 14 of 40", DeckTexts.describePosition(PositionKind.LEARNING, 14, 40))
+        assertEquals("Browse, card 2 of 112", DeckTexts.describePosition(PositionKind.BROWSING, 2, 112))
         assertEquals("3 / 4", DeckTexts.formatSuccessesValue(3, 4))
-        assertEquals("Немецкий A2. Выбрать колоду", DeckTexts.describeDeckHeading("Немецкий A2"))
-        assertEquals("Осталось 60 из 100", DeckTexts.formatRemaining(60, 100))
-        assertEquals("Следующий проход: эпоха II", DeckTexts.describeNextPass(2))
+        assertEquals("English A2. Choose deck", DeckTexts.describeDeckHeading("English A2"))
+        assertEquals("60 of 100 remaining", DeckTexts.formatRemaining(60, 100))
+        assertEquals("Next pass: epoch II", DeckTexts.describeNextPass(2))
         assertEquals(listOf("I", "II", "III", "IV"), (1..4).map { DeckTexts.formatEpoch(it) })
-        // Форматы из build.py: подпись счётчика позиции и «карточка 14 из 40».
-        assertTrue(buildScript.contains("{label}, карточка {position}"))
-        assertTrue(buildScript.contains("{position.replace(\" из \", \" / \")}"))
+        // Форматы из build.py: подпись счётчика позиции и «card 14 of 40».
+        assertTrue(buildScript.contains("{label}, card {position}"))
+        assertTrue(buildScript.contains("position.replace(' of ', ' / ')"))
     }
 
     @Test
     fun postponeDescriptionNamesTheReasonInLowerCase() {
-        assertEquals("В конец прохода", DeckTexts.describePostpone(null))
-        assertEquals("В конец прохода: ответ уже открыт", DeckTexts.describePostpone(ActionBlock.ANSWER_REVEALED))
-        assertEquals("В конец прохода: уже отложена", DeckTexts.describePostpone(ActionBlock.ALREADY_POSTPONED))
-        assertEquals("В конец прохода: последняя", DeckTexts.describePostpone(ActionBlock.LAST_IN_PASS))
+        assertEquals("Move to end of pass", DeckTexts.describePostpone(null))
+        assertEquals("Move to end of pass: answer already revealed", DeckTexts.describePostpone(ActionBlock.ANSWER_REVEALED))
+        assertEquals("Move to end of pass: already postponed", DeckTexts.describePostpone(ActionBlock.ALREADY_POSTPONED))
+        assertEquals("Move to end of pass: last card", DeckTexts.describePostpone(ActionBlock.LAST_IN_PASS))
         // Блокировка «виден вопрос» принадлежит оценкам, у переноса причины для неё нет.
-        assertEquals("В конец прохода", DeckTexts.describePostpone(ActionBlock.FRONT_VISIBLE))
-        // В build.py причина дописывается как «В конец прохода: » + причина.lower().
+        assertEquals("Move to end of pass", DeckTexts.describePostpone(ActionBlock.FRONT_VISIBLE))
+        // В build.py причина дописывается как «Move to end of pass: » + причина.lower().
         assertTrue(buildScript.contains("f': {blocked_reason.lower()}'"))
     }
 
     @Test
+    fun tabDescriptionNamesCountAndActiveEpoch() {
+        assertEquals("New, 112 cards", DeckTexts.describeTab("New", 112, false))
+        assertEquals("II, 23 cards, currently learning", DeckTexts.describeTab("II", 23, true))
+        assertEquals("I, 1 card", DeckTexts.describeTab("I", 1, false))
+        // В build.py описание вкладки собирается из подписи, числа «cards» и хвоста «currently learning».
+        assertTrue(buildScript.contains("{label}, {counts[i]} cards"))
+    }
+
+    @Test
     fun sharedPhrasesOfComponentsAreInMockupToo() {
-        for (phrase in listOf("Закрыть меню", ", сейчас обучение", "Секции колоды", "Новые", "Выучено")) {
+        for (phrase in listOf("Close menu", ", currently learning", "Deck sections", "New", "Learned")) {
             assertTrue("«$phrase» нет в build.py", buildScript.contains(phrase))
         }
+        assertEquals("Close menu", DeckTexts.CLOSE_MENU)
+        assertEquals("currently learning", DeckTexts.CURRENTLY_LEARNING)
+        assertEquals("Drawing unavailable", DeckTexts.DRAWING_UNAVAILABLE)
     }
 }

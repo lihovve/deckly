@@ -39,10 +39,10 @@ class CardSideImageTest {
     @Test
     fun imageHasDescriptionForAccessibility() {
         composeRule.setContent {
-            CardSideImage(emptyList(), Modifier.size(SHEET_DP.dp), "Рисунок не открылся")
+            CardSideImage(emptyList(), Modifier.size(SHEET_DP.dp), "Drawing unavailable")
         }
 
-        composeRule.onNodeWithContentDescription("Рисунок не открылся")
+        composeRule.onNodeWithContentDescription("Drawing unavailable")
             .assertWidthIsEqualTo(SHEET_DP.dp)
             .assertHeightIsEqualTo(SHEET_DP.dp)
     }
@@ -51,13 +51,13 @@ class CardSideImageTest {
     fun imageWithoutDescriptionKeepsTheOneOfItsCaller() {
         // Дизайн ставит описание листа сам через модификатор слота и передаёт null, чтобы описание не затёрлось.
         composeRule.setContent {
-            CardSideImage(emptyList(), Modifier.size(SHEET_DP.dp).semantics { contentDescription = "Вопрос" }, description = null)
+            CardSideImage(emptyList(), Modifier.size(SHEET_DP.dp).semantics { contentDescription = "Question" }, description = null)
         }
 
-        composeRule.onNodeWithContentDescription("Вопрос").assertExists()
-        val descriptions = composeRule.onNodeWithContentDescription("Вопрос").fetchSemanticsNode().config
+        composeRule.onNodeWithContentDescription("Question").assertExists()
+        val descriptions = composeRule.onNodeWithContentDescription("Question").fetchSemanticsNode().config
             .getOrNull(SemanticsProperties.ContentDescription)
-        assertEquals(listOf("Вопрос"), descriptions)
+        assertEquals(listOf("Question"), descriptions)
     }
 
     @Test

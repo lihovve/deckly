@@ -1,0 +1,324 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=992"><title>E · After placement · New card · answer</title></head><body><x-dc><style>*{box-sizing:border-box}
+body{margin:0;background:#fff;color:#000;font-family:Arial,"Liberation Sans","DejaVu Sans",sans-serif;font-size:24px;line-height:1.25;font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}button,input{font:inherit;color:inherit;background:#fff}button{cursor:pointer}h1,h2,p{margin:0}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:4px solid #000;outline-offset:4px}
+.screen{position:relative;width:992px;height:1323px;padding:32px;display:flex;flex-direction:column;gap:16px;background:#fff;overflow:hidden}
+.bar{height:64px;flex:none;display:flex;align-items:center;gap:24px}.heading{min-width:0;flex:1}.heading h1{font-size:28px;letter-spacing:-.6px;line-height:1.2}.heading p{font-size:20px;margin-top:4px}.deck{display:flex;align-items:center;gap:10px;font-weight:700;font-size:28px;letter-spacing:-.5px;max-width:100%}.deck span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.deck svg{flex:none;width:20px;height:20px}.deck-heading{height:64px;display:flex;flex-direction:column;justify-content:center;min-width:0;flex:1}.metric{display:flex;flex-direction:column;gap:2px;min-width:132px;padding-left:24px;border-left:1px solid #000}.metric>span{font-size:18px;text-align:center}.metric-value{display:grid;grid-template-columns:minmax(3ch,1fr) auto minmax(3ch,1fr);column-gap:8px;font-size:26px;font-weight:500;white-space:nowrap}.metric-value>span:first-child{text-align:right}.metric-value>span:last-child{text-align:left}
+.icon{width:26px;height:26px;flex:none;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.btn{min-width:64px;min-height:64px;display:flex;align-items:center;justify-content:center;gap:12px;border:2px solid #000;border-radius:8px;padding:12px 18px;background:#fff;font-size:24px;font-weight:600;line-height:1.2;text-align:center}.btn.primary{border-width:3px}.btn.quiet{border-color:transparent;font-weight:400}.btn.square{width:64px;padding:0;flex:none}.btn.off{color:#555;border-color:transparent;cursor:default}.btn.off .icon{opacity:.45}.btn small{display:block;font-size:18px;font-weight:400;margin-top:7px}.btn span{min-width:0}.btn.icon-only{gap:0}.icon-only .icon{width:32px;height:32px}.btn.selected{border-width:3px}.btn .icon+span{text-align:left}
+.strip{height:72px;flex:none;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;border-bottom:1px solid #000}.cell{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-width:0;padding-bottom:8px;border-bottom:4px solid transparent}.cell>span{font-size:20px;white-space:nowrap}.cell strong{font-size:24px;font-weight:400;display:flex;align-items:center;gap:7px}.cell.open{border-bottom-color:#000}.cell.open>span,.cell.open strong{font-weight:700}.cell.active .icon{width:18px;height:18px}.cell strong{position:relative}.cell.active strong>.icon{position:absolute;left:calc(100% + 6px);top:50%;transform:translateY(-50%)}
+.card{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;text-align:center;padding:48px}.corner{position:absolute;width:18px;height:18px;border-color:#000;border-style:solid;pointer-events:none}.tl{top:0;left:0;border-width:2px 0 0 2px}.tr{top:0;right:0;border-width:2px 2px 0 0}.bl{bottom:0;left:0;border-width:0 0 2px 2px}.br{bottom:0;right:0;border-width:0 2px 2px 0}.hand{font-family:"Z003","URW Chancery L",Georgia,serif;font-style:italic;font-size:112px;line-height:1.2}.hand.small{font-size:56px}.hand-stack{display:flex;flex-direction:column;gap:24px}.card .eyebrow{font-size:20px}.card h2{font-size:48px;letter-spacing:-1.3px;line-height:1.15;max-width:700px}.card .big{font-size:80px;letter-spacing:-3px}.card .hint{max-width:580px;font-size:24px;line-height:1.5}.card .empty-icon{width:64px;height:64px;margin-bottom:4px}.card .empty-icon .icon{width:64px;height:64px;stroke-width:1.2}
+.foot{height:112px;flex:none;display:grid;grid-template-columns:112px 112px 1fr 1fr;gap:16px}.foot .btn{font-size:26px}.foot .btn.quiet{font-size:24px}.foot.nav{grid-template-columns:112px 112px 1fr 112px}.foot.nav .next{grid-column:4}.foot.two{grid-template-columns:1fr 1fr}.foot.one{grid-template-columns:1fr}.foot .span2{grid-column:span 2}
+.side-tabs{height:72px;flex:none;display:grid;grid-template-columns:1fr 1fr;gap:32px;border-bottom:1px solid #000}.side-tab{min-height:64px;display:flex;align-items:center;justify-content:center;gap:14px;font-size:24px;border-bottom:4px solid transparent}.side-tab.selected{border-bottom-color:#000;font-weight:700}.side-tab small{font-size:18px;font-weight:400}.tools{height:112px;flex:none;display:flex;align-items:stretch;gap:16px}.tools>.btn{width:112px;padding:12px}.tools>.undo{margin-left:auto}.thickness{display:flex;align-items:center;gap:4px;margin:12px 0}.thickness .btn{width:80px;height:72px;min-height:72px;padding:12px;border-color:transparent}.thickness .selected{border-color:#000}.line-sample{display:block;background:#000;width:34px;border-radius:8px}
+.overlay{position:absolute;inset:0;z-index:2}.scrim{position:absolute;inset:0;border:0;background:transparent;width:100%;height:100%}.popup{position:absolute;top:108px;right:32px;width:432px;border:2px solid #000;border-radius:8px;padding:12px 24px;background:#fff}.popup h2{font-size:18px;font-weight:400;padding:12px 0 16px;border-bottom:1px solid #000}.popup a{min-height:80px;display:flex;align-items:center;gap:16px;font-size:24px}.popup a.danger{border-top:1px solid #000}.dialog{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:736px;background:#fff;border:3px solid #000;border-radius:12px;padding:40px;display:flex;flex-direction:column;gap:24px;outline:12px solid #fff}.dialog h2{font-size:36px;line-height:1.15;letter-spacing:-.7px}.dialog p{font-size:24px;line-height:1.5}.dialog .foot{height:88px;margin-top:12px}.dialog .btn{font-size:24px}
+.list{flex:1;min-height:0;border-top:1px solid #000;margin-top:16px}.item{display:flex;align-items:center;gap:24px;min-height:148px;border-bottom:1px solid #000}.item .fill{min-width:0;flex:1;min-height:112px;display:flex;flex-direction:column;justify-content:center;gap:9px;padding:16px 0}.item h2{font-size:30px;font-weight:500;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item.current h2{font-weight:700}.item p{font-size:20px;display:flex;align-items:center;gap:8px}.item p .icon{width:18px;height:18px}.item .number{font-size:20px;width:44px;flex:none}.item .number .icon{width:24px}.page-nav{display:flex;align-items:center;justify-content:center;gap:20px;height:64px;flex:none;font-size:20px}.field{display:flex;flex-direction:column;gap:16px;margin-top:40px;font-size:20px}.input{width:100%;height:88px;border:2px solid #000;border-radius:8px;font-size:28px;padding:16px}.note{font-size:22px;line-height:1.5;max-width:750px}.keyboard{margin-top:auto;height:420px;flex:none;border-top:1px solid #000;display:flex;align-items:center;justify-content:center;font-size:20px}.spec{display:grid;grid-template-columns:180px 1fr;gap:28px 24px;border-top:1px solid #000;padding-top:32px;margin-top:24px;font-size:22px;line-height:1.5}.spec strong{font-size:22px}
+/* Figure insertion: the sheet keeps its original size in every editor state. */
+[hidden]{display:none!important}.shape-editor-frame{display:contents}.shape-graphic{display:block;width:100%;height:100%;fill:none;stroke-linecap:round;stroke-linejoin:round}.shape-graphic>*{vector-effect:non-scaling-stroke}
+.shape-stage{position:absolute;inset:0;touch-action:none;user-select:none}.shape-stage.is-ready{cursor:crosshair}.shape-object{position:absolute;cursor:move;touch-action:none}.shape-object.is-selected{outline:1px dashed #000}.shape-handle{position:absolute;width:64px;height:64px;padding:0;border:0;background:transparent;touch-action:none}.shape-handle::after{content:"";position:absolute;width:16px;height:16px;left:24px;top:24px;border:2px solid #000;background:#fff}.shape-handle.nw{top:-32px;left:-32px;cursor:nwse-resize}.shape-handle.ne{top:-32px;right:-32px;cursor:nesw-resize}.shape-handle.sw{bottom:-32px;left:-32px;cursor:nesw-resize}.shape-handle.se{bottom:-32px;right:-32px;cursor:nwse-resize}
+.shape-edit-tools .shape-graphic{width:40px;height:40px}.shape-edit-tools .apply-shape{margin-left:auto}.shape-edit-tools .apply-shape:disabled{color:#555;border-color:transparent;cursor:default}
+.shape-palette{position:absolute;bottom:160px;left:32px;width:672px;padding:24px 32px 28px;border:2px solid #000;border-radius:12px;background:#fff;display:flex;flex-direction:column;gap:20px}.shape-palette header{display:flex;align-items:center;justify-content:space-between}.shape-palette h2{font-size:28px;letter-spacing:-.6px}.shape-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.shape-choice{height:104px;display:flex;align-items:center;justify-content:center;border:2px solid transparent;border-radius:8px}.shape-choice[aria-current="true"]{border-color:#000}.shape-choice .shape-graphic{width:56px;height:56px}.shape-width{border-top:1px solid #000;padding-top:24px;display:grid;grid-template-columns:1fr auto 80px;column-gap:20px;align-items:center;font-size:22px}.stroke-preview{width:80px;height:24px}.shape-width input{grid-column:1/-1;width:100%;height:64px;margin:8px 0 0;accent-color:#000;cursor:ew-resize;background:transparent}.shape-width input::-webkit-slider-thumb{width:32px;height:32px}.shape-width input::-moz-range-thumb{width:28px;height:28px;background:#fff;border:3px solid #000;border-radius:50%}.shape-width input::-moz-range-track{height:2px;background:#000}
+.shape-width input{appearance:none;-webkit-appearance:none}.shape-width input::-webkit-slider-runnable-track{height:2px;background:#000}.shape-width input::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;margin-top:-15px;background:#fff;border:3px solid #000;border-radius:50%}
+
+/* Optical correction for the epoch numeral below the check mark on Next pass. */
+.card .next-epoch{transform:translateX(-6px)}
+.loading-brand{flex:1;display:grid;place-items:center}.loading-brand h1{font-size:64px;font-weight:700;letter-spacing:-2px;line-height:1.1}
+/* Only a band around the outline selects a shape; its interior is not a target. */
+.shape-object{pointer-events:none;cursor:default}.shape-object>.shape-graphic{pointer-events:none}.shape-object>.shape-hit{position:absolute;inset:0;overflow:visible;stroke:transparent}.shape-hit>*{pointer-events:stroke;cursor:move}.shape-handle{pointer-events:auto}
+.shape-object.is-linear{outline:none}.shape-handle.start{left:calc(12% - 32px);top:calc(50% - 32px)}.shape-handle.end{left:calc(88% - 32px);top:calc(50% - 32px)}.shape-handle.start::after,.shape-handle.end::after{border-radius:50%}.shape-rotate{position:absolute;left:calc(50% - 32px);top:-80px;width:64px;height:64px;border:0;padding:0;background:transparent;display:grid;place-items:center;pointer-events:auto;touch-action:none;cursor:grab}.shape-rotate::before{content:"";position:absolute;top:64px;left:31px;width:1px;height:16px;background:#000}.shape-rotate .icon{width:24px;height:24px;background:#fff}
+</style><main class="screen" data-screen="editor-new-back-shape-placed"><div class="shape-editor-frame" data-editor-frame><header class="bar"><a class="btn quiet" aria-label="Cancel card creation" href="dlg-discard.html"><span>Cancel</span></a><div class="heading"><h1>New card</h1></div><a class="btn primary"  href="pool.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg><span>Save</span></a></header><nav class="side-tabs" aria-label="Card side"><a class="side-tab " href="editor-new.html">Question</a><a class="side-tab selected" href="editor-new-back.html" aria-current="page">Answer</a></nav><section class="card" aria-label="Canvas. Draw with the pen only"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="shape-stage" data-shape-editor data-state="placed" data-context="editor-new-back" data-kind="star" data-angle="0" data-bounds="420,390,360,300"><div class="shape-object" data-object="0" style="left:420px;top:390px;width:360px;height:300px;transform:rotate(0deg)" role="group" aria-label="Star"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m50 10 12 27 29 3-22 20 6 30-25-15-25 15 6-30L9 40l29-3Z"/></svg><svg class="shape-graphic shape-hit" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="19" aria-hidden="true"><path d="m50 10 12 27 29 3-22 20 6 30-25-15-25 15 6-30L9 40l29-3Z"/></svg><div class="shape-handles" hidden><button type="button" class="shape-handle nw" data-resize="nw" aria-label="Resize: top left corner"></button><button type="button" class="shape-handle ne" data-resize="ne" aria-label="Resize: top right corner"></button><button type="button" class="shape-handle sw" data-resize="sw" aria-label="Resize: bottom left corner"></button><button type="button" class="shape-handle se" data-resize="se" aria-label="Resize: bottom right corner"></button><button type="button" class="shape-rotate" data-rotate aria-label="Rotate shape"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v6h6M5 11c4-9 15-5 15 2 0 4-3 7-7 7"/></svg></button></div></div></div></section><div class="tools" data-normal-tools aria-label="Drawing tools"><div class="thickness" role="group" aria-label="Pen width"><button class="btn " aria-label="Thin line" aria-pressed="false" title="Pen width preview"><i class="line-sample" style="height:2px"></i></button><button class="btn selected" aria-label="Medium line" aria-pressed="true" title="Pen width preview"><i class="line-sample" style="height:7px"></i></button><button class="btn " aria-label="Thick line" aria-pressed="false" title="Pen width preview"><i class="line-sample" style="height:15px"></i></button></div><a class="btn quiet square icon-only" aria-label="Shapes" title="Shapes" data-open-shapes href="editor-new-back-shapes.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="4"/><path d="m16 5 6 12H10Z M3 16v5h6"/></svg></a><button class="btn icon-only quiet undo" aria-label="Undo stroke" title="Undo stroke"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v6h6M5 11c4-9 15-5 15 2 0 4-3 7-7 7"/></svg></button></div><div class="tools shape-edit-tools" data-shape-tools hidden><a class="btn quiet icon-only" aria-label="Cancel shape insertion or changes" title="Cancel" data-cancel-shape href="editor-new-back.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></a><button type="button" class="btn quiet" data-open-shapes aria-label="Shape and outline width" title="Shape and outline width"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m50 10 12 27 29 3-22 20 6 30-25-15-25 15 6-30L9 40l29-3Z"/></svg></button><button type="button" class="btn primary apply-shape" data-apply-shape aria-label="Apply shape" title="Apply" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></button></div></div><div class="overlay shape-overlay" data-shape-palette hidden><a class="scrim" href="editor-new-back.html" data-close-shapes aria-label="Close shape menu"></a><section class="shape-palette" role="dialog" aria-modal="true" aria-labelledby="shape-palette-title"><header><h2 id="shape-palette-title">Shapes</h2><a class="btn quiet square icon-only" aria-label="Close shape menu" data-close-shapes href="editor-new-back.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></a></header><div class="shape-grid"><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="line" aria-label="Line" title="Line"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 50H88"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="arrow" aria-label="Arrow" title="Arrow"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 50H88L68 30M88 50 68 70"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="double-arrow" aria-label="Double arrow" title="Double arrow"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 50H88M32 30 12 50 32 70M68 30 88 50 68 70"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="rectangle" aria-label="Rectangle" title="Rectangle"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><rect x="14" y="20" width="72" height="60"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="oval" aria-label="Oval" title="Oval"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><ellipse cx="50" cy="50" rx="38" ry="30"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="triangle" aria-label="Triangle" title="Triangle"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 12 89 85H11Z"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="diamond" aria-label="Diamond" title="Diamond"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 10 86 50 50 90 14 50Z"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="hexagon" aria-label="Hexagon" title="Hexagon"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M30 15H70L90 50 70 85H30L10 50Z"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="star" aria-label="Star" title="Star" aria-current="true"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m50 10 12 27 29 3-22 20 6 30-25-15-25 15 6-30L9 40l29-3Z"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="moon" aria-label="Moon" title="Moon"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M65 12A39 39 0 1 0 87 70 38 38 0 0 1 65 12Z"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="sun" aria-label="Sun" title="Sun"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><circle cx="50" cy="50" r="23"/><path d="M50 7V16M50 84V93M7 50H16M84 50H93M20 20 27 27M73 73 80 80M20 80 27 73M73 27 80 20"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="heart" aria-label="Heart" title="Heart"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 86 16 53C-5 28 25 4 50 29 75 4 105 28 84 53Z"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="cloud" aria-label="Cloud" title="Cloud"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M25 77A20 20 0 0 1 19 38 27 27 0 0 1 71 32a23 23 0 0 1 8 45H25Z"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="bolt" aria-label="Lightning" title="Lightning"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M57 8 20 56H46L39 92 82 40H55Z"/></svg></a><a class="shape-choice" href="editor-new-back-shape-ready.html" data-choose-shape="drop" aria-label="Drop" title="Drop"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 10C43 25 20 48 20 62A30 30 0 0 0 80 62C80 48 57 25 50 10Z"/></svg></a></div><div class="shape-width"><label for="shape-width">Outline width</label><output for="shape-width" data-width-value>3</output><svg class="stroke-preview" viewBox="0 0 80 24" aria-hidden="true"><path d="M8 12H72" stroke="currentColor" stroke-width="3" fill="none" data-width-preview/></svg><input id="shape-width" type="range" min="1" max="12" step="1" value="3" aria-label="Outline width"></div></section></div></main><script>/* Interactive design demo only. No application data or drawing is saved. */
+function clampShapeValue(value, minimum, maximum) {
+    return Math.max(minimum, Math.min(maximum, value));
+}
+
+function isLinearShape(kind) {
+    return ['line', 'arrow', 'double-arrow'].includes(kind);
+}
+
+function findShapePoint(box, x, y) {
+    const angle = (box.angle || 0) * Math.PI / 180;
+    return {x: box.x + box.w / 2 + x * Math.cos(angle) - y * Math.sin(angle),
+            y: box.y + box.h / 2 + x * Math.sin(angle) + y * Math.cos(angle)};
+}
+
+function canFitShape(box, width, height) {
+    const points = [-1, 1].flatMap(x => [-1, 1].map(y => findShapePoint(box, x * box.w / 2, y * box.h / 2)));
+    if (!isLinearShape(box.kind)) points.push(findShapePoint(box, 0, -box.h / 2 - 48));
+    return points.every(point => point.x >= 32 && point.x <= width - 32 && point.y >= 32 && point.y <= height - 32);
+}
+
+function limitShapeTransform(box, candidate, width, height) {
+    if (canFitShape(candidate, width, height)) return candidate;
+    let low = 0, high = 1;
+    let result = box;
+    for (let i = 0; i < 20; i++) {
+        const ratio = (low + high) / 2;
+        const trial = {...box};
+        for (const key of ['x', 'y', 'w', 'h', 'angle']) {
+            trial[key] = (box[key] || 0) + ((candidate[key] || 0) - (box[key] || 0)) * ratio;
+        }
+        if (canFitShape(trial, width, height)) { low = ratio; result = trial; }
+        else high = ratio;
+    }
+    return result;
+}
+
+function transformShape(box, dx, dy, corner, width, height) {
+    if (!corner) return limitShapeTransform(box, {...box, x: box.x + dx, y: box.y + dy}, width, height);
+    const angle = (box.angle || 0) * Math.PI / 180;
+    const localX = dx * Math.cos(angle) + dy * Math.sin(angle);
+    const localY = -dx * Math.sin(angle) + dy * Math.cos(angle);
+    let left = -box.w / 2, right = box.w / 2;
+    let top = -box.h / 2, bottom = box.h / 2;
+    if (corner.includes('w')) left = Math.min(left + localX, right - 80);
+    if (corner.includes('e')) right = Math.max(right + localX, left + 80);
+    if (corner.includes('n')) top = Math.min(top + localY, bottom - 80);
+    if (corner.includes('s')) bottom = Math.max(bottom + localY, top + 80);
+    const center = findShapePoint(box, (left + right) / 2, (top + bottom) / 2);
+    const candidate = {...box, w: right - left, h: bottom - top,
+        x: center.x - (right - left) / 2, y: center.y - (bottom - top) / 2};
+    return limitShapeTransform(box, candidate, width, height);
+}
+
+function rotateShape(box, start, point, width, height) {
+    const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+    const delta = Math.atan2(point.y - cy, point.x - cx) - Math.atan2(start.y - cy, start.x - cx);
+    const turn = Math.atan2(Math.sin(delta), Math.cos(delta)) * 180 / Math.PI;
+    return limitShapeTransform(box, {...box, angle: (box.angle || 0) + turn}, width, height);
+}
+
+function resizeShapeEndpoint(box, point, endpoint, width, height) {
+    const moving = findShapePoint(box, (endpoint === 'start' ? -0.38 : 0.38) * box.w, 0);
+    const fixed = findShapePoint(box, (endpoint === 'start' ? 0.38 : -0.38) * box.w, 0);
+    function buildEndpointBox(target) {
+        let dx = target.x - fixed.x, dy = target.y - fixed.y;
+        let length = Math.hypot(dx, dy);
+        if (length < 64) {
+            const angle = length > 0 ? Math.atan2(dy, dx) : Math.atan2(moving.y - fixed.y, moving.x - fixed.x);
+            dx = Math.cos(angle) * 64; dy = Math.sin(angle) * 64; length = 64;
+        }
+        const w = length / 0.76;
+        return {...box, x: fixed.x + dx / 2 - w / 2, y: fixed.y + dy / 2 - 40, w, h: 80,
+            angle: Math.atan2(endpoint === 'start' ? -dy : dy, endpoint === 'start' ? -dx : dx) * 180 / Math.PI};
+    }
+    const candidate = buildEndpointBox(point);
+    if (canFitShape(candidate, width, height)) return candidate;
+    let low = 0, high = 1, result = box;
+    for (let i = 0; i < 20; i++) {
+        const ratio = (low + high) / 2;
+        const trial = buildEndpointBox({x: moving.x + (point.x - moving.x) * ratio, y: moving.y + (point.y - moving.y) * ratio});
+        if (canFitShape(trial, width, height)) { low = ratio; result = trial; } else high = ratio;
+    }
+    return result;
+}
+
+function buildLinearShape(kind, box, lineWidth) {
+    const start = box.w * 0.12, end = box.w * 0.88, y = box.h / 2;
+    const head = Math.min(24, (end - start) / 3);
+    let path = `M${start} ${y}H${end}`;
+    if (kind !== 'line') path += `M${end - head} ${y - 16}L${end} ${y} ${end - head} ${y + 16}`;
+    if (kind === 'double-arrow') path += `M${start + head} ${y - 16}L${start} ${y} ${start + head} ${y + 16}`;
+    return `<svg class="shape-graphic" viewBox="0 0 ${box.w} ${box.h}" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="${lineWidth}" aria-hidden="true"><path d="${path}"/></svg>`;
+}
+
+(function initializeShapeEditor() {
+    const stage = document.querySelector('[data-shape-editor]');
+    if (!stage) return;
+    const screen = stage.closest('main');
+    const frame = screen.querySelector('[data-editor-frame]');
+    const palette = screen.querySelector('[data-shape-palette]');
+    const normalTools = screen.querySelector('[data-normal-tools]');
+    const shapeTools = screen.querySelector('[data-shape-tools]');
+    const slider = screen.querySelector('#shape-width');
+    const apply = screen.querySelector('[data-apply-shape]');
+    const choices = [...palette.querySelectorAll('[data-choose-shape]')];
+    const templates = Object.fromEntries(choices.map(choice => [choice.dataset.chooseShape, {
+        label: choice.getAttribute('aria-label'), svg: choice.querySelector('svg').outerHTML
+    }]));
+    const [x, y, w, h] = stage.dataset.bounds.split(',').map(Number);
+    const initial = stage.dataset.state;
+    let objects = ['selected', 'moved', 'resized', 'placed', 'arrow', 'rotated'].includes(initial)
+        ? [{kind: stage.dataset.kind, angle: Number(stage.dataset.angle), width: 3, x, y, w, h}] : [];
+    let selected = objects.length && initial !== 'placed' ? 0 : -1;
+    let savedObject = null;
+    let pending = initial === 'ready';
+    let kind = stage.dataset.kind;
+    let lineWidth = 3;
+    let gesture = null;
+    let returnFocus = null;
+    const corners = {nw: 'top left', ne: 'top right', sw: 'bottom left', se: 'bottom right'};
+
+    function renderShapeEditor() {
+        stage.innerHTML = objects.map((item, index) => {
+            const node = document.createElement('div');
+            node.className = 'shape-object' + (isLinearShape(item.kind) ? ' is-linear' : '') + (index === selected ? ' is-selected' : '');
+            node.dataset.object = index;
+            node.style.cssText = `left:${item.x}px;top:${item.y}px;width:${item.w}px;height:${item.h}px;transform:rotate(${item.angle || 0}deg)`;
+            node.setAttribute('role', 'group');
+            node.setAttribute('aria-label', templates[item.kind].label);
+            node.innerHTML = isLinearShape(item.kind) ? buildLinearShape(item.kind, item, item.width) : templates[item.kind].svg;
+            node.querySelector('svg').setAttribute('stroke-width', item.width);
+            // A transparent, wider stroke is the only selection target.
+            // The hollow interior and selection rectangle let pen input pass through.
+            const hit = node.querySelector('svg').cloneNode(true);
+            hit.classList.add('shape-hit');
+            hit.setAttribute('stroke-width', item.width + 16);
+            node.append(hit);
+            if (index === selected) {
+                for (const [corner, label] of Object.entries(isLinearShape(item.kind) ? {start: 'start point', end: 'end point'} : corners)) {
+                    const handle = document.createElement('button');
+                    handle.type = 'button';
+                    handle.className = 'shape-handle ' + corner;
+                    if (isLinearShape(item.kind)) {
+                        handle.dataset.endpoint = corner;
+                        handle.setAttribute('aria-label', 'Move ' + label);
+                    } else {
+                        handle.dataset.resize = corner;
+                        handle.setAttribute('aria-label', 'Resize: ' + label + ' corner');
+                    }
+                    node.append(handle);
+                }
+                if (!isLinearShape(item.kind)) {
+                    const rotate = document.createElement('button');
+                    rotate.type = 'button';
+                    rotate.className = 'shape-rotate';
+                    rotate.dataset.rotate = '';
+                    rotate.setAttribute('aria-label', 'Rotate shape');
+                    rotate.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v6h6M5 11c4-9 15-5 15 2 0 4-3 7-7 7"/></svg>';
+                    node.append(rotate);
+                }
+            }
+            return node.outerHTML;
+        }).join('');
+        stage.classList.toggle('is-ready', pending);
+        normalTools.hidden = pending || selected >= 0;
+        shapeTools.hidden = !normalTools.hidden;
+        apply.disabled = selected < 0;
+        const preview = shapeTools.querySelector('[data-open-shapes]');
+        preview.innerHTML = templates[kind].svg;
+        preview.querySelector('svg').setAttribute('stroke-width', lineWidth);
+        choices.forEach(choice => choice.setAttribute('aria-current', String(choice.dataset.chooseShape === kind)));
+    }
+
+    function updateShapeWidth() {
+        lineWidth = Number(slider.value);
+        palette.querySelector('[data-width-value]').textContent = lineWidth;
+        palette.querySelector('[data-width-preview]').setAttribute('stroke-width', lineWidth);
+        choices.forEach(choice => choice.querySelector('svg').setAttribute('stroke-width', lineWidth));
+        if (selected >= 0) objects[selected].width = lineWidth;
+        renderShapeEditor();
+    }
+
+    function closeShapePalette() {
+        palette.hidden = true;
+        frame.inert = false;
+        if (returnFocus && !returnFocus.closest('[hidden]')) returnFocus.focus();
+    }
+
+    screen.querySelectorAll('[data-open-shapes]').forEach(button => button.addEventListener('click', event => {
+        event.preventDefault();
+        returnFocus = button;
+        slider.value = lineWidth;
+        updateShapeWidth();
+        palette.hidden = false;
+        frame.inert = true;
+        choices.find(choice => choice.dataset.chooseShape === kind).focus();
+    }));
+    screen.querySelectorAll('[data-close-shapes]').forEach(button => button.addEventListener('click', event => {
+        event.preventDefault();
+        closeShapePalette();
+    }));
+    choices.forEach(choice => choice.addEventListener('click', event => {
+        event.preventDefault();
+        kind = choice.dataset.chooseShape;
+        if (selected >= 0) {
+            const previous = objects[selected];
+            objects[selected] = {...previous, kind, width: lineWidth, h: isLinearShape(kind) ? 80 : previous.h};
+        }
+        else pending = true;
+        renderShapeEditor();
+        closeShapePalette();
+    }));
+    slider.addEventListener('input', updateShapeWidth);
+    apply.addEventListener('click', () => {
+        selected = -1;
+        savedObject = null;
+        pending = false;
+        renderShapeEditor();
+    });
+    screen.querySelector('[data-cancel-shape]').addEventListener('click', event => {
+        event.preventDefault();
+        if (selected >= 0) {
+            if (savedObject) objects[selected] = savedObject;
+            else objects.splice(selected, 1);
+        }
+        selected = -1;
+        savedObject = null;
+        pending = false;
+        gesture = null;
+        renderShapeEditor();
+    });
+
+    function findSheetPoint(event) {
+        const rect = stage.getBoundingClientRect();
+        return {x: (event.clientX - rect.left) * stage.clientWidth / rect.width,
+                y: (event.clientY - rect.top) * stage.clientHeight / rect.height};
+    }
+
+    stage.addEventListener('pointerdown', event => {
+        if (event.button !== 0 || !event.isPrimary || frame.inert) return;
+        const point = findSheetPoint(event);
+        const target = event.target.closest('[data-object]');
+        if (pending) {
+            objects.push({kind, angle: 0, width: lineWidth, x: clampShapeValue(point.x - 110, 32, stage.clientWidth - 252),
+                y: clampShapeValue(point.y - (isLinearShape(kind) ? 40 : 110), 80, stage.clientHeight - 252), w: 220, h: isLinearShape(kind) ? 80 : 220});
+            selected = objects.length - 1;
+            savedObject = null;
+            pending = false;
+        } else if (target) {
+            const index = Number(target.dataset.object);
+            // Finish any previous figure before selecting another.
+            if (selected !== index) savedObject = {...objects[index]};
+            selected = index;
+            kind = objects[index].kind;
+            lineWidth = objects[index].width;
+        } else return;
+        gesture = {point, box: {...objects[selected]}, corner: event.target.closest('[data-resize]')?.dataset.resize,
+                   endpoint: event.target.closest('[data-endpoint]')?.dataset.endpoint,
+                   rotate: Boolean(event.target.closest('[data-rotate]')), pointerId: event.pointerId};
+        event.preventDefault();
+        stage.setPointerCapture(event.pointerId);
+        renderShapeEditor();
+    });
+    stage.addEventListener('pointermove', event => {
+        if (!gesture || event.pointerId !== gesture.pointerId) return;
+        const point = findSheetPoint(event);
+        if (gesture.endpoint) objects[selected] = resizeShapeEndpoint(gesture.box, point, gesture.endpoint, stage.clientWidth, stage.clientHeight);
+        else if (gesture.rotate) objects[selected] = rotateShape(gesture.box, gesture.point, point, stage.clientWidth, stage.clientHeight);
+        else objects[selected] = transformShape(gesture.box, point.x - gesture.point.x, point.y - gesture.point.y,
+            gesture.corner, stage.clientWidth, stage.clientHeight);
+        renderShapeEditor();
+    });
+    stage.addEventListener('pointerup', event => {
+        if (!gesture || event.pointerId !== gesture.pointerId) return;
+        gesture = null;
+        if (stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
+    });
+    stage.addEventListener('pointercancel', () => {
+        if (gesture) objects[selected] = gesture.box;
+        gesture = null;
+        renderShapeEditor();
+    });
+    screen.addEventListener('keydown', event => {
+        if (palette.hidden) return;
+        if (event.key === 'Escape') { event.preventDefault(); closeShapePalette(); }
+        if (event.key === 'Tab') {
+            const controls = [...palette.querySelectorAll('a, input')];
+            const first = controls[0], last = controls[controls.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
+    });
+    renderShapeEditor();
+    if (!palette.hidden && !palette.closest('[inert]')) choices.find(choice => choice.dataset.chooseShape === kind).focus();
+})();
+</script></x-dc></body></html>

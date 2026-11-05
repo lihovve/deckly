@@ -7,14 +7,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Тексты редактора, списка колод, формы и экрана запуска: берутся из `design/build.py` или названы здесь отдельно. */
+/** Тексты редактора, списка колод, формы и экрана запуска берутся из `design/build.py` дословно; в экранах нет кириллицы. */
 class ScreenTextsTest {
     @Test
-    fun everyFixedPhraseOfEditorAndDeckScreensIsInMockup() {
+    fun everyFixedPhraseOfEditorDeckAndStartupScreensIsInMockup() {
         val owners = mapOf(
             "EditorTexts" to listConstants(EditorTexts::class.java),
             "DeckListTexts" to listConstants(DeckListTexts::class.java),
             "DeckNameTexts" to listConstants(DeckNameTexts::class.java),
+            "StartupTexts" to listConstants(StartupTexts::class.java),
         )
 
         for ((owner, phrases) in owners) {
@@ -27,58 +28,53 @@ class ScreenTextsTest {
 
     @Test
     fun composedPhrasesFollowMockupFormats() {
-        assertEquals("Тонкая линия", EditorTexts.describeThickness(app.deckly.ui.contract.Thickness.THIN))
-        assertEquals("Средняя линия", EditorTexts.describeThickness(app.deckly.ui.contract.Thickness.MEDIUM))
-        assertEquals("Толстая линия", EditorTexts.describeThickness(app.deckly.ui.contract.Thickness.THICK))
-        assertTrue(buildScript.contains("aria-label=\"{name} линия\""))
+        assertEquals("Thin line", EditorTexts.describeThickness(app.deckly.ui.contract.Thickness.THIN))
+        assertEquals("Medium line", EditorTexts.describeThickness(app.deckly.ui.contract.Thickness.MEDIUM))
+        assertEquals("Thick line", EditorTexts.describeThickness(app.deckly.ui.contract.Thickness.THICK))
+        assertTrue(buildScript.contains("aria-label=\"{name} line\""))
         assertEquals(listOf("01", "02", "09", "10", "12"), listOf(1, 2, 9, 10, 12).map { DeckListTexts.formatDeckNumber(it) })
         assertTrue(buildScript.contains("{number:02}"))
     }
 
     @Test
-    fun startupPhrasesOutsideMockupAreExactlyTheDocumentedOnes() {
-        val phrases = listConstants(StartupTexts::class.java)
+    fun noCyrillicLiteralInScreens() {
+        val stray = listScreenSources().flatMap { file -> findCyrillicLiterals(file.readText()).map { "${file.name}: «$it»" } }
 
-        val beyond = phrases.map { it.second }.filterNot { buildScript.contains(it) }
-
-        // Таблица текстов в решении 7 плана 4. «Закрыть» есть в макете (окно ошибки импорта), остальных фраз там нет.
-        assertEquals(
-            listOf(
-                "Нужен доступ к файлам",
-                "Колоды хранятся в папке Deckly, без доступа их не открыть.",
-                "Открыть настройки",
-                "База повреждена",
-                "Файл Deckly/deckly.db не открылся, ничего не удалено.",
-                "База не найдена",
-                "В папке Deckly нет файла deckly.db, рисунки карточек не тронуты.",
-            ),
-            beyond,
-        )
-        assertEquals("Закрыть", StartupTexts.CLOSE)
-        assertTrue(buildScript.contains(StartupTexts.CLOSE))
+        assertEquals("кириллица в экранах: интерфейс английский", emptyList<String>(), stray)
     }
 
     @Test
-    fun everyRussianLiteralOfScreensIsInMockupOrDocumented() {
-        val documented = (listConstants(DeckTextsBeyondMockup::class.java) + listConstants(StartupTexts::class.java)).map { it.second }.toSet()
-        val sources = File("src/main/kotlin/app/deckly/design/e").listFiles { file -> file.extension == "kt" }.orEmpty()
-        assertTrue("исходники экранов не найдены", sources.size >= 10)
-
-        val stray = mutableListOf<String>()
-        for (file in sources) {
-            for (literal in listStringLiterals(file.readText())) {
-                if (literal in documented) continue
-                // Подстановка $x и ${x} делит строку на куски: каждый кусок с буквами обязан быть в build.py.
-                for (piece in literal.split(Regex("\\$\\{[^}]*}|\\$\\w+"))) {
-                    val phrase = piece.trim { it.isWhitespace() || it in ",.:·?!()«»—-" }
-                    if (phrase.any { it in 'А'..'я' || it == 'ё' || it == 'Ё' } && !buildScript.contains(phrase)) {
-                        stray += "${file.name}: «$phrase»"
-                    }
-                }
-            }
+    fun everyLiteralWithLettersOfScreensIsInMockup() {
+        val stray = listScreenSources().flatMap { file ->
+            findLiteralsOutsideMockup(file.readText(), buildScript).map { "${file.name}: «$it»" }
         }
 
-        assertEquals("фразы вне макета без записи в DeckTextsBeyondMockup и StartupTexts", emptyList<String>(), stray)
+        assertEquals("фразы экранов, которых нет в build.py", emptyList<String>(), stray)
+    }
+
+    @Test
+    fun cyrillicLiteralIsCaughtInScreenSource() {
+        val source = """val a = "Open"; val b = "Закрыть"; val c = "Close ${'$'}x"; val d = "закрыть"; val e = "ёж"; val f = "Ёж""""
+
+        assertEquals(listOf("Закрыть", "закрыть", "ёж", "Ёж"), findCyrillicLiterals(source))
+        // Сообщения require / check / error и комментарии — для программиста, не тексты экрана.
+        assertEquals(emptyList<String>(), findCyrillicLiterals("require(x) { \"Нет значка\" } // \"Закрыть\"\n/* \"Закрыть\" */"))
+    }
+
+    @Test
+    fun englishLiteralOutsideMockupIsCaughtInScreenSource() {
+        val mockup = "Close Open settings"
+        val source = """val a = "Close"; val b = "Open settings"; val c = "Dismiss"; val d = "Close ${'$'}name now"; val e = "I, ${'$'}n""""
+
+        // «Dismiss» и «now» в макете не нашлись; «I» тоже, потому что в этом макете его нет.
+        assertEquals(listOf("Dismiss", "now", "I"), findLiteralsOutsideMockup(source, mockup))
+    }
+
+    private fun listScreenSources(): List<File> {
+        // Контуры значков в Icons.kt — данные, а не тексты.
+        val sources = File("src/main/kotlin/app/deckly/design/e").listFiles { file -> file.extension == "kt" && file.name != "Icons.kt" }.orEmpty()
+        assertTrue("исходники экранов не найдены", sources.size >= 10)
+        return sources.sortedBy { it.name }
     }
 
     // Строковые литералы Kotlin без комментариев; сырых строк в экранах нет.
@@ -90,6 +86,16 @@ class ScreenTextsTest {
             .joinToString("\n") { it.substringBefore("//") }
         return Regex("\"((?:[^\"\\\\\\n]|\\\\.)*)\"").findAll(code).map { it.groupValues[1] }.toList()
     }
+
+    private fun findCyrillicLiterals(source: String): List<String> =
+        listStringLiterals(source).filter { literal -> literal.any { it in 'А'..'я' || it == 'ё' || it == 'Ё' } }
+
+    // Подстановка $x и ${x} делит строку на куски: каждый кусок с буквами обязан быть в build.py.
+    private fun findLiteralsOutsideMockup(source: String, mockup: String): List<String> =
+        listStringLiterals(source)
+            .flatMap { literal -> literal.split(Regex("\\$\\{[^}]*}|\\$\\w+")) }
+            .map { piece -> piece.trim { it.isWhitespace() || it in ",.:·?!()«»“”—-" } }
+            .filter { phrase -> phrase.any { it.isLetter() } && !mockup.contains(phrase) }
 
     private fun listConstants(owner: Class<*>): List<Pair<String, String>> =
         owner.declaredFields

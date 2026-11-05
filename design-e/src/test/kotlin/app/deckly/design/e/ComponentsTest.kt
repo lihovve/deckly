@@ -69,8 +69,8 @@ class ComponentsTest {
         showOnWhite {
             Column {
                 DecklyButton("Ок", null, ButtonKind.NORMAL, null, {}, Modifier.testTag("text"))
-                DecklyButton(null, DecklyIcons.Plus, ButtonKind.QUIET, "Создать карточку", {}, Modifier.testTag("icon"))
-                DecklyButton("Знал", DecklyIcons.Check, ButtonKind.PRIMARY, null, {}, Modifier.testTag("labelled"))
+                DecklyButton(null, DecklyIcons.Plus, ButtonKind.QUIET, "Create card", {}, Modifier.testTag("icon"))
+                DecklyButton("Nailed it", DecklyIcons.Check, ButtonKind.PRIMARY, null, {}, Modifier.testTag("labelled"))
                 DecklyButton(null, DecklyIcons.Defer, ButtonKind.OFF, "Недоступно", {}, Modifier.testTag("off"))
             }
         }
@@ -85,7 +85,7 @@ class ComponentsTest {
         showOnWhite {
             Column {
                 for (kind in ButtonKind.entries) {
-                    DecklyButton(null, DecklyIcons.Plus, kind, "Создать", {}, Modifier.testTag(kind.name))
+                    DecklyButton(null, DecklyIcons.Plus, kind, "Create", {}, Modifier.testTag(kind.name))
                 }
             }
         }
@@ -100,7 +100,7 @@ class ComponentsTest {
     @Test
     fun squareButtonKeepsFullIconAtSixtyFourDp() {
         showOnWhite {
-            DecklyButton(null, DecklyIcons.Plus, ButtonKind.QUIET, "Создать карточку", {}, Modifier.size(64.dp).testTag("square"), isSquare = true)
+            DecklyButton(null, DecklyIcons.Plus, ButtonKind.QUIET, "Create card", {}, Modifier.size(64.dp).testTag("square"), isSquare = true)
         }
 
         composeRule.onNodeWithTag("square").assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(64.dp)
@@ -115,8 +115,8 @@ class ComponentsTest {
     fun iconBesideLabelIs26dpAndSeparatedBy12dp() {
         showOnWhite {
             Column {
-                DecklyButton("Знал", DecklyIcons.Check, ButtonKind.NORMAL, null, {}, Modifier.testTag("with"))
-                DecklyButton("Знал", null, ButtonKind.NORMAL, null, {}, Modifier.testTag("without"))
+                DecklyButton("Nailed it", DecklyIcons.Check, ButtonKind.NORMAL, null, {}, Modifier.testTag("with"))
+                DecklyButton("Nailed it", null, ButtonKind.NORMAL, null, {}, Modifier.testTag("without"))
             }
         }
 
@@ -147,18 +147,18 @@ class ComponentsTest {
     fun buttonWithoutTextNeedsDescription() {
         assertTrue(runCatching { requireButtonContent(null, DecklyIcons.Plus, null) }.exceptionOrNull() is IllegalArgumentException)
         assertTrue(runCatching { requireButtonContent(null, null, "x") }.exceptionOrNull() is IllegalArgumentException)
-        requireButtonContent(null, DecklyIcons.Plus, "Создать")
-        requireButtonContent("Знал", null, null)
-        requireButtonContent("Знал", DecklyIcons.Check, null)
+        requireButtonContent(null, DecklyIcons.Plus, "Create")
+        requireButtonContent("Nailed it", null, null)
+        requireButtonContent("Nailed it", DecklyIcons.Check, null)
     }
 
     @Test
     fun descriptionOfLabelledButtonReplacesText() {
         showOnWhite {
-            DecklyButton("В конец", DecklyIcons.Defer, ButtonKind.OFF, "В конец прохода: ответ уже открыт", {})
+            DecklyButton("В конец", DecklyIcons.Defer, ButtonKind.OFF, "Move to end of pass: answer already revealed", {})
         }
 
-        composeRule.onNodeWithContentDescription("В конец прохода: ответ уже открыт").assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription("Move to end of pass: answer already revealed").assertIsNotEnabled()
     }
 
     @Test
@@ -166,9 +166,9 @@ class ComponentsTest {
         var clicks = 0
         showOnWhite {
             Column {
-                DecklyButton("Знал", null, ButtonKind.PRIMARY, null, { clicks++ }, Modifier.testTag("primary"))
-                DecklyButton("Оставить", null, ButtonKind.NORMAL, null, { clicks += 10 }, Modifier.testTag("normal"))
-                DecklyButton("Отмена", null, ButtonKind.QUIET, null, { clicks += 100 }, Modifier.testTag("quiet"))
+                DecklyButton("Nailed it", null, ButtonKind.PRIMARY, null, { clicks++ }, Modifier.testTag("primary"))
+                DecklyButton("Keep", null, ButtonKind.NORMAL, null, { clicks += 10 }, Modifier.testTag("normal"))
+                DecklyButton("Cancel", null, ButtonKind.QUIET, null, { clicks += 100 }, Modifier.testTag("quiet"))
             }
         }
 
@@ -183,7 +183,7 @@ class ComponentsTest {
     fun offButtonIsDisabledAndGrey() {
         var clicks = 0
         showOnWhite {
-            DecklyButton(null, DecklyIcons.Defer, ButtonKind.OFF, "В конец прохода: ответ уже открыт", { clicks++ }, Modifier.testTag("off"))
+            DecklyButton(null, DecklyIcons.Defer, ButtonKind.OFF, "Move to end of pass: answer already revealed", { clicks++ }, Modifier.testTag("off"))
         }
 
         composeRule.onNodeWithTag("off").assertIsNotEnabled().performClick()
@@ -223,7 +223,7 @@ class ComponentsTest {
         showOnWhite {
             CompositionLocalProvider(LocalIndication provides IndicationProbe) {
                 Column {
-                    DecklyButton("Знал", DecklyIcons.Check, ButtonKind.NORMAL, null, {}, Modifier.testTag("button"))
+                    DecklyButton("Nailed it", DecklyIcons.Check, ButtonKind.NORMAL, null, {}, Modifier.testTag("button"))
                     SectionTabs(buildTabs(openIndex = 0, activeIndex = 1), {}, Modifier.width(928.dp).testTag("tabs"))
                 }
             }
@@ -239,7 +239,7 @@ class ComponentsTest {
             press.performTouchInput { up() }
         }
         pressAndCheck("кнопка", composeRule.onNodeWithTag("button"), "button")
-        pressAndCheck("вкладка", composeRule.onNodeWithContentDescription("II, 23 карточки"), "tabs")
+        pressAndCheck("вкладка", composeRule.onNodeWithContentDescription("II, 23 cards"), "tabs")
         assertEquals(0, IndicationProbe.createdCount)
     }
 
@@ -247,16 +247,16 @@ class ComponentsTest {
 
     @Test
     fun topBarIs64dpHigh() {
-        showOnWhite { TopBar(Modifier.testTag("bar")) { Metric("Обучение", "14 / 40") } }
+        showOnWhite { TopBar(Modifier.testTag("bar")) { Metric("Learning", "14 / 40") } }
 
         composeRule.onNodeWithTag("bar").assertHeightIsEqualTo(64.dp)
     }
 
     @Test
     fun metricShowsLabelAndValueWithDivider() {
-        showOnWhite { Metric("Успехи", "3 / 4", Modifier.testTag("metric")) }
+        showOnWhite { Metric("Successes", "3 / 4", Modifier.testTag("metric")) }
 
-        composeRule.onNodeWithText("Успехи").assertExists()
+        composeRule.onNodeWithText("Successes").assertExists()
         composeRule.onNodeWithText("3 / 4").assertExists()
         composeRule.onNodeWithTag("metric").assertWidthIsAtLeast(132.dp)
         val bitmap = capture("metric")
@@ -280,12 +280,12 @@ class ComponentsTest {
 
     @Test
     fun metricIsPaddedFromDividerAndLabelSitsAboveValue() {
-        showOnWhite { Metric("Успехи", "3 / 4") }
+        showOnWhite { Metric("Successes", "3 / 4") }
 
         // Линия 1 dp и отступ 24 dp: подпись начинается с 25 dp. Между подписью и значением 2 dp.
-        composeRule.onNodeWithText("Успехи").assertLeftPositionInRootIsEqualTo(25.dp)
+        composeRule.onNodeWithText("Successes").assertLeftPositionInRootIsEqualTo(25.dp)
         composeRule.onNodeWithText("3 / 4").assertLeftPositionInRootIsEqualTo(25.dp)
-        val label = composeRule.onNodeWithText("Успехи").getUnclippedBoundsInRoot()
+        val label = composeRule.onNodeWithText("Successes").getUnclippedBoundsInRoot()
         val value = composeRule.onNodeWithText("3 / 4").getUnclippedBoundsInRoot()
         assertEquals(2f, value.top.value - label.bottom.value, 0.6f)
     }
@@ -296,12 +296,12 @@ class ComponentsTest {
     fun tabsShowSixSectionsWithAgreedDescriptions() {
         showOnWhite { SectionTabs(buildTabs(openIndex = 2, activeIndex = 2), {}, Modifier.width(928.dp)) }
 
-        composeRule.onNodeWithContentDescription("Новые, 112 карточек").assertHasClickAction()
-        composeRule.onNodeWithContentDescription("I, 40 карточек").assertExists()
-        composeRule.onNodeWithContentDescription("II, 23 карточки, сейчас обучение").assertExists()
-        composeRule.onNodeWithContentDescription("III, 9 карточек").assertExists()
-        composeRule.onNodeWithContentDescription("IV, 0 карточек").assertExists()
-        composeRule.onNodeWithContentDescription("Выучено, 61 карточка").assertExists()
+        composeRule.onNodeWithContentDescription("New, 112 cards").assertHasClickAction()
+        composeRule.onNodeWithContentDescription("I, 40 cards").assertExists()
+        composeRule.onNodeWithContentDescription("II, 23 cards, currently learning").assertExists()
+        composeRule.onNodeWithContentDescription("III, 9 cards").assertExists()
+        composeRule.onNodeWithContentDescription("IV, 0 cards").assertExists()
+        composeRule.onNodeWithContentDescription("Learned, 61 cards").assertExists()
     }
 
     @Test
@@ -309,8 +309,8 @@ class ComponentsTest {
         showOnWhite { SectionTabs(buildTabs(openIndex = 2, activeIndex = 2), {}, Modifier.width(928.dp)) }
 
         val descriptions = listOf(
-            "Новые, 112 карточек", "I, 40 карточек", "II, 23 карточки, сейчас обучение",
-            "III, 9 карточек", "IV, 0 карточек", "Выучено, 61 карточка",
+            "New, 112 cards", "I, 40 cards", "II, 23 cards, currently learning",
+            "III, 9 cards", "IV, 0 cards", "Learned, 61 cards",
         )
         // (928 - 5 × 8) / 6 = 148 на колонку, шаг 156.
         descriptions.forEachIndexed { index, description ->
@@ -324,8 +324,8 @@ class ComponentsTest {
     fun onlyOpenTabIsSelected() {
         showOnWhite { SectionTabs(buildTabs(openIndex = 2, activeIndex = 1), {}, Modifier.width(928.dp)) }
 
-        composeRule.onNodeWithContentDescription("II, 23 карточки").assertIsSelected()
-        composeRule.onNodeWithContentDescription("I, 40 карточек, сейчас обучение").assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
+        composeRule.onNodeWithContentDescription("II, 23 cards").assertIsSelected()
+        composeRule.onNodeWithContentDescription("I, 40 cards, currently learning").assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
     }
 
     @Test
@@ -333,8 +333,8 @@ class ComponentsTest {
         val opened = mutableListOf<SectionTab>()
         showOnWhite { SectionTabs(buildTabs(openIndex = 2, activeIndex = 1), { opened += it }, Modifier.width(928.dp)) }
 
-        composeRule.onNodeWithContentDescription("Выучено, 61 карточка").performClick()
-        composeRule.onNodeWithContentDescription("II, 23 карточки").performClick()
+        composeRule.onNodeWithContentDescription("Learned, 61 cards").performClick()
+        composeRule.onNodeWithContentDescription("II, 23 cards").performClick()
 
         assertEquals(listOf(SectionTab.LEARNED, SectionTab.EPOCH_2), opened)
     }
@@ -452,9 +452,9 @@ class ComponentsTest {
 
     @Test
     fun sheetShowsItsContentAboveNothing() {
-        showOnWhite { Sheet(Modifier.size(300.dp, 400.dp)) { androidx.compose.foundation.text.BasicText("Нет карточек") } }
+        showOnWhite { Sheet(Modifier.size(300.dp, 400.dp)) { androidx.compose.foundation.text.BasicText("No cards") } }
 
-        composeRule.onNodeWithText("Нет карточек").assertExists()
+        composeRule.onNodeWithText("No cards").assertExists()
     }
 
     @Test

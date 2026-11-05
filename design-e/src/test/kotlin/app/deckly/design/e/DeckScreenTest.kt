@@ -80,39 +80,39 @@ class DeckScreenTest {
     fun questionHasNoRatings() {
         showScreen(buildLearningState(side = CardSideShown.FRONT, areRatingsShown = false))
 
-        composeRule.onNodeWithText("Не знал").assertDoesNotExist()
-        composeRule.onNodeWithText("Знал").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Показать ответ").assertExists()
-        composeRule.onNodeWithContentDescription("В конец прохода").assertExists()
+        composeRule.onNodeWithText("Missed it").assertDoesNotExist()
+        composeRule.onNodeWithText("Nailed it").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Show answer").assertExists()
+        composeRule.onNodeWithContentDescription("Move to end of pass").assertExists()
     }
 
     @Test
     fun answerHasEqualRatings() {
         showScreen(buildLearningState(side = CardSideShown.BACK, areRatingsShown = true))
 
-        val notKnew = composeRule.onNodeWithText("Не знал").getUnclippedBoundsInRoot()
-        val knew = composeRule.onNodeWithText("Знал").getUnclippedBoundsInRoot()
+        val notKnew = composeRule.onNodeWithText("Missed it").getUnclippedBoundsInRoot()
+        val knew = composeRule.onNodeWithText("Nailed it").getUnclippedBoundsInRoot()
         // Равнозначные кнопки: одной ширины и высоты, в двух последних колонках (328 + 328 с промежутком 16).
         assertEquals(knew.right.value - knew.left.value, notKnew.right.value - notKnew.left.value, 0.01f)
         assertEquals(knew.bottom.value - knew.top.value, notKnew.bottom.value - notKnew.top.value, 0.01f)
-        composeRule.onNodeWithText("Не знал").assertLeftPositionInRootIsEqualTo(32.dp + 256.dp).assertWidthIsEqualTo(328.dp).assertHeightIsEqualTo(112.dp)
-        composeRule.onNodeWithText("Знал").assertLeftPositionInRootIsEqualTo(32.dp + 600.dp).assertWidthIsEqualTo(328.dp)
+        composeRule.onNodeWithText("Missed it").assertLeftPositionInRootIsEqualTo(32.dp + 256.dp).assertWidthIsEqualTo(328.dp).assertHeightIsEqualTo(112.dp)
+        composeRule.onNodeWithText("Nailed it").assertLeftPositionInRootIsEqualTo(32.dp + 600.dp).assertWidthIsEqualTo(328.dp)
         // Обе с обычной рамкой в 2 пикселя, ни одна не выделена.
-        for (label in listOf("Не знал", "Знал")) {
+        for (label in listOf("Missed it", "Nailed it")) {
             val bitmap = composeRule.onNodeWithText(label).captureToImage().asAndroidBitmap()
             assertEquals(label, 2, (0 until 8).takeWhile { bitmap.isInk(it, bitmap.height / 2) }.size)
         }
-        composeRule.onNodeWithText("Не знал").performClick()
-        composeRule.onNodeWithText("Знал").performClick()
+        composeRule.onNodeWithText("Missed it").performClick()
+        composeRule.onNodeWithText("Nailed it").performClick()
         assertEquals(listOf(DeckAction.DidNotKnow, DeckAction.Knew), actions)
     }
 
     @Test
     fun blockedPostponeExplainsReasonInDescription() {
         val reasons = mapOf(
-            ActionBlock.ANSWER_REVEALED to "В конец прохода: ответ уже открыт",
-            ActionBlock.ALREADY_POSTPONED to "В конец прохода: уже отложена",
-            ActionBlock.LAST_IN_PASS to "В конец прохода: последняя",
+            ActionBlock.ANSWER_REVEALED to "Move to end of pass: answer already revealed",
+            ActionBlock.ALREADY_POSTPONED to "Move to end of pass: already postponed",
+            ActionBlock.LAST_IN_PASS to "Move to end of pass: last card",
         )
         for ((block, description) in reasons) {
             actions.clear()
@@ -126,47 +126,47 @@ class DeckScreenTest {
     fun availablePostponeIsQuietAndSendsAction() {
         showScreen(buildLearningState(postpone = ActionState(true)))
 
-        composeRule.onNodeWithContentDescription("В конец прохода").assertIsEnabled().performClick()
+        composeRule.onNodeWithContentDescription("Move to end of pass").assertIsEnabled().performClick()
 
         assertEquals(listOf<DeckAction>(DeckAction.Postpone), actions)
         // Тихая кнопка без рамки, а недоступная была бы серой.
-        val bitmap = composeRule.onNodeWithContentDescription("В конец прохода").captureToImage().asAndroidBitmap()
+        val bitmap = composeRule.onNodeWithContentDescription("Move to end of pass").captureToImage().asAndroidBitmap()
         assertFalse(bitmap.isInk(0, bitmap.height / 2))
     }
 
     @Test
     fun flipIsSecondCellInLearningAndBrowsing() {
         showScreen(buildLearningState(side = CardSideShown.FRONT))
-        composeRule.onNodeWithContentDescription("Показать ответ")
+        composeRule.onNodeWithContentDescription("Show answer")
             .assertLeftPositionInRootIsEqualTo(32.dp + 128.dp).assertWidthIsEqualTo(112.dp).assertHeightIsEqualTo(112.dp)
             .assertTopPositionInRootIsEqualTo(1323.dp - 32.dp - 112.dp)
-        composeRule.onNodeWithContentDescription("В конец прохода").assertLeftPositionInRootIsEqualTo(32.dp).assertWidthIsEqualTo(112.dp)
+        composeRule.onNodeWithContentDescription("Move to end of pass").assertLeftPositionInRootIsEqualTo(32.dp).assertWidthIsEqualTo(112.dp)
 
         showScreen(buildBrowsingState(side = CardSideShown.BACK))
-        composeRule.onNodeWithContentDescription("Показать вопрос")
+        composeRule.onNodeWithContentDescription("Show question")
             .assertLeftPositionInRootIsEqualTo(32.dp + 128.dp).assertWidthIsEqualTo(112.dp).assertHeightIsEqualTo(112.dp)
-        composeRule.onNodeWithContentDescription("Предыдущая карточка").assertLeftPositionInRootIsEqualTo(32.dp).assertWidthIsEqualTo(112.dp)
-        composeRule.onNodeWithContentDescription("Следующая карточка").assertLeftPositionInRootIsEqualTo(32.dp + 816.dp).assertWidthIsEqualTo(112.dp)
+        composeRule.onNodeWithContentDescription("Previous card").assertLeftPositionInRootIsEqualTo(32.dp).assertWidthIsEqualTo(112.dp)
+        composeRule.onNodeWithContentDescription("Next card").assertLeftPositionInRootIsEqualTo(32.dp + 816.dp).assertWidthIsEqualTo(112.dp)
     }
 
     @Test
     fun flipIsPrimaryOnQuestionOfLearningAndOrdinaryOnAnswerAndWhenBrowsing() {
         showScreen(buildLearningState(side = CardSideShown.FRONT))
-        assertEquals(3, measureBorder("Показать ответ"))
+        assertEquals(3, measureBorder("Show answer"))
 
         showScreen(buildLearningState(side = CardSideShown.BACK, areRatingsShown = true))
-        assertEquals(2, measureBorder("Показать вопрос"))
+        assertEquals(2, measureBorder("Show question"))
 
         showScreen(buildBrowsingState(side = CardSideShown.FRONT))
-        assertEquals(2, measureBorder("Показать ответ"))
+        assertEquals(2, measureBorder("Show answer"))
     }
 
     @Test
     fun flipSendsFlipInBothModes() {
         showScreen(buildLearningState())
-        composeRule.onNodeWithContentDescription("Показать ответ").performClick()
+        composeRule.onNodeWithContentDescription("Show answer").performClick()
         showScreen(buildBrowsingState())
-        composeRule.onNodeWithContentDescription("Показать ответ").performClick()
+        composeRule.onNodeWithContentDescription("Show answer").performClick()
 
         assertEquals(listOf<DeckAction>(DeckAction.Flip, DeckAction.Flip), actions)
     }
@@ -176,14 +176,14 @@ class DeckScreenTest {
     @Test
     fun browsingArrowsSendActionsAndAreGreyForSingleCard() {
         showScreen(buildBrowsingState(canBrowse = true))
-        composeRule.onNodeWithContentDescription("Предыдущая карточка").performClick()
-        composeRule.onNodeWithContentDescription("Следующая карточка").performClick()
+        composeRule.onNodeWithContentDescription("Previous card").performClick()
+        composeRule.onNodeWithContentDescription("Next card").performClick()
         assertEquals(listOf(DeckAction.ShowPrevious, DeckAction.ShowNext), actions)
 
         actions.clear()
         showScreen(buildBrowsingState(canBrowse = false))
-        composeRule.onNodeWithContentDescription("Предыдущая карточка").assertIsNotEnabled().performClick()
-        composeRule.onNodeWithContentDescription("Следующая карточка").assertIsNotEnabled().performClick()
+        composeRule.onNodeWithContentDescription("Previous card").assertIsNotEnabled().performClick()
+        composeRule.onNodeWithContentDescription("Next card").assertIsNotEnabled().performClick()
         assertTrue(actions.isEmpty())
     }
 
@@ -191,21 +191,21 @@ class DeckScreenTest {
     fun browsingHeaderSaysViewing() {
         showScreen(buildBrowsingState(position = PositionMetric(PositionKind.BROWSING, 2, 112), successes = null))
 
-        composeRule.onNodeWithText("Просмотр").assertExists()
+        composeRule.onNodeWithText("Browse").assertExists()
         composeRule.onNodeWithText("2 / 112").assertExists()
-        composeRule.onNodeWithContentDescription("Просмотр, карточка 2 из 112").assertExists()
-        composeRule.onNodeWithText("Успехи").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Browse, card 2 of 112").assertExists()
+        composeRule.onNodeWithText("Successes").assertDoesNotExist()
     }
 
     @Test
     fun ratingsAndStartCarryIconsAndLargeLabels() {
         showScreen(buildLearningState(side = CardSideShown.BACK, areRatingsShown = true))
-        for ((label, icon) in listOf("Не знал" to IconId.CROSS, "Знал" to IconId.CHECK)) {
+        for ((label, icon) in listOf("Missed it" to IconId.CROSS, "Nailed it" to IconId.CHECK)) {
             assertEquals(label, 26f, readTextStyle(composeRule.onNodeWithText(label, useUnmergedTree = true)).fontSize.value, 0.01f)
             assertIconBeforeLabel(label, icon, borderMargin = 8)
         }
 
-        for ((kind, label) in listOf(TransitionKind.REGULAR to "Начать проход", TransitionKind.RESUMED to "Продолжить")) {
+        for ((kind, label) in listOf(TransitionKind.REGULAR to "Start pass", TransitionKind.RESUMED to "Continue")) {
             showScreen(buildTransitionState(kind, 4, 60, 100))
             assertEquals(label, 26f, readTextStyle(composeRule.onNodeWithText(label, useUnmergedTree = true)).fontSize.value, 0.01f)
             assertIconBeforeLabel(label, IconId.RIGHT, borderMargin = 8)
@@ -216,7 +216,7 @@ class DeckScreenTest {
     fun unavailableFlipIsGreyAndInert() {
         showScreen(buildLearningState(flip = ActionState(false)))
 
-        composeRule.onNodeWithContentDescription("Показать ответ").assertIsNotEnabled().performClick()
+        composeRule.onNodeWithContentDescription("Show answer").assertIsNotEnabled().performClick()
 
         assertTrue(actions.isEmpty())
     }
@@ -227,22 +227,22 @@ class DeckScreenTest {
     fun headerShowsDeckNameMetricsAndButtonsInMockupOrder() {
         showScreen(buildLearningState(canCreateCard = true))
 
-        val name = composeRule.onNodeWithContentDescription("Немецкий A2. Выбрать колоду").getUnclippedBoundsInRoot()
-        val position = composeRule.onNodeWithContentDescription("Обучение, карточка 14 из 40").getUnclippedBoundsInRoot()
-        val successes = composeRule.onNodeWithText("Успехи").getUnclippedBoundsInRoot()
-        val create = composeRule.onNodeWithContentDescription("Создать карточку").getUnclippedBoundsInRoot()
-        val menu = composeRule.onNode(hasContentDescription("Действия с карточкой") and hasClickAction()).getUnclippedBoundsInRoot()
+        val name = composeRule.onNodeWithContentDescription("English A2. Choose deck").getUnclippedBoundsInRoot()
+        val position = composeRule.onNodeWithContentDescription("Learning, card 14 of 40").getUnclippedBoundsInRoot()
+        val successes = composeRule.onNodeWithText("Successes").getUnclippedBoundsInRoot()
+        val create = composeRule.onNodeWithContentDescription("Create card").getUnclippedBoundsInRoot()
+        val menu = composeRule.onNode(hasContentDescription("Card actions") and hasClickAction()).getUnclippedBoundsInRoot()
         // Название слева, затем счётчик позиции, успехи, плюс и «⋯».
         assertTrue(name.left.value < position.left.value)
         assertTrue(position.right.value <= successes.left.value)
         assertTrue(successes.right.value <= create.left.value)
         assertTrue(create.right.value <= menu.left.value)
-        composeRule.onNodeWithText("Обучение").assertExists()
+        composeRule.onNodeWithText("Learning").assertExists()
         composeRule.onNodeWithText("14 / 40").assertExists()
         composeRule.onNodeWithText("3 / 4").assertExists()
-        composeRule.onNodeWithText("Немецкий A2").assertExists()
+        composeRule.onNodeWithText("English A2").assertExists()
         // Кнопки шапки квадратные 64 × 64, у «⋯» правый край совпадает с полем кадра.
-        composeRule.onNodeWithContentDescription("Создать карточку").assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(64.dp)
+        composeRule.onNodeWithContentDescription("Create card").assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(64.dp)
         assertEquals(992f - 32f, menu.right.value, 0.5f)
     }
 
@@ -250,16 +250,16 @@ class DeckScreenTest {
     fun headerButtonsAppearOnlyWhenOffered() {
         showScreen(buildLearningState(canCreateCard = false, menu = emptyList()))
 
-        composeRule.onNodeWithContentDescription("Создать карточку").assertDoesNotExist()
-        composeRule.onAllNodesWithContentDescription("Действия с карточкой").assertCountEquals(0)
+        composeRule.onNodeWithContentDescription("Create card").assertDoesNotExist()
+        composeRule.onAllNodesWithContentDescription("Card actions").assertCountEquals(0)
     }
 
     @Test
     fun deckNameOpensDeckList() {
         showScreen(buildLearningState())
 
-        composeRule.onNodeWithContentDescription("Немецкий A2. Выбрать колоду").performClick()
-        composeRule.onNodeWithContentDescription("Создать карточку").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("English A2. Choose deck").performClick()
+        composeRule.onNodeWithContentDescription("Create card").assertDoesNotExist()
 
         assertEquals(listOf<DeckAction>(DeckAction.OpenDeckList), actions)
     }
@@ -268,16 +268,16 @@ class DeckScreenTest {
     fun plusCreatesCard() {
         showScreen(buildLearningState(canCreateCard = true))
 
-        composeRule.onNodeWithContentDescription("Создать карточку").performClick()
+        composeRule.onNodeWithContentDescription("Create card").performClick()
 
         assertEquals(listOf<DeckAction>(DeckAction.CreateCard), actions)
     }
 
     @Test
     fun longDeckNameDoesNotPushButtonsOffScreen() {
-        showScreen(buildLearningState(deckName = "Очень длинное название колоды, которое не помещается в строку шапки целиком", canCreateCard = true))
+        showScreen(buildLearningState(deckName = "A very long deck name that does not fit the header line completely", canCreateCard = true))
 
-        val menu = composeRule.onNode(hasContentDescription("Действия с карточкой") and hasClickAction()).getUnclippedBoundsInRoot()
+        val menu = composeRule.onNode(hasContentDescription("Card actions") and hasClickAction()).getUnclippedBoundsInRoot()
         assertEquals(992f - 32f, menu.right.value, 0.5f)
     }
 
@@ -287,16 +287,16 @@ class DeckScreenTest {
 
         // Значок 32 dp без полей: крест плюса и крайние точки «⋯» занимают 16 клеток сетки 24 и линию 1,8, около 23,7 px.
         // С внутренними полями обычной кнопки значок сжался бы до высоты 28 dp, то есть до 20,7 px.
-        assertEquals(23.7f, measureInkWidth(composeRule.onNodeWithContentDescription("Создать карточку")), 1f)
-        assertEquals(23.7f, measureInkWidth(composeRule.onNode(hasContentDescription("Действия с карточкой") and hasClickAction())), 1f)
+        assertEquals(23.7f, measureInkWidth(composeRule.onNodeWithContentDescription("Create card")), 1f)
+        assertEquals(23.7f, measureInkWidth(composeRule.onNode(hasContentDescription("Card actions") and hasClickAction())), 1f)
     }
 
     @Test
     fun deckNameIsFollowedByTwentyDpArrowTenDpApart() {
-        showScreen(buildLearningState(deckName = "Немецкий A2"))
+        showScreen(buildLearningState(deckName = "English A2"))
 
-        val heading = composeRule.onNodeWithContentDescription("Немецкий A2. Выбрать колоду")
-        val textRight = composeRule.onNodeWithText("Немецкий A2", useUnmergedTree = true).getUnclippedBoundsInRoot().right.value
+        val heading = composeRule.onNodeWithContentDescription("English A2. Choose deck")
+        val textRight = composeRule.onNodeWithText("English A2", useUnmergedTree = true).getUnclippedBoundsInRoot().right.value
         val headingLeft = heading.getUnclippedBoundsInRoot().left.value
         val bitmap = heading.captureToImage().asAndroidBitmap()
         val arrowStart = (textRight - headingLeft).toInt() + 3
@@ -311,14 +311,14 @@ class DeckScreenTest {
 
     @Test
     fun deckNameIsBoldTitleAndAsTallAsTheBar() {
-        showScreen(buildLearningState(deckName = "Немецкий A2"))
+        showScreen(buildLearningState(deckName = "English A2"))
 
-        val style = readTextStyle(composeRule.onNodeWithText("Немецкий A2", useUnmergedTree = true))
+        val style = readTextStyle(composeRule.onNodeWithText("English A2", useUnmergedTree = true))
         assertEquals(28f, style.fontSize.value, 0.01f)
         assertEquals(FontWeight.Bold, style.fontWeight)
         assertEquals(-0.5f, style.letterSpacing.value, 0.01f)
         // Цель касания названия не ниже строки шапки: 64 dp.
-        composeRule.onNodeWithContentDescription("Немецкий A2. Выбрать колоду").assertHeightIsEqualTo(64.dp)
+        composeRule.onNodeWithContentDescription("English A2. Choose deck").assertHeightIsEqualTo(64.dp)
     }
 
     @Test
@@ -326,7 +326,7 @@ class DeckScreenTest {
         showScreen(buildLearningState())
 
         // Подпись и значение читаются одной фразой «Обучение, карточка 14 из 40», а не отдельно от неё.
-        composeRule.onNode(hasContentDescription("Обучение, карточка 14 из 40") and hasText("14 / 40") and hasText("Обучение")).assertExists()
+        composeRule.onNode(hasContentDescription("Learning, card 14 of 40") and hasText("14 / 40") and hasText("Learning")).assertExists()
     }
 
     // --- вкладки -------------------------------------------------------------------------------
@@ -334,21 +334,21 @@ class DeckScreenTest {
     @Test
     fun activeMarkFollowsState() {
         showScreen(buildLearningState(tabs = buildTabs(openIndex = 2, activeIndex = 2)))
-        composeRule.onNodeWithContentDescription("II, 23 карточки, сейчас обучение").assertExists()
-        composeRule.onNodeWithContentDescription("I, 40 карточек").assertExists()
+        composeRule.onNodeWithContentDescription("II, 23 cards, currently learning").assertExists()
+        composeRule.onNodeWithContentDescription("I, 40 cards").assertExists()
 
         // Открыта другая секция, активная прежняя: отметка ▶ остаётся у II.
         showScreen(buildBrowsingState(tabs = buildTabs(openIndex = 3, activeIndex = 2)))
-        composeRule.onNodeWithContentDescription("II, 23 карточки, сейчас обучение").assertExists()
-        composeRule.onNodeWithContentDescription("III, 9 карточек").assertExists()
-        composeRule.onNodeWithContentDescription("Секции колоды").assertExists()
+        composeRule.onNodeWithContentDescription("II, 23 cards, currently learning").assertExists()
+        composeRule.onNodeWithContentDescription("III, 9 cards").assertExists()
+        composeRule.onNodeWithContentDescription("Deck sections").assertExists()
     }
 
     @Test
     fun tabClickOpensSection() {
         showScreen(buildLearningState())
 
-        composeRule.onNodeWithContentDescription("Выучено, 61 карточка").performClick()
+        composeRule.onNodeWithContentDescription("Learned, 61 cards").performClick()
 
         assertEquals(listOf<DeckAction>(DeckAction.OpenSection(SectionTab.LEARNED)), actions)
     }
@@ -369,10 +369,10 @@ class DeckScreenTest {
     fun sheetGeometryIsTheSameForEveryBodyAndFooter() {
         // Нижняя строка занимает место и когда пуста: лист всегда 928 × 963 в точке (32, 200).
         val cases = listOf(
-            buildLearningState() to "Вопрос",
-            buildBrowsingState() to "Рукописная карточка",
-            buildEmptyState(isPool = false) to "Пустая секция",
-            buildTransitionState(TransitionKind.REGULAR, 2, 23, 23) to "Следующий проход: эпоха II",
+            buildLearningState() to "Question",
+            buildBrowsingState() to "Handwritten card",
+            buildEmptyState(isPool = false) to "Empty section",
+            buildTransitionState(TransitionKind.REGULAR, 2, 23, 23) to "Next pass: epoch II",
         )
         for ((state, label) in cases) {
             showScreen(state)
@@ -387,16 +387,16 @@ class DeckScreenTest {
     @Test
     fun sheetIsLabelledByBodyAndFooterMode() {
         showScreen(buildLearningState(side = CardSideShown.FRONT))
-        composeRule.onNodeWithContentDescription("Вопрос").assertExists()
+        composeRule.onNodeWithContentDescription("Question").assertExists()
 
         showScreen(buildLearningState(side = CardSideShown.BACK, areRatingsShown = true))
-        composeRule.onNodeWithContentDescription("Ответ").assertExists()
+        composeRule.onNodeWithContentDescription("Answer").assertExists()
 
         showScreen(buildBrowsingState(side = CardSideShown.BACK))
-        composeRule.onNodeWithContentDescription("Рукописная карточка").assertExists()
+        composeRule.onNodeWithContentDescription("Handwritten card").assertExists()
 
         showScreen(buildLearningState(isContentDamaged = true))
-        composeRule.onNodeWithContentDescription("Рисунок не открылся").assertExists()
+        composeRule.onNodeWithContentDescription("Drawing unavailable").assertExists()
     }
 
     // --- пустая секция и переходы --------------------------------------------------------------
@@ -404,13 +404,13 @@ class DeckScreenTest {
     @Test
     fun emptySectionShowsIconAndTitle() {
         showScreen(buildEmptyState(isPool = false))
-        composeRule.onNodeWithText("Нет карточек").assertExists()
-        composeRule.onNodeWithContentDescription("Пустая секция").assertExists()
+        composeRule.onNodeWithText("No cards").assertExists()
+        composeRule.onNodeWithContentDescription("Empty section").assertExists()
         composeRule.onNodeWithTag("slot").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Показать ответ").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Show answer").assertDoesNotExist()
 
         showScreen(buildEmptyState(isPool = true))
-        composeRule.onNodeWithText("Нет новых карточек").assertExists()
+        composeRule.onNodeWithText("No new cards").assertExists()
     }
 
     @Test
@@ -419,7 +419,7 @@ class DeckScreenTest {
 
         // Столбец .card: значок 64 с отступом 4, зазор 28, заголовок; всё по центру листа 928 × 963. Высоту строки текста
         // задаёт шрифт (Robolectric округляет её вверх), поэтому берём измеренную, а заданную проверяем по стилю.
-        val title = composeRule.onNodeWithText("Нет карточек", useUnmergedTree = true)
+        val title = composeRule.onNodeWithText("No cards", useUnmergedTree = true)
         val bounds = title.getUnclippedBoundsInRoot()
         val stackTop = 200f + (963f - (68f + 28f + (bounds.bottom.value - bounds.top.value))) / 2f
         assertEquals(stackTop + 68f + 28f, bounds.top.value, 1f)
@@ -436,9 +436,9 @@ class DeckScreenTest {
     fun emptySectionIconIsThinCardsAbove() {
         showScreen(buildEmptyState(isPool = false))
 
-        val titleTop = composeRule.onNodeWithText("Нет карточек", useUnmergedTree = true).getUnclippedBoundsInRoot().top.value
-        val sheetTop = composeRule.onNodeWithContentDescription("Пустая секция").getUnclippedBoundsInRoot().top.value
-        val bitmap = composeRule.onNodeWithContentDescription("Пустая секция").captureToImage().asAndroidBitmap()
+        val titleTop = composeRule.onNodeWithText("No cards", useUnmergedTree = true).getUnclippedBoundsInRoot().top.value
+        val sheetTop = composeRule.onNodeWithContentDescription("Empty section").getUnclippedBoundsInRoot().top.value
+        val bitmap = composeRule.onNodeWithContentDescription("Empty section").captureToImage().asAndroidBitmap()
         val iconTop = (titleTop - 28f - 68f - sheetTop).toInt()
         // Значок 64 dp с линией 1,2: тоньше обычных значков, поэтому габариты точные.
         assertIconShape("пустая секция", bitmap, 432 until 496, iconTop until iconTop + 64, IconId.CARDS, 64f, Tokens.IconEmptyStroke, tolerance = 1.2f)
@@ -449,8 +449,8 @@ class DeckScreenTest {
         showScreen(buildTransitionState(TransitionKind.REGULAR, 2, 23, 23))
 
         // Значок 64 с отступом 4, зазор 28, цифра 80 sp, зазор 28, подсказка 24 sp; высоты строк измеряем (см. выше).
-        val numeral = composeRule.onNode(hasText("II") and hasAnyAncestor(hasContentDescription("Следующий проход: эпоха II")), useUnmergedTree = true)
-        val hint = composeRule.onNodeWithText("23 карточки", useUnmergedTree = true)
+        val numeral = composeRule.onNode(hasText("II") and hasAnyAncestor(hasContentDescription("Next pass: epoch II")), useUnmergedTree = true)
+        val hint = composeRule.onNodeWithText("23 cards", useUnmergedTree = true)
         val numeralBounds = numeral.getUnclippedBoundsInRoot()
         val hintBounds = hint.getUnclippedBoundsInRoot()
         val textHeights = (numeralBounds.bottom.value - numeralBounds.top.value) + (hintBounds.bottom.value - hintBounds.top.value)
@@ -470,9 +470,9 @@ class DeckScreenTest {
     @Test
     fun transitionIconFollowsKind() {
         val cases = listOf(
-            Triple(TransitionKind.REGULAR, "Следующий проход: эпоха II", IconId.CHECK),
-            Triple(TransitionKind.INSERTED, "Вставной проход", IconId.RIGHT),
-            Triple(TransitionKind.RESUMED, "Продолжение прохода", IconId.UNDO),
+            Triple(TransitionKind.REGULAR, "Next pass: epoch II", IconId.CHECK),
+            Triple(TransitionKind.INSERTED, "Extra pass", IconId.RIGHT),
+            Triple(TransitionKind.RESUMED, "Resume pass", IconId.UNDO),
         )
         for ((kind, label, icon) in cases) {
             showScreen(buildTransitionState(kind, 2, 23, 23))
@@ -487,7 +487,7 @@ class DeckScreenTest {
 
     @Test
     fun cardCountWordAgrees() {
-        val expected = mapOf(1 to "1 карточка", 23 to "23 карточки", 40 to "40 карточек", 112 to "112 карточек")
+        val expected = mapOf(1 to "1 card", 23 to "23 cards", 40 to "40 cards", 112 to "112 cards")
         for ((count, text) in expected) {
             showScreen(buildTransitionState(TransitionKind.REGULAR, 2, count, count))
             composeRule.onNodeWithText(text).assertExists()
@@ -498,31 +498,31 @@ class DeckScreenTest {
     fun transitionsShowEpochAndRemainingLikeMockup() {
         showScreen(buildTransitionState(TransitionKind.REGULAR, 2, 23, 23))
         // Вкладка эпохи II тоже подписана «II»: цифра листа — только та, что лежит внутри самого листа.
-        composeRule.onNode(hasText("II") and hasAnyAncestor(hasContentDescription("Следующий проход: эпоха II"))).assertExists()
-        composeRule.onNodeWithText("23 карточки").assertExists()
-        composeRule.onNodeWithContentDescription("Следующий проход: эпоха II").assertExists()
-        composeRule.onNodeWithText("Начать проход").assertExists()
+        composeRule.onNode(hasText("II") and hasAnyAncestor(hasContentDescription("Next pass: epoch II"))).assertExists()
+        composeRule.onNodeWithText("23 cards").assertExists()
+        composeRule.onNodeWithContentDescription("Next pass: epoch II").assertExists()
+        composeRule.onNodeWithText("Start pass").assertExists()
 
         showScreen(buildTransitionState(TransitionKind.INSERTED, 1, 40, 40))
-        composeRule.onNodeWithText("40 карточек").assertExists()
-        composeRule.onNodeWithContentDescription("Вставной проход").assertExists()
-        composeRule.onNodeWithText("Начать проход").assertExists()
+        composeRule.onNodeWithText("40 cards").assertExists()
+        composeRule.onNodeWithContentDescription("Extra pass").assertExists()
+        composeRule.onNodeWithText("Start pass").assertExists()
 
         showScreen(buildTransitionState(TransitionKind.RESUMED, 4, 60, 100))
-        composeRule.onNode(hasText("IV") and hasAnyAncestor(hasContentDescription("Продолжение прохода"))).assertExists()
-        composeRule.onNodeWithText("Осталось 60 из 100").assertExists()
-        composeRule.onNodeWithContentDescription("Продолжение прохода").assertExists()
-        composeRule.onNodeWithText("Продолжить").assertExists()
-        composeRule.onNodeWithText("Начать проход").assertDoesNotExist()
+        composeRule.onNode(hasText("IV") and hasAnyAncestor(hasContentDescription("Resume pass"))).assertExists()
+        composeRule.onNodeWithText("60 of 100 remaining").assertExists()
+        composeRule.onNodeWithContentDescription("Resume pass").assertExists()
+        composeRule.onNodeWithText("Continue").assertExists()
+        composeRule.onNodeWithText("Start pass").assertDoesNotExist()
     }
 
     @Test
     fun startButtonFillsWholeFooterAndSendsStartPass() {
         showScreen(buildTransitionState(TransitionKind.REGULAR, 2, 23, 23))
 
-        composeRule.onNodeWithText("Начать проход").assertLeftPositionInRootIsEqualTo(32.dp).assertWidthIsEqualTo(928.dp).assertHeightIsEqualTo(112.dp)
-        assertEquals(3, measureBorder(composeRule.onNodeWithText("Начать проход")))
-        composeRule.onNodeWithText("Начать проход").performClick()
+        composeRule.onNodeWithText("Start pass").assertLeftPositionInRootIsEqualTo(32.dp).assertWidthIsEqualTo(928.dp).assertHeightIsEqualTo(112.dp)
+        assertEquals(3, measureBorder(composeRule.onNodeWithText("Start pass")))
+        composeRule.onNodeWithText("Start pass").performClick()
 
         assertEquals(listOf<DeckAction>(DeckAction.StartPass), actions)
     }
@@ -531,10 +531,10 @@ class DeckScreenTest {
     fun transitionShowsNoMetricsMenuOrPlus() {
         showScreen(buildTransitionState(TransitionKind.REGULAR, 2, 23, 23))
 
-        composeRule.onNodeWithText("Обучение").assertDoesNotExist()
-        composeRule.onNodeWithText("Успехи").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Создать карточку").assertDoesNotExist()
-        composeRule.onAllNodesWithContentDescription("Действия с карточкой").assertCountEquals(0)
+        composeRule.onNodeWithText("Learning").assertDoesNotExist()
+        composeRule.onNodeWithText("Successes").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Create card").assertDoesNotExist()
+        composeRule.onAllNodesWithContentDescription("Card actions").assertCountEquals(0)
     }
 
     // --- меню карточки -------------------------------------------------------------------------
@@ -542,11 +542,11 @@ class DeckScreenTest {
     @Test
     fun menuOffersStateItemsOnly() {
         val variants = mapOf(
-            listOf(CardMenuItem.EDIT, CardMenuItem.DELETE) to listOf("Редактировать", "Удалить карточку"),
-            listOf(CardMenuItem.RETURN_TO_NEW, CardMenuItem.DELETE) to listOf("Вернуть в новые", "Удалить карточку"),
-            listOf(CardMenuItem.DELETE) to listOf("Удалить карточку"),
+            listOf(CardMenuItem.EDIT, CardMenuItem.DELETE) to listOf("Edit", "Delete card"),
+            listOf(CardMenuItem.RETURN_TO_NEW, CardMenuItem.DELETE) to listOf("Return to New", "Delete card"),
+            listOf(CardMenuItem.DELETE) to listOf("Delete card"),
         )
-        val everything = listOf("Редактировать", "Вернуть в новые", "Удалить карточку")
+        val everything = listOf("Edit", "Return to New", "Delete card")
         for ((menu, shown) in variants) {
             showScreen(buildBrowsingState(menu = menu))
             openMenu()
@@ -561,12 +561,12 @@ class DeckScreenTest {
         showScreen(buildBrowsingState(menu = listOf(CardMenuItem.EDIT, CardMenuItem.RETURN_TO_NEW, CardMenuItem.DELETE)))
         openMenu()
 
-        val icons = listOf("Редактировать" to IconId.PEN, "Вернуть в новые" to IconId.UNDO, "Удалить карточку" to IconId.TRASH)
+        val icons = listOf("Edit" to IconId.PEN, "Return to New" to IconId.UNDO, "Delete card" to IconId.TRASH)
         for ((label, icon) in icons) assertIconBeforeLabel(label, icon, borderMargin = 0, topMargin = 3)
         // Линия в 1 px сверху только у опасного пункта.
-        val delete = composeRule.onNodeWithText("Удалить карточку").captureToImage().asAndroidBitmap()
+        val delete = composeRule.onNodeWithText("Delete card").captureToImage().asAndroidBitmap()
         assertTrue(delete.isInk(200, 0))
-        for (label in listOf("Редактировать", "Вернуть в новые")) {
+        for (label in listOf("Edit", "Return to New")) {
             assertTrue(label, !composeRule.onNodeWithText(label).captureToImage().asAndroidBitmap().isInk(200, 0))
         }
     }
@@ -575,21 +575,21 @@ class DeckScreenTest {
     fun menuItemSendsActionAndClosesMenu() {
         showScreen(buildLearningState(menu = listOf(CardMenuItem.RETURN_TO_NEW, CardMenuItem.DELETE)))
         openMenu()
-        composeRule.onNodeWithText("Вернуть в новые").performClick()
+        composeRule.onNodeWithText("Return to New").performClick()
 
         assertEquals(listOf<DeckAction>(DeckAction.ChooseMenuItem(CardMenuItem.RETURN_TO_NEW)), actions)
-        composeRule.onNodeWithText("Удалить карточку").assertDoesNotExist()
+        composeRule.onNodeWithText("Delete card").assertDoesNotExist()
     }
 
     @Test
     fun touchOutsideMenuClosesItWithoutAction() {
         showScreen(buildLearningState())
         openMenu()
-        composeRule.onNodeWithText("Удалить карточку").assertExists()
+        composeRule.onNodeWithText("Delete card").assertExists()
 
-        composeRule.onNodeWithContentDescription("Закрыть меню").performClick()
+        composeRule.onNodeWithContentDescription("Close menu").performClick()
 
-        composeRule.onNodeWithText("Удалить карточку").assertDoesNotExist()
+        composeRule.onNodeWithText("Delete card").assertDoesNotExist()
         assertTrue(actions.isEmpty())
     }
 
@@ -598,10 +598,10 @@ class DeckScreenTest {
         showScreen(buildBrowsingState(menu = listOf(CardMenuItem.EDIT, CardMenuItem.DELETE)))
         openMenu()
 
-        val edit = composeRule.onNodeWithText("Редактировать").getUnclippedBoundsInRoot()
-        val delete = composeRule.onNodeWithText("Удалить карточку").getUnclippedBoundsInRoot()
+        val edit = composeRule.onNodeWithText("Edit").getUnclippedBoundsInRoot()
+        val delete = composeRule.onNodeWithText("Delete card").getUnclippedBoundsInRoot()
         assertTrue(edit.top.value < delete.top.value)
-        composeRule.onNode(hasContentDescription("Действия с карточкой") and hasNoClickAction())
+        composeRule.onNode(hasContentDescription("Card actions") and hasNoClickAction())
             .assertLeftPositionInRootIsEqualTo((992 - 32 - 432).dp).assertTopPositionInRootIsEqualTo(108.dp)
     }
 
@@ -611,14 +611,14 @@ class DeckScreenTest {
     fun deleteDialogUsesMockupTexts() {
         showScreen(buildLearningState(dialog = DeckDialog.CONFIRM_DELETE_CARD))
 
-        composeRule.onNodeWithText("Удалить карточку?").assertExists()
-        composeRule.onNodeWithText("Вопрос и ответ будут удалены безвозвратно.").assertExists()
+        composeRule.onNodeWithText("Delete card?").assertExists()
+        composeRule.onNodeWithText("Both sides will be deleted. You can't undo this.").assertExists()
         // Первым стоит «Оставить» (основная), вторым «Удалить».
-        val keep = composeRule.onNodeWithText("Оставить").getUnclippedBoundsInRoot()
-        val delete = composeRule.onNodeWithText("Удалить").getUnclippedBoundsInRoot()
+        val keep = composeRule.onNodeWithText("Keep").getUnclippedBoundsInRoot()
+        val delete = composeRule.onNodeWithText("Delete").getUnclippedBoundsInRoot()
         assertTrue(keep.left.value < delete.left.value)
-        composeRule.onNodeWithText("Оставить").performClick()
-        composeRule.onNodeWithText("Удалить").performClick()
+        composeRule.onNodeWithText("Keep").performClick()
+        composeRule.onNodeWithText("Delete").performClick()
         assertEquals(listOf(DeckAction.DismissDialog, DeckAction.ConfirmDialog), actions)
     }
 
@@ -626,10 +626,10 @@ class DeckScreenTest {
     fun returnDialogUsesMockupTexts() {
         showScreen(buildLearningState(dialog = DeckDialog.CONFIRM_RETURN_TO_NEW))
 
-        composeRule.onNodeWithText("Вернуть в новые?").assertExists()
-        composeRule.onNodeWithText("Успехи обнулятся.").assertExists()
-        composeRule.onNodeWithText("Оставить").performClick()
-        composeRule.onNodeWithText("Вернуть").performClick()
+        composeRule.onNodeWithText("Return to New?").assertExists()
+        composeRule.onNodeWithText("Your success count will reset.").assertExists()
+        composeRule.onNodeWithText("Keep").performClick()
+        composeRule.onNodeWithText("Return").performClick()
         assertEquals(listOf(DeckAction.DismissDialog, DeckAction.ConfirmDialog), actions)
     }
 
@@ -637,9 +637,9 @@ class DeckScreenTest {
     fun needNewCardDialogOffersOpeningPool() {
         showScreen(buildEmptyState(isPool = true, dialog = DeckDialog.NEED_NEW_CARD))
 
-        composeRule.onNodeWithText("Пока нечего повторять").assertExists()
-        composeRule.onNodeWithText("Нет карточек для обучения.").assertExists()
-        composeRule.onNodeWithText("Открыть новые").performClick()
+        composeRule.onNodeWithText("Nothing to review yet").assertExists()
+        composeRule.onNodeWithText("No cards to study.").assertExists()
+        composeRule.onNodeWithText("Open New").performClick()
         assertEquals(listOf<DeckAction>(DeckAction.ConfirmDialog), actions)
     }
 
@@ -647,13 +647,13 @@ class DeckScreenTest {
     fun doneForTodayDialogHasOnlyOpenNewWithArrow() {
         showScreen(buildEmptyState(isPool = true, dialog = DeckDialog.DONE_FOR_TODAY))
 
-        composeRule.onNodeWithText("На сегодня всё").assertExists()
-        composeRule.onNodeWithText("Открыть новые").assertExists()
-        composeRule.onNodeWithText("Оставить").assertDoesNotExist()
+        composeRule.onNodeWithText("All done for today").assertExists()
+        composeRule.onNodeWithText("Open New").assertExists()
+        composeRule.onNodeWithText("Keep").assertDoesNotExist()
         // Пояснения у окна нет (в макете `modal` текст пуст), у кнопки — стрелка.
-        composeRule.onNodeWithText("Нет карточек для обучения.").assertDoesNotExist()
-        assertIconBeforeLabel("Открыть новые", IconId.RIGHT, borderMargin = 8)
-        composeRule.onNodeWithText("Открыть новые").performClick()
+        composeRule.onNodeWithText("No cards to study.").assertDoesNotExist()
+        assertIconBeforeLabel("Open New", IconId.RIGHT, borderMargin = 8)
+        composeRule.onNodeWithText("Open New").performClick()
         assertEquals(listOf<DeckAction>(DeckAction.ConfirmDialog), actions)
     }
 
@@ -673,13 +673,13 @@ class DeckScreenTest {
     fun dialogOpenedWhileMenuIsShownHidesMenu() {
         showScreen(buildLearningState())
         openMenu()
-        composeRule.onNodeWithText("Удалить карточку").assertExists()
+        composeRule.onNodeWithText("Delete card").assertExists()
 
         showScreen(buildLearningState(dialog = DeckDialog.CONFIRM_DELETE_CARD))
 
-        composeRule.onNodeWithText("Удалить карточку?").assertExists()
-        composeRule.onNodeWithText("Редактировать").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Закрыть меню").assertDoesNotExist()
+        composeRule.onNodeWithText("Delete card?").assertExists()
+        composeRule.onNodeWithText("Edit").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Close menu").assertDoesNotExist()
     }
 
     // --- вспомогательное -----------------------------------------------------------------------
@@ -707,7 +707,7 @@ class DeckScreenTest {
     }
 
     private fun openMenu() {
-        composeRule.onNode(hasContentDescription("Действия с карточкой") and hasClickAction()).performClick()
+        composeRule.onNode(hasContentDescription("Card actions") and hasClickAction()).performClick()
     }
 
     private fun measureBorder(description: String): Int = measureBorder(composeRule.onNodeWithContentDescription(description))
@@ -734,7 +734,7 @@ class DeckScreenTest {
     }
 
     private fun buildHeader(
-        deckName: String = "Немецкий A2",
+        deckName: String = "English A2",
         position: PositionMetric? = PositionMetric(PositionKind.LEARNING, 14, 40),
         successes: SuccessMetric? = SuccessMetric(3, 4),
         canCreateCard: Boolean = false,
@@ -747,7 +747,7 @@ class DeckScreenTest {
         postpone: ActionState = ActionState(true),
         flip: ActionState = ActionState(true),
         isContentDamaged: Boolean = false,
-        deckName: String = "Немецкий A2",
+        deckName: String = "English A2",
         canCreateCard: Boolean = false,
         menu: List<CardMenuItem> = listOf(CardMenuItem.RETURN_TO_NEW, CardMenuItem.DELETE),
         tabs: List<TabState> = buildTabs(),

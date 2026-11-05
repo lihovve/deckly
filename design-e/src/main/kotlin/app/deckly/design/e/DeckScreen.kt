@@ -151,7 +151,7 @@ private fun DeckSheet(state: DeckScreenState, sheet: @Composable (Modifier) -> U
 
 // Учебная карточка называется «Вопрос» или «Ответ», просматриваемая — «Рукописная карточка» (функции learn и browse).
 private fun describeCardSheet(body: DeckBody.Card, isLearning: Boolean): String = when {
-    body.isContentDamaged -> DeckTextsBeyondMockup.DRAWING_DAMAGED
+    body.isContentDamaged -> DeckTexts.DRAWING_UNAVAILABLE
     !isLearning -> DeckTexts.HANDWRITTEN_CARD
     body.side == CardSideShown.FRONT -> DeckTexts.QUESTION
     else -> DeckTexts.ANSWER

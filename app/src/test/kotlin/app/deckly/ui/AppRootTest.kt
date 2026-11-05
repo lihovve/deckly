@@ -134,8 +134,8 @@ class AppRootTest {
         val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
         startApp(buildData(drafts = drafts))
 
-        composeRule.onNodeWithText("Новая карточка").assertExists()
-        composeRule.onNodeWithText("Сохранить").assertExists()
+        composeRule.onNodeWithText("New card").assertExists()
+        composeRule.onNodeWithText("Save").assertExists()
     }
 
     @Test
@@ -149,7 +149,7 @@ class AppRootTest {
     fun startWithoutCurrentDeckOpensDeckList() {
         startApp(buildData())
 
-        composeRule.onNodeWithText("Колоды").assertExists()
+        composeRule.onNodeWithText("Decks").assertExists()
         composeRule.onNodeWithText("Немецкий A2").assertExists()
     }
 
@@ -162,15 +162,15 @@ class AppRootTest {
         gate.complete(Unit)
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Колоды").assertExists()
+        composeRule.onNodeWithText("Decks").assertExists()
     }
 
     @Test
     fun accessRequestOffersSettings() {
         startApp(buildData(), hasFileAccess = false)
 
-        composeRule.onNodeWithText("Нужен доступ к файлам").assertExists()
-        composeRule.onNodeWithText("Открыть настройки").performClick()
+        composeRule.onNodeWithText("We need file access").assertExists()
+        composeRule.onNodeWithText("Open settings").performClick()
 
         assertEquals(1, settingsOpened)
         assertEquals(0, closed)
@@ -180,8 +180,8 @@ class AppRootTest {
     fun damagedDatabaseOffersClose() {
         startApp(buildData(), openFailure = DatabaseDamagedException(File("deckly.db"), "повреждена"))
 
-        composeRule.onNodeWithText("База повреждена").assertExists()
-        composeRule.onNodeWithText("Закрыть").performClick()
+        composeRule.onNodeWithText("Database damaged").assertExists()
+        composeRule.onNodeWithText("Close").performClick()
 
         assertEquals(1, closed)
         assertEquals(0, settingsOpened)
@@ -196,13 +196,13 @@ class AppRootTest {
 
         pressBack()
 
-        composeRule.onNodeWithText("Сохранить и выйти?").assertExists()
+        composeRule.onNodeWithText("Save and exit?").assertExists()
         assertFalse(composeRule.activity.isFinishing)
 
         pressBack()
 
-        composeRule.onNodeWithText("Сохранить и выйти?").assertDoesNotExist()
-        composeRule.onNodeWithText("Новая карточка").assertExists()
+        composeRule.onNodeWithText("Save and exit?").assertDoesNotExist()
+        composeRule.onNodeWithText("New card").assertExists()
         assertFalse(composeRule.activity.isFinishing)
     }
 
@@ -218,13 +218,13 @@ class AppRootTest {
     @Test
     fun backInDeckClosesOpenDialogOnly() {
         startApp(buildData(decks = buildCatalogWithCard(), appState = FakeAppStateRepository(DECK_ID)))
-        composeRule.onNode(hasContentDescription("Действия с карточкой") and hasClickAction()).performClick()
-        composeRule.onNodeWithText("Удалить карточку").performClick()
-        composeRule.onNodeWithText("Удалить карточку?").assertExists()
+        composeRule.onNode(hasContentDescription("Card actions") and hasClickAction()).performClick()
+        composeRule.onNodeWithText("Delete card").performClick()
+        composeRule.onNodeWithText("Delete card?").assertExists()
 
         pressBack()
 
-        composeRule.onNodeWithText("Удалить карточку?").assertDoesNotExist()
+        composeRule.onNodeWithText("Delete card?").assertDoesNotExist()
         composeRule.onNodeWithText("Немецкий A2").assertExists()
         assertFalse(composeRule.activity.isFinishing)
     }
@@ -232,31 +232,31 @@ class AppRootTest {
     @Test
     fun backWithOpenCardMenuClosesMenuNotApp() {
         startApp(buildData(decks = buildCatalogWithCard(), appState = FakeAppStateRepository(DECK_ID)))
-        composeRule.onNode(hasContentDescription("Действия с карточкой") and hasClickAction()).performClick()
-        composeRule.onNodeWithText("Удалить карточку").assertExists()
+        composeRule.onNode(hasContentDescription("Card actions") and hasClickAction()).performClick()
+        composeRule.onNodeWithText("Delete card").assertExists()
 
         pressBack()
 
-        composeRule.onNodeWithText("Удалить карточку").assertDoesNotExist()
+        composeRule.onNodeWithText("Delete card").assertDoesNotExist()
         assertFalse(composeRule.activity.isFinishing)
     }
 
     @Test
     fun backInDeckListWithCurrentDeckReturnsToIt() {
         startApp(buildData(appState = FakeAppStateRepository(DECK_ID)))
-        composeRule.onNodeWithContentDescription("Немецкий A2. Выбрать колоду").performClick()
-        composeRule.onNodeWithText("Колоды").assertExists()
+        composeRule.onNodeWithContentDescription("Немецкий A2. Choose deck").performClick()
+        composeRule.onNodeWithText("Decks").assertExists()
 
         pressBack()
 
-        composeRule.onNodeWithContentDescription("Немецкий A2. Выбрать колоду").assertExists()
+        composeRule.onNodeWithContentDescription("Немецкий A2. Choose deck").assertExists()
         assertFalse(composeRule.activity.isFinishing)
     }
 
     @Test
     fun backInDeckListWithoutCurrentDeckLeavesApp() {
         startApp(buildData())
-        composeRule.onNodeWithText("Колоды").assertExists()
+        composeRule.onNodeWithText("Decks").assertExists()
 
         pressBack()
 
@@ -266,13 +266,13 @@ class AppRootTest {
     @Test
     fun backInNewDeckFormCancelsToDeckList() {
         startApp(buildData())
-        composeRule.onNodeWithText("Новая колода").performClick()
-        composeRule.onNodeWithText("Название колоды").assertExists()
+        composeRule.onNodeWithText("New deck").performClick()
+        composeRule.onNodeWithText("Deck name").assertExists()
 
         pressBack()
 
-        composeRule.onNodeWithText("Название колоды").assertDoesNotExist()
-        composeRule.onNodeWithText("Колоды").assertExists()
+        composeRule.onNodeWithText("Deck name").assertDoesNotExist()
+        composeRule.onNodeWithText("Decks").assertExists()
         assertFalse(composeRule.activity.isFinishing)
     }
 
@@ -394,7 +394,7 @@ class AppRootTest {
 
         assertEquals(FakeCardContentRepository.buildContent(7).front, sheets.deckStrokes.last())
         // Описание листа ставит дизайн, слот его не затирает.
-        composeRule.onNodeWithContentDescription("Рукописная карточка").assertExists()
+        composeRule.onNodeWithContentDescription("Handwritten card").assertExists()
     }
 
     @Test
@@ -404,7 +404,7 @@ class AppRootTest {
         startApp(buildData(drafts = FakeDraftRepository(StoredDraft(DECK_ID, draft))))
 
         assertEquals(listOf(stroke), sheets.canvases.last().strokes)
-        composeRule.onNodeWithContentDescription("Холст. Рисование только пером").assertExists()
+        composeRule.onNodeWithContentDescription("Canvas. Draw with the pen only").assertExists()
     }
 
     @Test
@@ -418,7 +418,7 @@ class AppRootTest {
 
         assertEquals(listOf(stroke), sheets.canvases.last().strokes)
         assertEquals("штрих записан в черновик", listOf(stroke), drafts.stored?.draft?.front)
-        composeRule.onNodeWithContentDescription("Отменить штрих").assertIsEnabled()
+        composeRule.onNodeWithContentDescription("Undo stroke").assertIsEnabled()
 
         composeRule.runOnUiThread { sheets.onErase(listOf(StrokePoint(150f, 150f, 1f)), 50f) }
         composeRule.waitForIdle()
@@ -434,11 +434,11 @@ class AppRootTest {
 
         app.navigate(AppScreen.Editor(DECK_ID, EditorStart.NewCard(Section.NEW)))
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Новая карточка").assertExists()
+        composeRule.onNodeWithText("New card").assertExists()
 
         app.navigate(AppScreen.Editor(DECK_ID, EditorStart.EditCard(7, Section.NEW)))
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Редактирование").assertExists()
+        composeRule.onNodeWithText("Edit card").assertExists()
     }
 
     // --- обновление экрана ---------------------------------------------------------------------
@@ -463,7 +463,7 @@ class AppRootTest {
         val app = startApp(buildData(decks = repository, appState = FakeAppStateRepository(DECK_ID)))
         assertEquals("первый экран после запуска", 1, fullRefreshes)
 
-        composeRule.onNodeWithContentDescription("Показать ответ").performClick()
+        composeRule.onNodeWithContentDescription("Show answer").performClick()
         composeRule.waitForIdle()
         // Переворот не смена: 29 смен экрана после него всё ещё не дают обновления, а 30-я даёт.
         navigateAround(app, REFRESH_PERIOD - 1, AppScreen.DeckName)
@@ -537,7 +537,7 @@ class AppRootTest {
         repeat(10) { clickNextCard() }
         app.navigate(AppScreen.Editor(DECK_ID, EditorStart.NewCard(Section.NEW)))
         composeRule.waitForIdle()
-        repeat(9) { clickSide(if (it % 2 == 0) "Ответ" else "Вопрос") }
+        repeat(9) { clickSide(if (it % 2 == 0) "Answer" else "Question") }
         // 10 карточек, вход в редактор и 9 смен стороны — 20 смен; ещё 9 смен экрана — 29.
         navigateAround(app, 9, AppScreen.DeckName)
         assertEquals("29 смен вперемешку", 1, fullRefreshes)
@@ -586,7 +586,7 @@ class AppRootTest {
         val canvasesBefore = sheets.canvases.size
         val revisionBefore = sheets.canvases.last().uiRevision
 
-        clickSide("Ответ")
+        clickSide("Answer")
 
         // Смена стороны не 30-я: полного обновления нет, но цикл пера остался (лист получил новую ревизию), и перо
         // нигде не выключено: паузу на время обновления делает только полное обновление.
@@ -602,10 +602,10 @@ class AppRootTest {
         startApp(buildData(drafts = drafts), refreshScreen = { penWhenRefreshing += sheets.canvases.last().isPenEnabled })
         assertEquals(1, fullRefreshes)
 
-        repeat(REFRESH_PERIOD - 1) { clickSide(if (it % 2 == 0) "Ответ" else "Вопрос") }
+        repeat(REFRESH_PERIOD - 1) { clickSide(if (it % 2 == 0) "Answer" else "Question") }
         assertEquals("29 смен стороны", 1, fullRefreshes)
         // 29 кликов закончились на «Ответ»: 30-й возвращает «Вопрос» (клик по выбранной вкладке сторону не меняет).
-        clickSide("Вопрос")
+        clickSide("Question")
 
         // 30-я смена: полное обновление, и перо на это время выключено; потом включено снова.
         assertEquals(2, fullRefreshes)
@@ -626,7 +626,7 @@ class AppRootTest {
         composeRule.waitForIdle()
 
         assertEquals(FakeCardContentRepository.buildContent(8).front, sheets.deckStrokes.last())
-        composeRule.onNode(hasContentDescription("II, 2 карточки")).assertIsSelected()
+        composeRule.onNode(hasContentDescription("II, 2 cards")).assertIsSelected()
     }
 
     // --- вид и клавиатура ----------------------------------------------------------------------
@@ -643,12 +643,12 @@ class AppRootTest {
     @Test
     fun keyboardLiftsTheWholeScreen() {
         startApp(buildData())
-        val footerBottom = composeRule.onNodeWithText("Новая колода").getUnclippedBoundsInRoot().bottom.value
+        val footerBottom = composeRule.onNodeWithText("New deck").getUnclippedBoundsInRoot().bottom.value
 
         showKeyboard(heightPx = 420)
 
         // Нижняя строка поднялась ровно на высоту клавиатуры: поле имени и холст не остаются под ней.
-        val lifted = composeRule.onNodeWithText("Новая колода").getUnclippedBoundsInRoot().bottom.value
+        val lifted = composeRule.onNodeWithText("New deck").getUnclippedBoundsInRoot().bottom.value
         assertEquals(footerBottom - 420f, lifted, 1f)
     }
 
@@ -710,7 +710,7 @@ class AppRootTest {
     }
 
     private fun clickNextCard() {
-        composeRule.onNodeWithContentDescription("Следующая карточка").performClick()
+        composeRule.onNodeWithContentDescription("Next card").performClick()
         composeRule.waitForIdle()
     }
 

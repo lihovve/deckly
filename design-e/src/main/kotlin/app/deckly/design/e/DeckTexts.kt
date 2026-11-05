@@ -4,67 +4,70 @@ import app.deckly.ui.contract.ActionBlock
 import app.deckly.ui.contract.PositionKind
 
 /**
- * Тексты экрана колоды. Постоянные фразы взяты из `design/build.py` дословно, и `DeckTextsTest` проверяет, что каждая
- * там есть; склеенные из частей строки собирают функции ниже по форматам макета. Слово «карточка» согласуется с
- * числом ([formatCardCount]): в макете везде «карточек», это упрощение статичной вёрстки.
+ * Тексты экрана колоды. Интерфейс английский, постоянные фразы взяты из `design/build.py` дословно, и `DeckTextsTest`
+ * проверяет, что каждая там есть; склеенные из частей строки собирают функции ниже по форматам макета. Слово «card»
+ * согласуется с числом ([formatCardCount]): в макете везде «cards», это упрощение статичной вёрстки.
  */
 internal object DeckTexts {
     // --- шапка ---
-    const val LEARNING = "Обучение"
-    const val BROWSING = "Просмотр"
-    const val SUCCESSES = "Успехи"
-    const val DECK_HEADING_SUFFIX = "Выбрать колоду"
-    const val CREATE_CARD = "Создать карточку"
-    const val CARD_ACTIONS = "Действия с карточкой"
+    const val LEARNING = "Learning"
+    const val BROWSING = "Browse"
+    const val SUCCESSES = "Successes"
+    const val DECK_HEADING_SUFFIX = "Choose deck"
+    const val CREATE_CARD = "Create card"
+    const val CARD_ACTIONS = "Card actions"
+    const val CLOSE_MENU = "Close menu"
 
     // --- вкладки ---
-    const val SECTIONS = "Секции колоды"
+    const val SECTIONS = "Deck sections"
+    const val CURRENTLY_LEARNING = "currently learning"
 
     // --- меню карточки ---
-    const val EDIT = "Редактировать"
-    const val RETURN_TO_NEW = "Вернуть в новые"
-    const val DELETE_CARD = "Удалить карточку"
+    const val EDIT = "Edit"
+    const val RETURN_TO_NEW = "Return to New"
+    const val DELETE_CARD = "Delete card"
 
     // --- нижняя строка ---
-    const val POSTPONE = "В конец прохода"
-    const val SHOW_ANSWER = "Показать ответ"
-    const val SHOW_QUESTION = "Показать вопрос"
-    const val NOT_KNEW = "Не знал"
-    const val KNEW = "Знал"
-    const val PREVIOUS_CARD = "Предыдущая карточка"
-    const val NEXT_CARD = "Следующая карточка"
-    const val START_PASS = "Начать проход"
-    const val CONTINUE_PASS = "Продолжить"
+    const val POSTPONE = "Move to end of pass"
+    const val SHOW_ANSWER = "Show answer"
+    const val SHOW_QUESTION = "Show question"
+    const val NOT_KNEW = "Missed it"
+    const val KNEW = "Nailed it"
+    const val PREVIOUS_CARD = "Previous card"
+    const val NEXT_CARD = "Next card"
+    const val START_PASS = "Start pass"
+    const val CONTINUE_PASS = "Continue"
 
     // --- причины, по которым нельзя отложить: в описании кнопки после двоеточия строчными ---
-    const val REASON_ANSWER_REVEALED = "Ответ уже открыт"
-    const val REASON_ALREADY_POSTPONED = "Уже отложена"
-    const val REASON_LAST_IN_PASS = "Последняя"
+    const val REASON_ANSWER_REVEALED = "Answer already revealed"
+    const val REASON_ALREADY_POSTPONED = "Already postponed"
+    const val REASON_LAST_IN_PASS = "Last card"
 
     // --- лист ---
-    const val QUESTION = "Вопрос"
-    const val ANSWER = "Ответ"
-    const val HANDWRITTEN_CARD = "Рукописная карточка"
-    const val EMPTY_SECTION = "Пустая секция"
-    const val NO_CARDS = "Нет карточек"
-    const val NO_NEW_CARDS = "Нет новых карточек"
-    const val NEXT_PASS_PREFIX = "Следующий проход: эпоха"
-    const val INSERTED_PASS = "Вставной проход"
-    const val RESUMED_PASS = "Продолжение прохода"
-    const val REMAINING_PREFIX = "Осталось"
+    const val QUESTION = "Question"
+    const val ANSWER = "Answer"
+    const val HANDWRITTEN_CARD = "Handwritten card"
+    const val DRAWING_UNAVAILABLE = "Drawing unavailable"
+    const val EMPTY_SECTION = "Empty section"
+    const val NO_CARDS = "No cards"
+    const val NO_NEW_CARDS = "No new cards"
+    const val NEXT_PASS_PREFIX = "Next pass: epoch"
+    const val INSERTED_PASS = "Extra pass"
+    const val RESUMED_PASS = "Resume pass"
+    const val REMAINING_SUFFIX = "remaining"
 
     // --- окна ---
-    const val KEEP = "Оставить"
-    const val DELETE_TITLE = "Удалить карточку?"
-    const val DELETE_TEXT = "Вопрос и ответ будут удалены безвозвратно."
-    const val DELETE = "Удалить"
-    const val RETURN_TITLE = "Вернуть в новые?"
-    const val RETURN_TEXT = "Успехи обнулятся."
-    const val RETURN = "Вернуть"
-    const val NEED_CARD_TITLE = "Пока нечего повторять"
-    const val NEED_CARD_TEXT = "Нет карточек для обучения."
-    const val DONE_TITLE = "На сегодня всё"
-    const val OPEN_NEW = "Открыть новые"
+    const val KEEP = "Keep"
+    const val DELETE_TITLE = "Delete card?"
+    const val DELETE_TEXT = "Both sides will be deleted. You can't undo this."
+    const val DELETE = "Delete"
+    const val RETURN_TITLE = "Return to New?"
+    const val RETURN_TEXT = "Your success count will reset."
+    const val RETURN = "Return"
+    const val NEED_CARD_TITLE = "Nothing to review yet"
+    const val NEED_CARD_TEXT = "No cards to study."
+    const val DONE_TITLE = "All done for today"
+    const val OPEN_NEW = "Open New"
 
     private val epochNames = listOf("I", "II", "III", "IV")
 
@@ -75,25 +78,30 @@ internal object DeckTexts {
         PositionKind.BROWSING -> BROWSING
     }
 
-    /** «Обучение, карточка 14 из 40»: `aria-label` счётчика позиции. */
+    /** «Learning, card 14 of 40»: `aria-label` счётчика позиции. */
     fun describePosition(kind: PositionKind, position: Int, total: Int): String =
-        "${findPositionLabel(kind)}, карточка $position из $total"
+        "${findPositionLabel(kind)}, card $position of $total"
 
     fun formatSuccessesValue(successes: Int, threshold: Int): String = "$successes / $threshold"
 
-    /** «Немецкий A2. Выбрать колоду»: `aria-label` названия колоды. */
+    /** «English A2. Choose deck»: `aria-label` названия колоды. */
     fun describeDeckHeading(deckName: String): String = "$deckName. $DECK_HEADING_SUFFIX"
 
     fun formatEpoch(epoch: Int): String = epochNames[epoch - 1]
 
-    /** «Осталось 60 из 100»: возврат к прерванному проходу. */
-    fun formatRemaining(remaining: Int, total: Int): String = "$REMAINING_PREFIX $remaining из $total"
+    /** «60 of 100 remaining»: возврат к прерванному проходу. */
+    fun formatRemaining(remaining: Int, total: Int): String = "$remaining of $total $REMAINING_SUFFIX"
 
     fun describeNextPass(epoch: Int): String = "$NEXT_PASS_PREFIX ${formatEpoch(epoch)}"
 
+    /** «New, 112 cards» или «II, 23 cards, currently learning»: `aria-label` вкладки секции. */
+    fun describeTab(label: String, cardCount: Int, isActive: Boolean): String =
+        "$label, ${formatCardCount(cardCount)}" + if (isActive) ", $CURRENTLY_LEARNING" else ""
+
     /**
-     * «В конец прохода» или «В конец прохода: ответ уже открыт»: причина строчными, как `blocked_reason.lower()` в
-     * макете. Блокировки «виден вопрос» у переноса не бывает (она у оценок), причину тогда не называем.
+     * «Move to end of pass» или «Move to end of pass: answer already revealed»: причина строчными, как
+     * `blocked_reason.lower()` в макете. Блокировки «виден вопрос» у переноса не бывает (она у оценок), причину тогда
+     * не называем.
      */
     fun describePostpone(block: ActionBlock?): String {
         val reason = when (block) {
@@ -104,10 +112,4 @@ internal object DeckTexts {
         }
         return "$POSTPONE: ${reason.lowercase()}"
     }
-}
-
-/** Тексты, которых в макетах нет: решения плана 4. `DeckTextsTest` фиксирует, что их ровно столько, сколько здесь. */
-internal object DeckTextsBeyondMockup {
-    /** Файл штрихов карточки не открылся: лист пуст, а описание для доступности говорит об этом (решение 6 плана 4). */
-    const val DRAWING_DAMAGED = "Рисунок не открылся"
 }
