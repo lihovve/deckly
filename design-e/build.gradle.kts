@@ -21,7 +21,14 @@ android {
             // Robolectric берёт манифест и ресурсы из сборки.
             isIncludeAndroidResources = true
             // Robolectric грузит нативные библиотеки (графика); в будущих JDK без этого флага это станет ошибкой.
-            all { it.jvmArgs("--enable-native-access=ALL-UNNAMED") }
+            all {
+                it.jvmArgs("--enable-native-access=ALL-UNNAMED")
+                // Тесты сверяют тексты, значки и токены с макетом (`MockupSources` читает `../design`). Файлы вне модуля Gradle
+                // сам входами не считает: без этого правка макета оставляла бы тесты UP-TO-DATE, и «зелёный» ничего не значил.
+                it.inputs.files(rootProject.file("design/build.py"), rootProject.file("design/styles.css"))
+                    .withPropertyName("mockupSources")
+                    .withPathSensitivity(PathSensitivity.RELATIVE)
+            }
         }
     }
 }
