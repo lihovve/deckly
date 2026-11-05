@@ -33,6 +33,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.resetMain
@@ -70,6 +71,56 @@ class EditorViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    // --- загрузка: показывать нечего, пока сессия не прочитана ---------------------------------
+
+    @Test
+    fun resumedDraftHasNoStateUntilItIsLoaded() {
+        drafts.stored = StoredDraft(DECK_ID, Draft(null, listOf(first), emptyList(), Side.BACK, Section.EPOCH_2))
+        startResume()
+
+        assertNull("пока черновик читается, показывать нечего", viewModel.state.value)
+        assertFalse("перо выключено до загрузки", viewModel.canvas.value.isPenEnabled)
+        runUntilIdle()
+
+        assertTrue(shown.isNewCard)
+        assertEquals(CardSideShown.BACK, shown.side)
+        assertTrue(viewModel.canvas.value.isPenEnabled)
+    }
+
+    @Test
+    fun editedCardHasNoStateUntilItsContentIsLoaded() {
+        startEditing(2)
+
+        assertNull(viewModel.state.value)
+        runUntilIdle()
+
+        assertFalse(shown.isNewCard)
+    }
+
+    @Test
+    fun newCardHasStateAtOnce() {
+        startNewCard()
+
+        assertTrue(shown.isNewCard)
+        assertEquals(CardSideShown.FRONT, shown.side)
+    }
+
+    @Test
+    fun nothingButTheLoadedStateIsEverPublishedForResumedDraft() {
+        drafts.stored = StoredDraft(DECK_ID, Draft(null, listOf(first), emptyList(), Side.BACK, Section.EPOCH_2))
+        startResume()
+        val published = mutableListOf<EditorScreenState?>()
+        val job = CoroutineScope(Dispatchers.Unconfined).launch { viewModel.state.collect { published += it } }
+
+        runUntilIdle()
+        job.cancel()
+
+        // Ни одного кадра с заглушкой («Редактирование», лицо): первым непустым идёт состояние с верной стороной.
+        val real = published.filterNotNull()
+        assertTrue(real.isNotEmpty())
+        assertTrue(real.all { it.isNewCard && it.side == CardSideShown.BACK })
     }
 
     // --- черновик (Review Focus 1) -------------------------------------------------------------
@@ -144,13 +195,13 @@ class EditorViewModelTest {
         viewModel.onStroke(first)
         runUntilIdle()
         assertTrue(viewModel.canvas.value.strokes.isEmpty())
-        assertFalse(viewModel.state.value.canUndo)
+        assertFalse(shown.canUndo)
 
         gate.complete(Unit)
         runUntilIdle()
 
         assertEquals(listOf(first), viewModel.canvas.value.strokes)
-        assertTrue(viewModel.state.value.canUndo)
+        assertTrue(shown.canUndo)
     }
 
     @Test
@@ -176,11 +227,11 @@ class EditorViewModelTest {
 
         runUntilIdle()
 
-        assertEquals(CardSideShown.BACK, viewModel.state.value.side)
+        assertEquals(CardSideShown.BACK, shown.side)
         assertEquals(listOf(second), viewModel.canvas.value.strokes)
-        assertTrue(viewModel.state.value.isNewCard)
+        assertTrue(shown.isNewCard)
         // История отмены после перезапуска пуста, а сама загрузка черновик не перезаписывает.
-        assertFalse(viewModel.state.value.canUndo)
+        assertFalse(shown.canUndo)
         assertTrue(drafts.storedCalls.isEmpty())
         assertTrue(viewModel.canvas.value.isPenEnabled)
     }
@@ -209,7 +260,7 @@ class EditorViewModelTest {
 
         runUntilIdle()
 
-        assertFalse(viewModel.state.value.isNewCard)
+        assertFalse(shown.isNewCard)
     }
 
     // --- сохранение ----------------------------------------------------------------------------
@@ -339,7 +390,7 @@ class EditorViewModelTest {
     fun savingEditChangesContentOnlyAndAllocatesNoId() {
         startEditing(cardId = 2)
         runUntilIdle()
-        assertFalse(viewModel.state.value.isNewCard)
+        assertFalse(shown.isNewCard)
         assertEquals(FakeCardContentRepository.buildContent(2).front, viewModel.canvas.value.strokes)
 
         viewModel.onStroke(second)
@@ -384,7 +435,7 @@ class EditorViewModelTest {
 
         assertTrue(viewModel.canvas.value.strokes.isEmpty())
         assertTrue(viewModel.canvas.value.isPenEnabled)
-        assertFalse(viewModel.state.value.isNewCard)
+        assertFalse(shown.isNewCard)
     }
 
     @Test
@@ -425,13 +476,13 @@ class EditorViewModelTest {
 
         viewModel.onAction(EditorAction.Cancel)
         runUntilIdle()
-        assertEquals(EditorDialog.DISCARD_DRAFT, viewModel.state.value.dialog)
+        assertEquals(EditorDialog.DISCARD_DRAFT, shown.dialog)
         assertEquals(0, drafts.discardCount)
         assertTrue(navigated.isEmpty())
 
         viewModel.onAction(EditorAction.DismissDialog)
         runUntilIdle()
-        assertNull(viewModel.state.value.dialog)
+        assertNull(shown.dialog)
         assertEquals(0, drafts.discardCount)
 
         viewModel.onAction(EditorAction.Cancel)
@@ -452,12 +503,12 @@ class EditorViewModelTest {
 
         viewModel.onAction(EditorAction.Back)
         runUntilIdle()
-        assertEquals(EditorDialog.SAVE_ON_BACK, viewModel.state.value.dialog)
+        assertEquals(EditorDialog.SAVE_ON_BACK, shown.dialog)
         assertTrue(drafts.commits.isEmpty())
 
         viewModel.onAction(EditorAction.DismissDialog)
         runUntilIdle()
-        assertNull(viewModel.state.value.dialog)
+        assertNull(shown.dialog)
         assertTrue(navigated.isEmpty())
 
         viewModel.onAction(EditorAction.Back)
@@ -477,7 +528,7 @@ class EditorViewModelTest {
 
         viewModel.onAction(EditorAction.Delete)
         runUntilIdle()
-        assertEquals(EditorDialog.DELETE_CARD, viewModel.state.value.dialog)
+        assertEquals(EditorDialog.DELETE_CARD, shown.dialog)
         assertTrue(repository.savedChanges.isEmpty())
 
         viewModel.onAction(EditorAction.ConfirmDialog)
@@ -496,13 +547,13 @@ class EditorViewModelTest {
         runUntilIdle()
         viewModel.onAction(EditorAction.Delete)
         runUntilIdle()
-        assertNull(viewModel.state.value.dialog)
+        assertNull(shown.dialog)
 
         startEditing(cardId = 2)
         runUntilIdle()
         viewModel.onAction(EditorAction.Cancel)
         runUntilIdle()
-        assertNull(viewModel.state.value.dialog)
+        assertNull(shown.dialog)
     }
 
     @Test
@@ -540,9 +591,9 @@ class EditorViewModelTest {
         assertEquals(1, drafts.storedCalls.size)
         assertEquals(listOf(first), viewModel.canvas.value.strokes)
         assertTrue(drafts.commits.isEmpty())
-        assertEquals(CardSideShown.FRONT, viewModel.state.value.side)
-        assertEquals(EditorTool.PEN, viewModel.state.value.tool)
-        assertEquals(EditorDialog.SAVE_ON_BACK, viewModel.state.value.dialog)
+        assertEquals(CardSideShown.FRONT, shown.side)
+        assertEquals(EditorTool.PEN, shown.tool)
+        assertEquals(EditorDialog.SAVE_ON_BACK, shown.dialog)
     }
 
     // --- холст и обновление экрана (Review Focus 2) --------------------------------------------
@@ -581,7 +632,7 @@ class EditorViewModelTest {
         viewModel.onAction(EditorAction.Undo)
         runUntilIdle()
         assertEquals(initial + 2, viewModel.canvas.value.uiRevision)
-        assertFalse(viewModel.state.value.canUndo)
+        assertFalse(shown.canUndo)
     }
 
     @Test
@@ -635,8 +686,8 @@ class EditorViewModelTest {
         assertEquals(10f, viewModel.canvas.value.penWidthPx, 0f)
         assertEquals(DrawingTool.ERASER, viewModel.canvas.value.tool)
         assertEquals(initial.uiRevision + 3, viewModel.canvas.value.uiRevision)
-        assertEquals(Thickness.THICK, viewModel.state.value.thickness)
-        assertEquals(EditorTool.ERASER, viewModel.state.value.tool)
+        assertEquals(Thickness.THICK, shown.thickness)
+        assertEquals(EditorTool.ERASER, shown.tool)
     }
 
     @Test
@@ -664,7 +715,7 @@ class EditorViewModelTest {
 
         // Вкладки «Вопрос / Ответ» вне холста, а список штрихов не изменился: сам лист этого не заметит.
         assertEquals(initial + 1, viewModel.canvas.value.uiRevision)
-        assertEquals(CardSideShown.BACK, viewModel.state.value.side)
+        assertEquals(CardSideShown.BACK, shown.side)
     }
 
     @Test
@@ -685,7 +736,7 @@ class EditorViewModelTest {
         assertTrue(viewModel.canvas.value.isPenEnabled)
         assertEquals(
             EditorScreenState(true, CardSideShown.FRONT, EditorTool.PEN, Thickness.MEDIUM, canUndo = false, dialog = null),
-            viewModel.state.value,
+            shown,
         )
     }
 
@@ -717,6 +768,9 @@ class EditorViewModelTest {
             navigate = { navigated += it },
         )
     }
+
+    // Состояние, показанное после загрузки: до неё оно null.
+    private val shown: EditorScreenState get() = checkNotNull(viewModel.state.value) { "Редактор ещё не загружен" }
 
     private fun runUntilIdle() = scheduler.advanceUntilIdle()
 

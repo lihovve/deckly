@@ -27,7 +27,6 @@ import app.deckly.domain.review.ReviewEngine
 import app.deckly.ink.DrawingTool
 import app.deckly.navigation.AppScreen
 import app.deckly.navigation.EditorStart
-import app.deckly.ui.contract.CardSideShown
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.EditorDialog
 import app.deckly.ui.contract.EditorScreenState
@@ -102,7 +101,11 @@ class EditorViewModel(
     private val mutableState = MutableStateFlow(buildState())
     private val mutableCanvas = MutableStateFlow(buildCanvas())
 
-    val state: StateFlow<EditorScreenState> = mutableState.asStateFlow()
+    /**
+     * `null`, пока сессия (черновик, правленая карточка) не прочитана: заглушка с неверной шапкой и стороной
+     * показалась бы на кадр. Новая карточка готова сразу, у неё `null` не бывает.
+     */
+    val state: StateFlow<EditorScreenState?> = mutableState.asStateFlow()
     val canvas: StateFlow<CanvasState> = mutableCanvas.asStateFlow()
 
     private val current: EditorSession get() = checkNotNull(session) { "Редактор ещё не загружен" }
@@ -277,16 +280,7 @@ class EditorViewModel(
         side = session?.draft?.visibleSide ?: Side.FRONT,
     )
 
-    private fun buildState(): EditorScreenState =
-        session?.let { buildEditorScreenState(it, tool, thickness, dialog) }
-            ?: EditorScreenState(
-                isNewCard = false,
-                side = CardSideShown.FRONT,
-                tool = tool,
-                thickness = thickness,
-                canUndo = false,
-                dialog = dialog,
-            )
+    private fun buildState(): EditorScreenState? = session?.let { buildEditorScreenState(it, tool, thickness, dialog) }
 
     private fun buildCanvas() = CanvasState(
         strokes = session?.let { listVisibleStrokes(it) } ?: emptyList(),

@@ -22,10 +22,11 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.node.DelegatableNode
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.deckly.AppContainer
@@ -97,6 +98,18 @@ internal object NoIndication : IndicationNodeFactory {
 
 private class EntryStoreOwner(override val viewModelStore: ViewModelStore) : ViewModelStoreOwner
 
+/**
+ * ViewModel экрана из хранилища его записи, один раз на запись. `viewModel()` запрашивает модель при каждой
+ * перекомпозиции, и после очистки хранилища при переходе создала бы новую, которую уже никто не очистит. Здесь
+ * запрос идёт внутри `remember`; после смены конфигурации `remember` пересчитывается и возвращает ту же модель из
+ * хранилища, пережившего поворот.
+ */
+@Composable
+private inline fun <reified T : ViewModel> rememberScreenViewModel(noinline create: () -> T): T {
+    val owner = checkNotNull(LocalViewModelStoreOwner.current) { "Хранилище ViewModel экрана не задано" }
+    return remember(owner) { ViewModelProvider.create(owner.viewModelStore, viewModelFactory { initializer { create() } })[T::class] }
+}
+
 private class ScreenEnvironment(
     val app: AppViewModel,
     val container: AppContainer,
@@ -131,11 +144,9 @@ private fun ScreenHost(entry: ScreenEntry, environment: ScreenEnvironment) {
 @Composable
 private fun DeckListHost(entry: ScreenEntry, environment: ScreenEnvironment) {
     val data = environment.container.requireData()
-    val viewModel = viewModel<DeckListViewModel>(
-        factory = viewModelFactory {
-            initializer { DeckListViewModel(data.decks, data.appState, environment.container.writer, environment.app::navigate) }
-        },
-    )
+    val viewModel = rememberScreenViewModel {
+        DeckListViewModel(data.decks, data.appState, environment.container.writer, environment.app::navigate)
+    }
     val state by viewModel.state.collectAsState()
     state?.let { shown ->
         // «Назад» ведёт к текущей колоде; если её нет, остаётся системное поведение.
@@ -148,11 +159,9 @@ private fun DeckListHost(entry: ScreenEntry, environment: ScreenEnvironment) {
 @Composable
 private fun DeckNameHost(entry: ScreenEntry, environment: ScreenEnvironment) {
     val data = environment.container.requireData()
-    val viewModel = viewModel<DeckNameViewModel>(
-        factory = viewModelFactory {
-            initializer { DeckNameViewModel(data.decks, data.appState, environment.container.writer, environment.app::navigate) }
-        },
-    )
+    val viewModel = rememberScreenViewModel {
+        DeckNameViewModel(data.decks, data.appState, environment.container.writer, environment.app::navigate)
+    }
     val state by viewModel.state.collectAsState()
     BackHandler { viewModel.onAction(DeckNameAction.Cancel) }
     RefreshEffect(environment, RefreshKey(entry.token, cardId = null, editorSide = null))
@@ -163,24 +172,20 @@ private fun DeckNameHost(entry: ScreenEntry, environment: ScreenEnvironment) {
 private fun DeckHost(entry: ScreenEntry, screen: AppScreen.Deck, environment: ScreenEnvironment) {
     val data = environment.container.requireData()
     val container = environment.container
-    val viewModel = viewModel<DeckViewModel>(
-        factory = viewModelFactory {
-            initializer {
-                DeckViewModel(
-                    deckId = screen.deckId,
-                    decks = data.decks,
-                    contents = data.contents,
-                    appState = data.appState,
-                    writer = container.writer,
-                    clock = container.clock,
-                    random = container.random,
-                    navigate = environment.app::navigate,
-                    initialSection = screen.openSection,
-                    initialFocusCardId = screen.focusCardId,
-                )
-            }
-        },
-    )
+    val viewModel = rememberScreenViewModel {
+        DeckViewModel(
+            deckId = screen.deckId,
+            decks = data.decks,
+            contents = data.contents,
+            appState = data.appState,
+            writer = container.writer,
+            clock = container.clock,
+            random = container.random,
+            navigate = environment.app::navigate,
+            initialSection = screen.openSection,
+            initialFocusCardId = screen.focusCardId,
+        )
+    }
     val state by viewModel.state.collectAsState()
     val shownCard by viewModel.shownCard.collectAsState()
     state?.let { shown ->
@@ -199,34 +204,33 @@ private fun DeckHost(entry: ScreenEntry, screen: AppScreen.Deck, environment: Sc
 private fun EditorHost(entry: ScreenEntry, screen: AppScreen.Editor, environment: ScreenEnvironment) {
     val data = environment.container.requireData()
     val container = environment.container
-    val viewModel = viewModel<EditorViewModel>(
-        factory = viewModelFactory {
-            initializer {
-                EditorViewModel(
-                    deckId = screen.deckId,
-                    start = screen.start,
-                    decks = data.decks,
-                    contents = data.contents,
-                    drafts = data.drafts,
-                    writer = container.writer,
-                    clock = container.clock,
-                    random = container.random,
-                    nowMillis = System::currentTimeMillis,
-                    navigate = environment.app::navigate,
-                )
-            }
-        },
-    )
+    val viewModel = rememberScreenViewModel {
+        EditorViewModel(
+            deckId = screen.deckId,
+            start = screen.start,
+            decks = data.decks,
+            contents = data.contents,
+            drafts = data.drafts,
+            writer = container.writer,
+            clock = container.clock,
+            random = container.random,
+            nowMillis = System::currentTimeMillis,
+            navigate = environment.app::navigate,
+        )
+    }
     val state by viewModel.state.collectAsState()
     val canvas by viewModel.canvas.collectAsState()
     // Пока идёт полное обновление, перо выключено: включённое, оно не даёт прошивке показать перерисовку.
     var isRefreshing by remember { mutableStateOf(false) }
-    // С окном «Назад» закрывает окно, без него предлагает сохранить и выйти.
-    BackHandler { viewModel.onAction(if (state.dialog != null) EditorAction.DismissDialog else EditorAction.Back) }
-    RefreshEffect(environment, RefreshKey(entry.token, cardId = null, editorSide = state.side)) { isRefreshing = it }
-    environment.design.EditorScreen(state, viewModel::onAction) { modifier ->
-        val shownCanvas = if (isRefreshing) canvas.copy(isPenEnabled = false) else canvas
-        environment.sheets.EditorSheet(shownCanvas, viewModel::onStroke, viewModel::onErase, modifier)
+    // Пока сессия не загружена (state == null), экран не рисуется: белый лист, как у загрузки, без «Назад» и обновления.
+    state?.let { shown ->
+        // С окном «Назад» закрывает окно, без него предлагает сохранить и выйти.
+        BackHandler { viewModel.onAction(if (shown.dialog != null) EditorAction.DismissDialog else EditorAction.Back) }
+        RefreshEffect(environment, RefreshKey(entry.token, cardId = null, editorSide = shown.side)) { isRefreshing = it }
+        environment.design.EditorScreen(shown, viewModel::onAction) { modifier ->
+            val shownCanvas = if (isRefreshing) canvas.copy(isPenEnabled = false) else canvas
+            environment.sheets.EditorSheet(shownCanvas, viewModel::onStroke, viewModel::onErase, modifier)
+        }
     }
 }
 

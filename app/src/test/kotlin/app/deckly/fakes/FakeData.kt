@@ -66,7 +66,18 @@ class FakeDraftRepository(var stored: StoredDraft? = null, private var nextCardI
         private set
     var storeGate: CompletableDeferred<Unit>? = null
 
-    override suspend fun loadDraft(): StoredDraft? = stored
+    /** Сколько раз читали черновик (запуск и сама ViewModel редактора). */
+    var loadCount = 0
+        private set
+
+    /** Пока задан, чтение черновика стоит и ждёт его завершения. */
+    var loadGate: CompletableDeferred<Unit>? = null
+
+    override suspend fun loadDraft(): StoredDraft? {
+        loadCount++
+        loadGate?.await()
+        return stored
+    }
 
     override suspend fun storeDraft(stored: StoredDraft) {
         storeGate?.await()

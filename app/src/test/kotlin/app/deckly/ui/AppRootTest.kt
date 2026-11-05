@@ -7,6 +7,9 @@ import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -35,6 +38,7 @@ import app.deckly.domain.model.Side
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
 import app.deckly.domain.port.AppStateRepository
+import app.deckly.domain.port.CardContentRepository
 import app.deckly.domain.port.DeckRepository
 import app.deckly.domain.port.DraftRepository
 import app.deckly.domain.port.StoredDraft
@@ -61,6 +65,7 @@ import app.deckly.ui.contract.DeckNameState
 import app.deckly.ui.contract.DeckScreenState
 import app.deckly.ui.contract.Design
 import app.deckly.ui.contract.EditorAction
+import app.deckly.ui.contract.CardSideShown
 import app.deckly.ui.contract.EditorScreenState
 import app.deckly.ui.contract.StartupAction
 import app.deckly.ui.contract.StartupState
@@ -107,6 +112,7 @@ class AppRootTest {
     private var closed = 0
     private var fullRefreshes = 0
     private val sheets = RecordingSheets()
+    private var sheetsInUse: SheetSlots by mutableStateOf(sheets)
 
     @Before
     fun setUp() {
@@ -299,6 +305,77 @@ class AppRootTest {
         val app = startApp(buildData(), hasFileAccess = false, design = probe)
 
         assertSame(app.entry.value.viewModelStore, probe.storeOwnerStore)
+    }
+
+    @Test
+    fun editorShowsNothingWhileResumedDraftLoads() {
+        val drafts = FakeDraftRepository()
+        val probe = ProbeDesign()
+        val app = startApp(buildData(drafts = drafts, appState = FakeAppStateRepository(DECK_ID)), design = probe)
+        assertEquals(1, fullRefreshes)
+        drafts.stored = StoredDraft(DECK_ID, Draft(null, emptyList(), emptyList(), Side.BACK, Section.NEW))
+        drafts.loadGate = CompletableDeferred()
+
+        app.navigate(AppScreen.Editor(DECK_ID, EditorStart.ResumeDraft))
+        composeRule.waitForIdle()
+
+        // Пока черновик читается: ни экрана дизайна, ни обновления, ни обработчика «Назад»; лист белый, как у загрузки.
+        assertTrue(probe.editorStates.isEmpty())
+        assertEquals(1, fullRefreshes)
+        drafts.loadGate!!.complete(Unit)
+        composeRule.waitForIdle()
+
+        // Первое же показанное состояние верное, обновление при входе ровно одно.
+        assertTrue(probe.editorStates.isNotEmpty())
+        assertTrue(probe.editorStates.all { it.isNewCard && it.side == CardSideShown.BACK })
+        assertEquals(2, fullRefreshes)
+    }
+
+    @Test
+    fun editorShowsNothingWhileEditedCardLoads() {
+        val card = buildCard(id = 7, section = Section.NEW, position = 0)
+        val repository = FakeDeckRepository(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"), card))
+        val contents = FakeCardContentRepository()
+        val probe = ProbeDesign()
+        val app = startApp(buildData(decks = repository, contents = contents, appState = FakeAppStateRepository(DECK_ID)), design = probe)
+        contents.loadGate = CompletableDeferred()
+
+        app.navigate(AppScreen.Editor(DECK_ID, EditorStart.EditCard(7, Section.NEW)))
+        composeRule.waitForIdle()
+        assertTrue(probe.editorStates.isEmpty())
+        contents.loadGate!!.complete(Unit)
+        composeRule.waitForIdle()
+
+        assertTrue(probe.editorStates.isNotEmpty())
+        assertTrue(probe.editorStates.all { !it.isNewCard && it.side == CardSideShown.FRONT })
+    }
+
+    @Test
+    fun backWhileEditorLoadsIsLeftToTheSystem() {
+        val drafts = FakeDraftRepository()
+        val app = startApp(buildData(drafts = drafts, appState = FakeAppStateRepository(DECK_ID)))
+        drafts.stored = StoredDraft(DECK_ID, buildEmptyDraft())
+        drafts.loadGate = CompletableDeferred()
+        app.navigate(AppScreen.Editor(DECK_ID, EditorStart.ResumeDraft))
+        composeRule.waitForIdle()
+
+        pressBack()
+
+        assertTrue(composeRule.activity.isFinishing)
+    }
+
+    @Test
+    fun screenViewModelIsTakenFromTheStoreOncePerEntry() {
+        val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
+        val app = startApp(buildData(drafts = drafts))
+        val loadsAfterStart = drafts.loadCount
+
+        // Хранилище записи очищено (так делает переход), а хост перекомпонован другим листом.
+        app.entry.value.viewModelStore.clear()
+        sheetsInUse = RecordingSheets()
+        composeRule.waitForIdle()
+
+        assertEquals("модель не создаётся заново в очищенном хранилище", loadsAfterStart, drafts.loadCount)
     }
 
     // --- слоты листов --------------------------------------------------------------------------
@@ -525,7 +602,7 @@ class AppRootTest {
                 onOpenSettings = { settingsOpened++ },
                 onClose = { closed++ },
                 design = design,
-                sheets = sheets,
+                sheets = sheetsInUse,
                 refreshScreen = { fullRefreshes++; refreshScreen?.invoke() },
             )
         }
@@ -557,13 +634,14 @@ class AppRootTest {
         decks: DeckRepository = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2")))),
         appState: AppStateRepository = FakeAppStateRepository(),
         drafts: DraftRepository = FakeDraftRepository(),
+        contents: CardContentRepository = FakeCardContentRepository(),
     ): DecklyData = buildFakeData(
         context = application,
         rootDir = folder.newFolder(),
         appState = appState,
         drafts = drafts,
         decks = decks,
-        contents = FakeCardContentRepository(),
+        contents = contents,
     )
 
     // Читает колоду и считает чтения: возврат на равный экран должен читать заново.
@@ -609,6 +687,7 @@ class AppRootTest {
         var overscroll: Any? = null
         var storeOwnerStore: Any? = null
         val listMarkers = mutableListOf<Any>()
+        val editorStates = mutableListOf<EditorScreenState>()
 
         @Composable
         override fun StartupScreen(state: StartupState, onAction: (StartupAction) -> Unit) {
@@ -621,7 +700,9 @@ class AppRootTest {
         override fun DeckScreen(state: DeckScreenState, onAction: (DeckAction) -> Unit, sheet: @Composable (Modifier) -> Unit) = Unit
 
         @Composable
-        override fun EditorScreen(state: EditorScreenState, onAction: (EditorAction) -> Unit, sheet: @Composable (Modifier) -> Unit) = Unit
+        override fun EditorScreen(state: EditorScreenState, onAction: (EditorAction) -> Unit, sheet: @Composable (Modifier) -> Unit) {
+            SideEffect { editorStates += state }
+        }
 
         @Composable
         override fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) {
