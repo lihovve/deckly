@@ -87,7 +87,8 @@ private fun isReadyForRelease(card: Card, epoch: Int): Boolean {
     return lastSuccessDay > card.sectionDay
 }
 
-private fun findReleaseThreshold(epoch: Int): Int = if (epoch == 4) 3 else 4
+/** Сколько успехов выпускает карточку из эпохи: 4, 4, 4 и 3 (ТЗ, «Пороги успехов»). */
+fun findReleaseThreshold(epoch: Int): Int = if (epoch == 4) 3 else 4
 
 private fun findReleaseSection(epoch: Int): Section =
     if (epoch == 4) Section.LEARNED else findEpochSection(epoch + 1)

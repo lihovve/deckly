@@ -14,7 +14,7 @@ import kotlin.math.max
  * Открыта ли активная эпоха с начатым проходом. Только тогда курсор `passCursor` ведёт по проходу;
  * в любой другой открытой секции карточки листаются курсором `browseCursor`.
  */
-internal fun isActivePassOpen(deck: Deck): Boolean =
+fun isActivePassOpen(deck: Deck): Boolean =
     deck.passStarted && deck.activeSection == findEpochSection(deck.currentEpoch)
 
 /**

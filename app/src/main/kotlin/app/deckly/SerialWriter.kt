@@ -25,14 +25,15 @@ class SerialWriter(scope: CoroutineScope) {
 
     suspend fun <T> write(block: suspend () -> T): T {
         val result = CompletableDeferred<T>()
-        queue.send {
+        // Очередь без предела: постановка не приостанавливается, и отмена вызывающего до неё дойти не может.
+        queue.trySend {
             try {
                 result.complete(block())
             } catch (failure: Throwable) {
                 result.completeExceptionally(failure)
                 throw failure
             }
-        }
+        }.getOrThrow()
         return result.await()
     }
 }

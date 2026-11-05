@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.os.Environment
 import androidx.test.core.app.ApplicationProvider
-import app.deckly.data.DecklyData
 import app.deckly.data.db.DatabaseDamagedException
 import app.deckly.fakes.buildFakeData
 import app.deckly.navigation.AppScreen
