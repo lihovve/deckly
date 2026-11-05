@@ -199,7 +199,7 @@ class EditorViewModelTest {
         viewModel.onAction(EditorAction.Save)
         runUntilIdle()
 
-        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.EPOCH_2)), navigated)
+        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.EPOCH_2, NEW_CARD_ID)), navigated)
     }
 
     @Test
@@ -238,8 +238,59 @@ class EditorViewModelTest {
         assertEquals(listOf(first), content.front)
         assertEquals(listOf(second), content.back)
         assertTrue(changes.deletedCardIds.isEmpty())
-        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW)), navigated)
+        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, NEW_CARD_ID)), navigated)
         assertEquals(0, drafts.discardCount)
+    }
+
+    @Test
+    fun savingNewCardShowsIt() {
+        startNewCard()
+        runUntilIdle()
+        viewModel.onStroke(first)
+        runUntilIdle()
+
+        viewModel.onAction(EditorAction.Save)
+        runUntilIdle()
+
+        // Экран колоды откроется на созданной карточке, а не на первой в пуле.
+        val screen = navigated.single() as AppScreen.Deck
+        assertEquals(drafts.commits.single().first.upsertedCards.single().id, screen.focusCardId)
+        assertEquals(NEW_CARD_ID, screen.focusCardId)
+    }
+
+    @Test
+    fun savingEditReturnsToEditedCard() {
+        startEditing(cardId = 2)
+        runUntilIdle()
+        viewModel.onStroke(first)
+        runUntilIdle()
+
+        viewModel.onAction(EditorAction.Save)
+        runUntilIdle()
+
+        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, focusCardId = 2)), navigated)
+    }
+
+    @Test
+    fun leavingWithoutSavingFocusesNoCard() {
+        startNewCard()
+        runUntilIdle()
+        viewModel.onAction(EditorAction.Cancel)
+        viewModel.onAction(EditorAction.ConfirmDialog)
+        runUntilIdle()
+
+        // Отменённая карточка не создана, удалённая не существует: фокусироваться не на чем.
+        startEditing(cardId = 2)
+        runUntilIdle()
+        viewModel.onAction(EditorAction.Delete)
+        viewModel.onAction(EditorAction.ConfirmDialog)
+        runUntilIdle()
+
+        assertEquals(
+            listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW), AppScreen.Deck(DECK_ID, Section.NEW)),
+            navigated,
+        )
+        assertTrue(navigated.all { (it as AppScreen.Deck).focusCardId == null })
     }
 
     @Test
@@ -253,7 +304,7 @@ class EditorViewModelTest {
         assertTrue(drafts.storedCalls.isEmpty())
         val (_, content) = drafts.commits.single()
         assertTrue(content.front.isEmpty() && content.back.isEmpty())
-        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW)), navigated)
+        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, NEW_CARD_ID)), navigated)
     }
 
     @Test
@@ -275,7 +326,7 @@ class EditorViewModelTest {
         assertEquals(2L, content.cardId)
         assertEquals(FakeCardContentRepository.buildContent(2).front + second, content.front)
         assertEquals(FakeCardContentRepository.buildContent(2).back, content.back)
-        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW)), navigated)
+        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, focusCardId = 2)), navigated)
     }
 
     @Test
@@ -386,7 +437,7 @@ class EditorViewModelTest {
         runUntilIdle()
 
         assertEquals(listOf(first), drafts.commits.single().second.front)
-        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW)), navigated)
+        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, NEW_CARD_ID)), navigated)
     }
 
     @Test
@@ -643,6 +694,7 @@ class EditorViewModelTest {
 
     private companion object {
         const val DECK_ID = 7L
+        const val NEW_CARD_ID = 100L
         const val NOW_MILLIS = 1_794_000_000_000L
     }
 }

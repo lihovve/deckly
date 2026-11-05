@@ -5,13 +5,18 @@ import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
 import app.deckly.domain.model.findEpochSection
+import app.deckly.domain.model.listSectionCards
 import kotlin.random.Random
 
 private const val MAX_CHAIN_ITERATIONS = 100
 private const val PORTION_SIZE = 40
 
 sealed interface ReviewAction {
-    data class OpenSection(val section: Section) : ReviewAction
+    /**
+     * [focusCardId] — карточка, с которой начать просмотр секции (после правки карточки в редакторе). Нет такой в
+     * секции — первая. Для активной эпохи игнорируется: там позицию ведёт курсор прохода.
+     */
+    data class OpenSection(val section: Section, val focusCardId: Long? = null) : ReviewAction
     data class Browse(val step: Int) : ReviewAction
     data object Flip : ReviewAction
     data object Knew : ReviewAction
@@ -54,7 +59,7 @@ object ReviewEngine {
         random: Random,
     ): ReviewResult =
         when (action) {
-            is ReviewAction.OpenSection -> openSection(state, action.section, today, random)
+            is ReviewAction.OpenSection -> openSection(state, action.section, action.focusCardId, today, random)
             is ReviewAction.Browse -> browse(state, action.step)
             ReviewAction.Flip -> showCurrent(flipCard(state))
             ReviewAction.Knew -> continueAfterRating(rateKnew(state, today), today, random)
@@ -75,12 +80,24 @@ object ReviewEngine {
      * Открытие активной эпохи при неначатом проходе запускает цепочку старта; при начатом — возвращает
      * к текущей карточке. Любая другая секция открывается для просмотра и проход не двигает.
      */
-    private fun openSection(state: DeckState, section: Section, today: Int, random: Random): ReviewResult {
+    private fun openSection(
+        state: DeckState,
+        section: Section,
+        focusCardId: Long?,
+        today: Int,
+        random: Random,
+    ): ReviewResult {
         val deck = state.deck
-        val opened = state.copy(deck = deck.copy(activeSection = section, browseCursor = 0))
-        if (section != findEpochSection(deck.currentEpoch)) return showCurrent(opened)
+        val isActiveEpoch = section == findEpochSection(deck.currentEpoch)
+        val browseCursor = if (isActiveEpoch) 0 else findFocusCursor(state, section, focusCardId)
+        val opened = state.copy(deck = deck.copy(activeSection = section, browseCursor = browseCursor))
+        if (!isActiveEpoch) return showCurrent(opened)
         return if (deck.passStarted) showCurrent(opened) else runStartChain(opened, today, random)
     }
+
+    /** Индекс карточки [focusCardId] в порядке секции; без фокуса или без такой карточки в секции — начало. */
+    private fun findFocusCursor(state: DeckState, section: Section, focusCardId: Long?): Int =
+        state.listSectionCards(section).indexOfFirst { it.id == focusCardId }.coerceAtLeast(0)
 
     private fun browse(state: DeckState, step: Int): ReviewResult {
         require(!isActivePassOpen(state.deck)) { "В активном проходе листать нельзя" }

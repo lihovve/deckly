@@ -233,7 +233,8 @@ class EditorViewModel(
         val newCardId = if (draft.cardId == null) writer.write { drafts.allocateCardId() } else 0L
         val (after, content) = saveDraft(before, draft, newCardId, clock.computeToday(), nowMillis())
         writer.write { drafts.commitDraft(collectDeckChanges(before, after), content) }
-        navigate(AppScreen.Deck(deckId, draft.returnSection))
+        // Экран колоды покажет правленую или созданную карточку, а не первую в секции.
+        navigate(AppScreen.Deck(deckId, draft.returnSection, focusCardId = content.cardId))
     }
 
     private suspend fun discardAndLeave() {

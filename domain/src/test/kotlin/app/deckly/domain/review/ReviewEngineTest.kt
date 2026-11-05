@@ -690,4 +690,61 @@ class ReviewEngineTest {
         if (cardRun > 0) summary += "ShowCard×$cardRun"
         return summary
     }
+
+    // --- фокус на карточке при открытии секции -------------------------------------------------
+
+    /** Пул: id 10, 20, 30 стоят на позициях 2, 0, 1, поэтому порядок секции — 20, 30, 10. */
+    private fun buildShuffledPool(browseCursor: Int = 0): DeckState {
+        val deck = buildDeck(activeSection = Section.EPOCH_3, currentEpoch = 1, browseCursor = browseCursor)
+        return buildDeckState(
+            deck,
+            listOf(
+                buildCard(10, Section.NEW, position = 2),
+                buildCard(20, Section.NEW, position = 0),
+                buildCard(30, Section.NEW, position = 1),
+            ),
+        )
+    }
+
+    @Test
+    fun openSectionFocusesGivenCard() {
+        val result = act(buildShuffledPool(), OpenSection(Section.NEW, focusCardId = 10))
+
+        // Индекс считается по порядку секции, а не по id и не по списку карточек колоды.
+        assertEquals(2, result.state.deck.browseCursor)
+        assertEquals(ShowCard(10), result.outcome)
+        assertEquals(Section.NEW, result.state.deck.activeSection)
+    }
+
+    @Test
+    fun openSectionWithoutFocusStartsFromFirstCard() {
+        val result = act(buildShuffledPool(browseCursor = 2), OpenSection(Section.NEW))
+
+        assertEquals(0, result.state.deck.browseCursor)
+        assertEquals(ShowCard(20), result.outcome)
+    }
+
+    @Test
+    fun focusOnMissingCardFallsBackToFirst() {
+        val missing = act(buildShuffledPool(browseCursor = 2), OpenSection(Section.NEW, focusCardId = 999))
+        // Карточка есть в колоде, но в другой секции: в этой её нет.
+        val elsewhere = act(buildShuffledPool(browseCursor = 2), OpenSection(Section.EPOCH_4, focusCardId = 10))
+
+        assertEquals(0, missing.state.deck.browseCursor)
+        assertEquals(ShowCard(20), missing.outcome)
+        assertEquals(0, elsewhere.state.deck.browseCursor)
+        assertEquals(EmptySection, elsewhere.outcome)
+    }
+
+    @Test
+    fun focusIgnoredForActivePass() {
+        // Начатый проход эпохи 1, курсор на третьей карточке: просмотр здесь не листается, фокус не нужен.
+        val state = buildDeckState(buildPassDeck(1, passCursor = 2), buildEpochRange(1, 1, 5))
+
+        val result = act(state, OpenSection(Section.EPOCH_1, focusCardId = 5))
+
+        assertEquals(ShowCard(3), result.outcome)
+        assertEquals(2, result.state.deck.passCursor)
+        assertEquals(0, result.state.deck.browseCursor)
+    }
 }

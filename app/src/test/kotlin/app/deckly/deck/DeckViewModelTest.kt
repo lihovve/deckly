@@ -102,6 +102,24 @@ class DeckViewModelTest {
     }
 
     @Test
+    fun initialFocusSelectsCardInSection() {
+        // Возврат из редактора: открывается пул на карточке, которую только что правили, а не на первой.
+        val pool = (10L..14L).map { buildCard(it, Section.NEW, position = (it - 10).toInt()) }
+        startWith(
+            buildDeckState(buildPassDeck(1, passCursor = 1), buildEpochRange(1, 1, 3) + pool),
+            initialSection = Section.NEW,
+            initialFocusCardId = 13,
+        )
+
+        runUntilIdle()
+
+        assertEquals(13L, viewModel.shownCard.value?.cardId)
+        assertEquals(3, repository.stored.deck.browseCursor)
+        assertEquals(DeckBody.Card(CardSideShown.FRONT, false), readScreen().body)
+        assertEquals(4, readScreen().header.position?.position)
+    }
+
+    @Test
     fun initialSectionIsTheOneGivenNotAlwaysPool() {
         val cards = buildEpochRange(1, 1, 5) + buildEpochRange(2, 20, 3)
         startWith(buildDeckState(buildPassDeck(1, passCursor = 2), cards), initialSection = Section.EPOCH_2)
@@ -670,6 +688,7 @@ class DeckViewModelTest {
         state: DeckState,
         writerScheduler: TestCoroutineScheduler = scheduler,
         initialSection: Section? = null,
+        initialFocusCardId: Long? = null,
     ) {
         repository = FakeDeckRepository(state)
         viewModel = DeckViewModel(
@@ -682,6 +701,7 @@ class DeckViewModelTest {
             random = Random(1),
             navigate = { navigated += it },
             initialSection = initialSection,
+            initialFocusCardId = initialFocusCardId,
         )
     }
 

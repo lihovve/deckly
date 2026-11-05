@@ -15,8 +15,11 @@ sealed interface AppScreen {
     /** Форма новой колоды. */
     data object DeckName : AppScreen
 
-    /** [openSection] — секция, которую открыть после загрузки: так экран колоды возвращается из редактора. */
-    data class Deck(val deckId: Long, val openSection: Section? = null) : AppScreen
+    /**
+     * [openSection] — секция, которую открыть после загрузки, а [focusCardId] — карточка, на которой её показать:
+     * так экран колоды возвращается из редактора на правленую или созданную карточку.
+     */
+    data class Deck(val deckId: Long, val openSection: Section? = null, val focusCardId: Long? = null) : AppScreen
 
     data class Editor(val deckId: Long, val start: EditorStart) : AppScreen
 }

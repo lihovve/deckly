@@ -61,6 +61,7 @@ class DeckViewModel(
     private val random: Random,
     private val navigate: (AppScreen) -> Unit,
     private val initialSection: Section? = null,
+    private val initialFocusCardId: Long? = null,
 ) : ViewModel() {
     private val cache = CardContentCache(contents)
     private val actions = Channel<DeckAction>(Channel.UNLIMITED)
@@ -86,7 +87,11 @@ class DeckViewModel(
             deckState = decks.loadDeckState(deckId)
             writer.write { appState.saveCurrentDeckId(deckId) }
             // Из редактора экран возвращается в ту секцию, откуда его вызвали; до этого прежняя не показывается.
-            if (initialSection != null) applyReview(ReviewAction.OpenSection(initialSection)) else publish()
+            if (initialSection != null) {
+                applyReview(ReviewAction.OpenSection(initialSection, initialFocusCardId))
+            } else {
+                publish()
+            }
             for (action in actions) handle(action)
         }
     }
