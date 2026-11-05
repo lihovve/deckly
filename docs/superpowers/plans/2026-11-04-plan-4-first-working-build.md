@@ -591,7 +591,11 @@ JUnit 4 + Robolectric 4.17 + `compose-ui-test`.
 - `AppRoot`:
   - `LocalIndication` без эффекта и overscroll выключен для всего дерева;
   - по `AppScreen` вызывает `DesignE`;
-  - слоты: колода — `CardSideImage(shownCard.strokes)`, редактор — `DrawingSheet(canvas…)`.
+  - слоты: колода — `CardSideImage(shownCard.strokes)`, редактор — `DrawingSheet(canvas…)`;
+  - описание листа ставит дизайн через модификатор слота (задача 9), поэтому у `CardSideImage`
+    параметр становится `description: String?`, и слот передаёт `null`, чтобы описание не
+    задвоилось;
+  - форма имени и редактор не прячутся под клавиатурой: `adjustResize` или отступ под IME.
 - `fun isFullRefreshNeeded(previous: RefreshKey?, next: RefreshKey): Boolean`, где
   `RefreshKey(screen, cardId, editorSide, editorExitCount)` — решение 4. Полное обновление
   выполняется после кадра (`withFrameNanos` дважды). В редакторе — при выключенном пере.
@@ -635,7 +639,11 @@ JUnit 4 + Robolectric 4.17 + `compose-ui-test`.
   4. Меню карточки: возврат в новые, удаление с подтверждением.
   5. Посреди рисования убить приложение (`adb shell am force-stop app.deckly`) → запуск → черновик
      на месте (Review Focus 1).
-  6. Размеры и серый цвет: читаемо ли, хватает ли полей, не мелко ли.
+  6. Размеры и серый цвет: читаемо ли, хватает ли полей, не мелко ли. Читаются ли ▶ и номера
+     строк списка колод при плотности 1,875; совпадают ли высоты строк текста с макетом
+     (Robolectric их округляет).
+  7. Новая колода: клавиатура выходит сама при открытии формы; русское название с подсказками
+     клавиатуры набирается без потерянных букв.
 - [ ] **Step 4: Итоги** — в `docs/superpowers/specs/2026-11-05-first-build-results.md`. Правки по
   итогам — отдельными задачами после согласования с владельцем.
 - [ ] **Step 5: Commit** — «Первая рабочая сборка: проверка на планшете».
