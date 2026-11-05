@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.deckly.design.e.MockupSources.buildScript
 import app.deckly.design.e.MockupSources.findCssNumber
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -123,6 +124,54 @@ class TokensTest {
         assertSp(findCssNumber(".dialog h2", "letter-spacing"), Tokens.DialogTitleSpacing)
         assertSp(findCssNumber(".card h2", "letter-spacing"), Tokens.EmptyTitleSpacing)
         assertSp(findCssNumber(".card .big", "letter-spacing"), Tokens.BigNumeralSpacing)
+    }
+
+    @Test
+    fun editorTokensMatchStyles() {
+        assertDp(findCssNumber(".side-tabs", "height"), Tokens.SideTabsHeight)
+        assertDp(findCssNumber(".side-tabs", "gap"), Tokens.SideTabsGap)
+        assertDp(findCssNumber(".side-tab", "min-height"), Tokens.ControlMin)
+        assertDp(findCssNumber(".side-tab", "border-bottom"), Tokens.TabUnderline)
+        assertSp(findCssNumber(".side-tab", "font-size"), Tokens.BodyText)
+        assertDp(findCssNumber(".tools", "height"), Tokens.ToolsHeight)
+        assertDp(findCssNumber(".tools", "gap"), Tokens.ToolsGap)
+        assertDp(findCssNumber(".tools>.btn", "width"), Tokens.ToolButton)
+        assertDp(findCssNumber(".thickness", "gap"), Tokens.ThicknessGap)
+        assertDp(findCssNumber(".thickness", "padding", 1), Tokens.ThicknessPaddingHorizontal)
+        assertDp(findCssNumber(".thickness", "margin", 0), Tokens.ThicknessMarginVertical)
+        assertDp(findCssNumber(".thickness .btn", "width"), Tokens.ThicknessButtonWidth)
+        assertDp(findCssNumber(".thickness .btn", "height"), Tokens.ThicknessButtonHeight)
+        assertDp(findCssNumber(".line-sample", "width"), Tokens.LineSampleWidth)
+        assertDp(findCssNumber(".line-sample", "border-radius"), Tokens.LineSampleRadius)
+        assertSp(findCssNumber(".heading h1", "letter-spacing"), Tokens.HeadingSpacing)
+        // Высоты образцов линии заданы в build.py, а не в стилях.
+        assertTrue(buildScript.contains("[('Тонкая', 2), ('Средняя', 5), ('Толстая', 9)]"))
+        assertEquals(listOf(2f, 5f, 9f), listOf(Tokens.LineThin, Tokens.LineMedium, Tokens.LineThick).map { it.value })
+    }
+
+    @Test
+    fun deckListAndFieldTokensMatchStyles() {
+        assertDp(findCssNumber(".list", "margin-top"), Tokens.ListMarginTop)
+        assertDp(findCssNumber(".item", "min-height"), Tokens.ItemMinHeight)
+        assertDp(findCssNumber(".item", "gap"), Tokens.ItemGap)
+        assertDp(findCssNumber(".item .fill", "min-height"), Tokens.ItemFillMinHeight)
+        assertDp(findCssNumber(".item .fill", "gap"), Tokens.ItemFillGap)
+        assertDp(findCssNumber(".item .fill", "padding"), Tokens.ItemFillPaddingVertical)
+        assertSp(findCssNumber(".item h2", "font-size"), Tokens.ItemTitleText)
+        assertSp(findCssNumber(".item p", "font-size"), Tokens.ItemInfoText)
+        assertDp(findCssNumber(".item p", "gap"), Tokens.ItemInfoGap)
+        assertDp(findCssNumber(".item p .icon", "width"), Tokens.IconSmall)
+        assertSp(findCssNumber(".item .number", "font-size"), Tokens.ItemNumberText)
+        assertDp(findCssNumber(".item .number", "width"), Tokens.ItemNumberWidth)
+        assertDp(findCssNumber(".item .number .icon", "width"), Tokens.ItemNumberIcon)
+        assertDp(findCssNumber(".field", "gap"), Tokens.FieldGap)
+        assertDp(findCssNumber(".field", "margin-top"), Tokens.FieldMarginTop)
+        assertSp(findCssNumber(".field", "font-size"), Tokens.FieldLabelText)
+        assertDp(findCssNumber(".input", "height"), Tokens.InputHeight)
+        assertDp(findCssNumber(".input", "border"), Tokens.BorderMedium)
+        assertDp(findCssNumber(".input", "border-radius"), Tokens.RadiusSmall)
+        assertDp(findCssNumber(".input", "padding"), Tokens.InputPadding)
+        assertSp(findCssNumber(".input", "font-size"), Tokens.InputText)
     }
 
     @Test

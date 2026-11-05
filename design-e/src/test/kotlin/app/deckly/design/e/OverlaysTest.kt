@@ -200,8 +200,7 @@ class OverlaysTest {
         val button = buttonNode.getUnclippedBoundsInRoot()
         val bitmap = buttonNode.captureToImage().asAndroidBitmap()
         val textLeft = (label.left.value - button.left.value).toInt()
-        val ink = measureInkBox(bitmap, 8 until textLeft - 4, 8 until bitmap.height - 8)
-        assertIconInk("кнопка окна", IconId.RIGHT, 26f, Tokens.IconStroke, ink)
+        assertIconShape("кнопка окна", bitmap, 8 until textLeft - 4, 8 until bitmap.height - 8, IconId.RIGHT, 26f, Tokens.IconStroke)
     }
 
     @Test

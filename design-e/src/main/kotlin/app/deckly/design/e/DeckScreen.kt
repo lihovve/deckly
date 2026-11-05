@@ -177,7 +177,7 @@ private fun findTransitionIcon(kind: TransitionKind): IconId = when (kind) {
 
 // Значок 64, под ним заголовок и пояснение: столбец по центру листа с полями 48 и промежутком 28 (.card в styles.css).
 @Composable
-private fun SheetMessage(icon: ImageVector, content: @Composable () -> Unit) {
+internal fun SheetMessage(icon: ImageVector, content: @Composable () -> Unit) {
     Column(
         Modifier.padding(Tokens.SheetPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -194,7 +194,7 @@ private fun SheetMessage(icon: ImageVector, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SheetTitle(
+internal fun SheetTitle(
     text: String,
     size: TextUnit = Tokens.EmptyTitleText,
     letterSpacing: TextUnit = Tokens.EmptyTitleSpacing,

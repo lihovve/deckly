@@ -77,6 +77,38 @@ object Tokens {
     val DeckHeadingGap = 10.dp
     val DeckArrow = 20.dp
 
+    // --- редактор: вкладки сторон и инструменты ---
+    val SideTabsHeight = 72.dp
+    val SideTabsGap = 32.dp
+    val ToolsHeight = 112.dp
+    val ToolsGap = 16.dp
+    val ToolButton = 112.dp
+    val ThicknessGap = 4.dp
+    val ThicknessPaddingHorizontal = 16.dp
+    val ThicknessMarginVertical = 12.dp
+    val ThicknessButtonWidth = 80.dp
+    val ThicknessButtonHeight = 72.dp
+    val LineSampleWidth = 34.dp
+    val LineSampleRadius = 8.dp
+    val LineThin = 2.dp
+    val LineMedium = 5.dp
+    val LineThick = 9.dp
+
+    // --- список колод и поле ввода ---
+    val ListMarginTop = 16.dp
+    val ItemMinHeight = 148.dp
+    val ItemGap = 24.dp
+    val ItemFillMinHeight = 112.dp
+    val ItemFillGap = 9.dp
+    val ItemFillPaddingVertical = 16.dp
+    val ItemNumberWidth = 44.dp
+    val ItemNumberIcon = 24.dp
+    val ItemInfoGap = 8.dp
+    val FieldGap = 16.dp
+    val FieldMarginTop = 40.dp
+    val InputHeight = 88.dp
+    val InputPadding = 16.dp
+
     // --- рамки и скругления ---
     val BorderThin = 1.dp
     val BorderMedium = 2.dp
@@ -97,9 +129,15 @@ object Tokens {
     val EmptyTitleText = 48.sp
     val BigNumeralText = 80.sp
     val HintText = 24.sp
+    val ItemTitleText = 30.sp
+    val ItemInfoText = 20.sp
+    val ItemNumberText = 20.sp
+    val FieldLabelText = 20.sp
+    val InputText = 28.sp
 
     // --- межбуквенный интервал заголовков ---
     val DeckHeadingSpacing = (-0.5).sp
+    val HeadingSpacing = (-0.6).sp
     val DialogTitleSpacing = (-0.7).sp
     val EmptyTitleSpacing = (-1.3).sp
     val BigNumeralSpacing = (-3).sp

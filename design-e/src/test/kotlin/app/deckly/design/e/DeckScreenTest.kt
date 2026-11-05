@@ -441,8 +441,7 @@ class DeckScreenTest {
         val bitmap = composeRule.onNodeWithContentDescription("Пустая секция").captureToImage().asAndroidBitmap()
         val iconTop = (titleTop - 28f - 68f - sheetTop).toInt()
         // Значок 64 dp с линией 1,2: тоньше обычных значков, поэтому габариты точные.
-        val ink = measureInkBox(bitmap, 432 until 496, iconTop until iconTop + 64)
-        assertIconInk("пустая секция", IconId.CARDS, 64f, Tokens.IconEmptyStroke, ink, tolerance = 1.2f)
+        assertIconShape("пустая секция", bitmap, 432 until 496, iconTop until iconTop + 64, IconId.CARDS, 64f, Tokens.IconEmptyStroke, tolerance = 1.2f)
     }
 
     @Test
@@ -481,8 +480,8 @@ class DeckScreenTest {
             val numeral = composeRule.onNode(hasText("II") and hasAnyAncestor(hasContentDescription(label)), useUnmergedTree = true)
             val sheet = composeRule.onNodeWithContentDescription(label)
             val iconTop = (numeral.getUnclippedBoundsInRoot().top.value - 28f - 68f - sheet.getUnclippedBoundsInRoot().top.value).toInt()
-            val ink = measureInkBox(sheet.captureToImage().asAndroidBitmap(), 432 until 496, iconTop until iconTop + 64)
-            assertIconInk(label, icon, 64f, Tokens.IconEmptyStroke, ink, tolerance = 1.2f)
+            val bitmap = sheet.captureToImage().asAndroidBitmap()
+            assertIconShape(label, bitmap, 432 until 496, iconTop until iconTop + 64, icon, 64f, Tokens.IconEmptyStroke, tolerance = 1.2f)
         }
     }
 
@@ -719,16 +718,8 @@ class DeckScreenTest {
         return (inkColumns.last() - inkColumns.first() + 1).toFloat()
     }
 
-    // Значок слева от подписи кнопки или пункта меню: чернила левее текста, без рамки; поля отсекают рамку и линию пункта.
-    private fun assertIconBeforeLabel(label: String, id: IconId, borderMargin: Int, topMargin: Int = borderMargin) {
-        val labelBounds = composeRule.onNodeWithText(label, useUnmergedTree = true).getUnclippedBoundsInRoot()
-        val node = composeRule.onNodeWithText(label)
-        val nodeBounds = node.getUnclippedBoundsInRoot()
-        val bitmap = node.captureToImage().asAndroidBitmap()
-        val textLeft = (labelBounds.left.value - nodeBounds.left.value).toInt()
-        val ink = measureInkBox(bitmap, borderMargin until textLeft - 4, topMargin until bitmap.height - topMargin)
-        assertIconInk(label, id, 26f, Tokens.IconStroke, ink)
-    }
+    private fun assertIconBeforeLabel(label: String, id: IconId, borderMargin: Int, topMargin: Int = borderMargin) =
+        composeRule.assertIconBeforeLabel(label, id, borderMargin, topMargin)
 
     private fun measureBorder(node: SemanticsNodeInteraction): Int {
         val bitmap = node.captureToImage().asAndroidBitmap()
