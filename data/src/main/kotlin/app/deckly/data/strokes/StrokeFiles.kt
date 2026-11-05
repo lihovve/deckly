@@ -1,5 +1,6 @@
 package app.deckly.data.strokes
 
+import app.deckly.data.timing.DecklyTiming
 import app.deckly.domain.model.Stroke
 import java.io.File
 import java.io.FileNotFoundException
@@ -7,6 +8,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.random.Random
 
 private const val CONTENT_SUFFIX = ".dks"
@@ -194,7 +196,21 @@ fun countCardFiles(strokesDir: File): Int =
         it.isFile && it.name.startsWith(CARD_PREFIX) && it.name.endsWith(CONTENT_SUFFIX)
     } ?: 0
 
-/** Сбрасывает на диск саму папку: `fsync` её дескриптора (на Linux и Android каталог открывается только на чтение). */
+private val isForceLogged = AtomicBoolean(false)
+
+/**
+ * Сбрасывает на диск саму папку: `fsync` её дескриптора (на Linux и Android каталог открывается только на чтение).
+ * Отладочный лог времени: сбой пишется всегда, успех один раз за процесс. Исключение идёт дальше, как и без лога.
+ */
 fun forceDirectoryToDisk(dir: File) {
-    FileChannel.open(dir.toPath(), StandardOpenOption.READ).use { it.force(true) }
+    val startNanos = System.nanoTime()
+    try {
+        FileChannel.open(dir.toPath(), StandardOpenOption.READ).use { it.force(true) }
+    } catch (error: Exception) {
+        DecklyTiming.logWarning("force папки ${dir.name} не удался", error)
+        throw error
+    }
+    if (DecklyTiming.isEnabled && isForceLogged.compareAndSet(false, true)) {
+        DecklyTiming.logInfo { "force папки ${dir.name} сработал за ${DecklyTiming.describeElapsed(startNanos)}ms" }
+    }
 }

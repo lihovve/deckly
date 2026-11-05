@@ -9,6 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -395,6 +396,12 @@ class StrokeFilesTest {
         forceDirectoryToDisk(storage.strokesDir)
 
         assertEquals(setOf(name), listNames())
+    }
+
+    @Test
+    fun directorySyncOfMissingFolderStillFails() {
+        // Лог времени не глотает ошибку: исключение идёт дальше, как и без него.
+        assertThrows(IOException::class.java) { forceDirectoryToDisk(File(storage.strokesDir, "нет-такой-папки")) }
     }
 
     @Test

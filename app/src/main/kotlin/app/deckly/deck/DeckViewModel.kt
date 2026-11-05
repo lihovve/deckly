@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.deckly.DayClock
 import app.deckly.SerialWriter
+import app.deckly.data.timing.DecklyTiming
 import app.deckly.domain.model.CardContent
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
@@ -38,7 +39,13 @@ import kotlinx.coroutines.launch
  * Карточка на листе: штрихи видимой стороны. Файл штрихов не открылся — [isDamaged], лист пуст, а с
  * карточкой можно работать дальше.
  */
-data class ShownCard(val cardId: Long, val side: Side, val strokes: List<Stroke>, val isDamaged: Boolean)
+data class ShownCard(val cardId: Long, val side: Side, val strokes: List<Stroke>, val isDamaged: Boolean) {
+    /** Для лога времени (`DecklyTiming`): когда карточка собрана. В равенство не входит. */
+    val publishedNanos: Long = System.nanoTime()
+}
+
+// Действие с моментом прихода: от него лог времени отсчитывает открытие карточки.
+private class QueuedAction(val action: DeckAction, val arrivedNanos: Long)
 
 /**
  * Экран колоды: действие → алгоритм → запись → публикация (поток данных из документа архитектуры).
@@ -64,7 +71,7 @@ class DeckViewModel(
     private val initialFocusCardId: Long? = null,
 ) : ViewModel() {
     private val cache = CardContentCache(contents)
-    private val actions = Channel<DeckAction>(Channel.UNLIMITED)
+    private val actions = Channel<QueuedAction>(Channel.UNLIMITED)
     private val mutableState = MutableStateFlow<DeckScreenState?>(null)
     private val mutableShownCard = MutableStateFlow<ShownCard?>(null)
 
@@ -81,6 +88,8 @@ class DeckViewModel(
     // Карточка, о которой спрашивает окно подтверждения; читается, только пока окно открыто.
     private var dialogCardId: Long? = null
     private var prefetchJob: Job? = null
+    // Когда пришло действие, которое сейчас применяется; для первой публикации — создание модели.
+    private var actionArrivedNanos = System.nanoTime()
 
     init {
         viewModelScope.launch {
@@ -92,12 +101,15 @@ class DeckViewModel(
             } else {
                 publish()
             }
-            for (action in actions) handle(action)
+            for (queued in actions) {
+                actionArrivedNanos = queued.arrivedNanos
+                handle(queued.action)
+            }
         }
     }
 
     fun onAction(action: DeckAction) {
-        actions.trySend(action)
+        actions.trySend(QueuedAction(action, System.nanoTime()))
     }
 
     private suspend fun handle(action: DeckAction) {
@@ -185,10 +197,21 @@ class DeckViewModel(
     // Содержимое читается до публикации, а следующая карточка прохода подгружается после неё.
     private suspend fun publish() {
         val card = if (transition == null) findCurrentCard(deckState) else null
+        val loadStartNanos = System.nanoTime()
         val shown = card?.let { buildShownCard(it.id, cache.loadContent(it.id)) }
         mutableShownCard.value = shown
         mutableState.value = buildDeckScreenState(deckState, transition, dialog, isContentDamaged = shown?.isDamaged == true)
+        if (shown != null) logCardTiming(shown, loadStartNanos)
         prefetchNext()
+    }
+
+    // Лог для проверки на планшете: от прихода действия до публикации и чтение содержимого (из кэша оно близко к нулю).
+    private fun logCardTiming(shown: ShownCard, loadStartNanos: Long) {
+        DecklyTiming.logInfo {
+            "card id=${shown.cardId} side=${shown.side} strokes=${shown.strokes.size} " +
+                "action→publish=${DecklyTiming.describeElapsed(actionArrivedNanos, shown.publishedNanos)}ms " +
+                "load=${DecklyTiming.describeElapsed(loadStartNanos, shown.publishedNanos)}ms"
+        }
     }
 
     private fun buildShownCard(cardId: Long, content: Result<CardContent>): ShownCard {

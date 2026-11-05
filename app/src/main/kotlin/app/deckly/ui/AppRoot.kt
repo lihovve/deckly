@@ -30,7 +30,9 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.deckly.AppContainer
+import app.deckly.data.timing.DecklyTiming
 import app.deckly.deck.DeckViewModel
+import app.deckly.deck.ShownCard
 import app.deckly.decks.DeckListViewModel
 import app.deckly.decks.DeckNameViewModel
 import app.deckly.design.e.DesignE
@@ -193,6 +195,7 @@ private fun DeckHost(entry: ScreenEntry, screen: AppScreen.Deck, environment: Sc
         BackHandler(enabled = shown.dialog != null) { viewModel.onAction(DeckAction.DismissDialog) }
         // Переворот карточки в ключ не входит: он обновляется частично.
         RefreshEffect(environment, RefreshKey(entry.token, cardId = shownCard?.cardId, editorSide = null))
+        CardFrameTimingEffect(shownCard)
         environment.design.DeckScreen(shown, viewModel::onAction) { modifier ->
             val card = shownCard
             if (card != null) environment.sheets.DeckSheet(card.strokes, modifier) else Box(modifier)
@@ -230,6 +233,21 @@ private fun EditorHost(entry: ScreenEntry, screen: AppScreen.Editor, environment
         environment.design.EditorScreen(shown, viewModel::onAction) { modifier ->
             val shownCanvas = if (isRefreshing) canvas.copy(isPenEnabled = false) else canvas
             environment.sheets.EditorSheet(shownCanvas, viewModel::onStroke, viewModel::onErase, modifier)
+        }
+    }
+}
+
+// Лог для проверки на планшете: сколько от публикации карточки до собранного экрана и до следующего кадра.
+// «Кадр» — следующий кадр после сборки, так что цифра длиннее настоящей не больше чем на один кадр.
+@Composable
+private fun CardFrameTimingEffect(card: ShownCard?) {
+    LaunchedEffect(card) {
+        if (card == null || !DecklyTiming.isEnabled) return@LaunchedEffect
+        val composedNanos = System.nanoTime()
+        withFrameNanos { }
+        DecklyTiming.logInfo {
+            "card id=${card.cardId} side=${card.side} publish→composed=${DecklyTiming.describeElapsed(card.publishedNanos, composedNanos)}ms " +
+                "publish→frame=${DecklyTiming.describeElapsed(card.publishedNanos)}ms"
         }
     }
 }

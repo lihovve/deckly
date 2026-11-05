@@ -12,6 +12,7 @@ import app.deckly.data.repository.removeUnreferencedStrokeFiles
 import app.deckly.data.storage.DecklyStorage
 import app.deckly.data.storage.MediaStoreNotifier
 import app.deckly.data.strokes.StrokeFiles
+import app.deckly.data.timing.DecklyTiming
 import app.deckly.data.transfer.JsonDeckTransfer
 import app.deckly.domain.port.AppStateRepository
 import app.deckly.domain.port.CardContentRepository
@@ -50,10 +51,16 @@ class DecklyData(
  * ничего не пишет. Повреждённая база — [app.deckly.data.db.DatabaseDamagedException], файл не тронут.
  */
 suspend fun openDecklyData(context: Context, rootDir: File): DecklyData {
+    DecklyTiming.enableIfDebuggable(context)
+    val openStartNanos = System.nanoTime()
     val storage = DecklyStorage(rootDir)
+    var quickCheckStartNanos = 0L
+    var quickCheckEndNanos = 0L
     // До Room и до любых папок: повреждённая база не открывается и ничего вокруг себя не создаёт.
     withContext(Dispatchers.IO) {
+        quickCheckStartNanos = System.nanoTime()
         checkDatabaseIntegrity(storage.databaseFile)
+        quickCheckEndNanos = System.nanoTime()
         checkDatabaseIsNotMissing(storage)
     }
     storage.ensureDirectories()
@@ -62,7 +69,7 @@ suspend fun openDecklyData(context: Context, rootDir: File): DecklyData {
     val files = StrokeFiles(storage.strokesDir, mediaStore::recordChanged)
     removeUnreferencedStrokeFiles(database, files)
     val drafts = RoomDraftRepository(database, files)
-    return DecklyData(
+    val data = DecklyData(
         decks = RoomDeckRepository(database, files),
         contents = FileCardContentRepository(database, files),
         drafts = drafts,
@@ -71,4 +78,9 @@ suspend fun openDecklyData(context: Context, rootDir: File): DecklyData {
         mediaStore = mediaStore,
         onClose = database::close,
     )
+    DecklyTiming.logInfo {
+        "open total=${DecklyTiming.describeElapsed(openStartNanos)}ms " +
+            "quickCheck=${DecklyTiming.describeElapsed(quickCheckStartNanos, quickCheckEndNanos)}ms"
+    }
+    return data
 }
