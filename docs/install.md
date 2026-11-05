@@ -47,6 +47,17 @@ tools/install-apk.sh app/build/outputs/apk/debug/app-debug.apk app.deckly
 | 5 | `pm install` отказал | Текст отказа выведен. Например, при установленной сборке с другой подписью сначала `adb uninstall app.deckly` |
 | 6 | Пакет не включился или доступ не выдан | APK уже установлен; выполните шаги 3 и 4 вручную |
 
+Прошивка может отключить пакет с задержкой, уже после того как скрипт сообщил «Пакет включён» (проверка
+на планшете это показала). Поэтому перед первым запуском подождите минуту и проверьте ещё раз:
+
+```
+adb shell dumpsys package app.deckly | grep -o 'enabled=[0-9]*'
+adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER app.deckly
+```
+
+Нужны `enabled=0` или `enabled=1` и строка `app.deckly/.MainActivity`. При `enabled=3` (или ответе «No activity
+found») выполните `adb shell pm enable --user 0 app.deckly` и проверьте снова.
+
 Предыдущий прототип (`app.deckly.spike`) удалять не нужно: у него своя папка `Deckly/spike/`.
 
 ## 3. Доступ ко всем файлам
