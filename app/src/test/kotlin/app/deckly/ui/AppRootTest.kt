@@ -6,8 +6,10 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.IntState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
@@ -315,11 +317,15 @@ class AppRootTest {
         assertEquals(1, fullRefreshes)
         drafts.stored = StoredDraft(DECK_ID, Draft(null, emptyList(), emptyList(), Side.BACK, Section.NEW))
         drafts.loadGate = CompletableDeferred()
+        // Вход в редактор должен стать 30-й сменой после первого обновления: тогда обновление при входе видно в счётчике.
+        navigateAround(app, REFRESH_PERIOD - 1)
+        assertEquals(1, fullRefreshes)
 
         app.navigate(AppScreen.Editor(DECK_ID, EditorStart.ResumeDraft))
         composeRule.waitForIdle()
 
-        // Пока черновик читается: ни экрана дизайна, ни обновления, ни обработчика «Назад»; лист белый, как у загрузки.
+        // Пока черновик читается: ни экрана дизайна, ни обновления (и смена ещё не посчитана), ни обработчика «Назад»;
+        // лист белый, как у загрузки.
         assertTrue(probe.editorStates.isEmpty())
         assertEquals(1, fullRefreshes)
         drafts.loadGate!!.complete(Unit)
@@ -443,26 +449,29 @@ class AppRootTest {
         val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
         startApp(buildData(drafts = drafts), refreshScreen = { penWhenRefreshing += sheets.canvases.last().isPenEnabled })
 
-        // Одно полное обновление при открытии, перо в этот момент выключено и потом включено снова.
+        // Редактор — первый экран после запуска, поэтому полное обновление при открытии есть; перо в этот момент
+        // выключено и потом включено снова.
         assertEquals(listOf(false), penWhenRefreshing)
         assertTrue(sheets.canvases.last().isPenEnabled)
     }
 
     @Test
-    fun deckRefreshesFullyOnTransitionAndPartiallyOnFlip() {
+    fun flipIsNotCountedAsChange() {
         // Переворот записывается в колоду, поэтому нужен репозиторий, который умеет сохранять.
         val card = buildCard(id = 7, section = Section.NEW, position = 0)
         val repository = FakeDeckRepository(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"), card))
         val app = startApp(buildData(decks = repository, appState = FakeAppStateRepository(DECK_ID)))
-        assertEquals(1, fullRefreshes)
+        assertEquals("первый экран после запуска", 1, fullRefreshes)
 
         composeRule.onNodeWithContentDescription("Показать ответ").performClick()
         composeRule.waitForIdle()
-        assertEquals("переворот обновляется частично", 1, fullRefreshes)
+        // Переворот не смена: 29 смен экрана после него всё ещё не дают обновления, а 30-я даёт.
+        navigateAround(app, REFRESH_PERIOD - 1, AppScreen.DeckName)
+        assertEquals("переворот не считается", 1, fullRefreshes)
 
-        app.navigate(AppScreen.Deck(DECK_ID))
+        app.navigate(AppScreen.DeckName)
         composeRule.waitForIdle()
-        assertEquals("переход на равный экран обновляется полностью", 2, fullRefreshes)
+        assertEquals("30-я смена экрана", 2, fullRefreshes)
     }
 
     @Test
@@ -473,14 +482,14 @@ class AppRootTest {
     }
 
     @Test
-    fun deckListAndNewDeckFormRefreshFullyWhenTheyAppear() {
+    fun deckListIsRefreshedFirstAndNewDeckFormOnlyCounted() {
         val app = startApp(buildData())
-        assertEquals("список колод", 1, fullRefreshes)
+        assertEquals("список колод — первый экран после запуска", 1, fullRefreshes)
 
         app.navigate(AppScreen.DeckName)
         composeRule.waitForIdle()
 
-        assertEquals("форма новой колоды", 2, fullRefreshes)
+        assertEquals("форма новой колоды — обычная смена, её обновляет прошивка", 1, fullRefreshes)
     }
 
     @Test
@@ -504,33 +513,102 @@ class AppRootTest {
     }
 
     @Test
-    fun nextCardRefreshesFully() {
-        val repository = FakeDeckRepository(
-            buildDeckState(
-                buildDeck(DECK_ID, "Немецкий A2"),
-                buildCard(id = 7, section = Section.NEW, position = 0),
-                buildCard(id = 8, section = Section.NEW, position = 1),
-            ),
-        )
+    fun nextCardIsCountedAsChange() {
+        val cards = (0 until REFRESH_PERIOD + 1).map { buildCard(id = 100L + it, section = Section.NEW, position = it) }
+        val repository = FakeDeckRepository(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"), cards))
         startApp(buildData(decks = repository, appState = FakeAppStateRepository(DECK_ID)))
-        assertEquals(1, fullRefreshes)
+        assertEquals("первый экран после запуска", 1, fullRefreshes)
 
-        composeRule.onNodeWithContentDescription("Следующая карточка").performClick()
-        composeRule.waitForIdle()
+        repeat(REFRESH_PERIOD - 1) { clickNextCard() }
+        assertEquals("29 смен карточки", 1, fullRefreshes)
 
-        assertEquals("другая карточка обновляется полностью", 2, fullRefreshes)
+        clickNextCard()
+        assertEquals("30-я смена карточки", 2, fullRefreshes)
     }
 
     @Test
-    fun editorSideSwitchRefreshesFullyWithPenPaused() {
+    fun screenCardAndEditorSideChangesAreCountedTogether() {
+        val cards = (0 until 12).map { buildCard(id = 100L + it, section = Section.NEW, position = it) }
+        val repository = FakeDeckRepository(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"), cards))
+        val drafts = FakeDraftRepository()
+        val app = startApp(buildData(decks = repository, appState = FakeAppStateRepository(DECK_ID), drafts = drafts))
+        assertEquals(1, fullRefreshes)
+
+        repeat(10) { clickNextCard() }
+        app.navigate(AppScreen.Editor(DECK_ID, EditorStart.NewCard(Section.NEW)))
+        composeRule.waitForIdle()
+        repeat(9) { clickSide(if (it % 2 == 0) "Ответ" else "Вопрос") }
+        // 10 карточек, вход в редактор и 9 смен стороны — 20 смен; ещё 9 смен экрана — 29.
+        navigateAround(app, 9, AppScreen.DeckName)
+        assertEquals("29 смен вперемешку", 1, fullRefreshes)
+
+        app.navigate(AppScreen.DeckName)
+        composeRule.waitForIdle()
+        assertEquals("30-я смена", 2, fullRefreshes)
+    }
+
+    @Test
+    fun thirtyFirstScreenGivesSecondRefresh() {
+        val app = startApp(buildData(appState = FakeAppStateRepository(DECK_ID)))
+        assertEquals("первый экран", 1, fullRefreshes)
+
+        navigateAround(app, REFRESH_PERIOD - 1)
+        assertEquals("30-й экран подряд", 1, fullRefreshes)
+
+        app.navigate(AppScreen.DeckList)
+        composeRule.waitForIdle()
+        assertEquals("31-й экран", 2, fullRefreshes)
+    }
+
+    @Test
+    fun recompositionOfRootWithSameActivityKeepsRefreshCounter() {
+        val parentTick = mutableIntStateOf(0)
+        val app = startApp(buildData(appState = FakeAppStateRepository(DECK_ID)), parentTick = parentTick)
+        assertEquals(1, fullRefreshes)
+
+        // Родитель корня перекомпонован и заново передал те же, равные по значению ссылки на методы activity.
+        repeat(3) {
+            parentTick.intValue++
+            composeRule.waitForIdle()
+        }
+        app.navigate(AppScreen.DeckList)
+        composeRule.waitForIdle()
+
+        // Счётчик не сброшен: иначе первый ключ после сброса снова был бы должным.
+        assertEquals(1, fullRefreshes)
+    }
+
+    @Test
+    fun editorSideSwitchKeepsPenCycleWithoutFullRefresh() {
+        val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
+        startApp(buildData(drafts = drafts))
+        assertEquals("редактор — первый экран", 1, fullRefreshes)
+        val canvasesBefore = sheets.canvases.size
+        val revisionBefore = sheets.canvases.last().uiRevision
+
+        clickSide("Ответ")
+
+        // Смена стороны не 30-я: полного обновления нет, но цикл пера остался (лист получил новую ревизию), и перо
+        // нигде не выключено: паузу на время обновления делает только полное обновление.
+        assertEquals(1, fullRefreshes)
+        assertEquals(revisionBefore + 1, sheets.canvases.last().uiRevision)
+        assertTrue(sheets.canvases.drop(canvasesBefore).all { it.isPenEnabled })
+    }
+
+    @Test
+    fun editorSideSwitchRefreshesFullyOnThirtiethChangeWithPenPaused() {
         val penWhenRefreshing = mutableListOf<Boolean>()
         val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
         startApp(buildData(drafts = drafts), refreshScreen = { penWhenRefreshing += sheets.canvases.last().isPenEnabled })
         assertEquals(1, fullRefreshes)
 
-        composeRule.onNodeWithText("Ответ").performClick()
-        composeRule.waitForIdle()
+        repeat(REFRESH_PERIOD - 1) { clickSide(if (it % 2 == 0) "Ответ" else "Вопрос") }
+        assertEquals("29 смен стороны", 1, fullRefreshes)
+        // 29 кликов закончились на «Ответ»: 30-й возвращает «Вопрос» (клик по выбранной вкладке сторону не меняет).
+        clickSide("Вопрос")
 
+        // 30-я смена: полное обновление, и перо на это время выключено; потом включено снова.
+        assertEquals(2, fullRefreshes)
         assertEquals(listOf(false, false), penWhenRefreshing)
         assertTrue(sheets.canvases.last().isPenEnabled)
     }
@@ -583,6 +661,7 @@ class AppRootTest {
         openGate: CompletableDeferred<Unit>? = null,
         design: Design = DesignE,
         refreshScreen: (() -> Unit)? = null,
+        parentTick: IntState? = null,
     ): AppViewModel {
         val container = AppContainer(
             application,
@@ -596,11 +675,13 @@ class AppRootTest {
         )
         val app = AppViewModel(container.startupLoader)
         composeRule.setContent {
+            // Чтение состояния перекомпонует родителя корня, и ссылки на методы activity вычисляются заново, как в MainActivity.
+            parentTick?.intValue
             AppRoot(
                 app = app,
                 container = container,
-                onOpenSettings = { settingsOpened++ },
-                onClose = { closed++ },
+                onOpenSettings = ::openSettings,
+                onClose = ::closeApp,
                 design = design,
                 sheets = sheetsInUse,
                 refreshScreen = { fullRefreshes++; refreshScreen?.invoke() },
@@ -608,6 +689,34 @@ class AppRootTest {
         }
         composeRule.waitForIdle()
         return app
+    }
+
+    // Как `::openFileAccessSettings` и `::finishAndRemoveTask` в MainActivity: ссылки на методы одного владельца.
+    private fun openSettings() {
+        settingsOpened++
+    }
+
+    private fun closeApp() {
+        closed++
+    }
+
+    // Каждый переход — смена экрана: после обновления до следующего должного не хватает REFRESH_PERIOD - 1 смен.
+    // Экран по умолчанию — список колод; репозиторию без `listDecks` (одна колода) нужна форма новой колоды.
+    private fun navigateAround(app: AppViewModel, changes: Int, screen: AppScreen = AppScreen.DeckList) {
+        repeat(changes) {
+            app.navigate(screen)
+            composeRule.waitForIdle()
+        }
+    }
+
+    private fun clickNextCard() {
+        composeRule.onNodeWithContentDescription("Следующая карточка").performClick()
+        composeRule.waitForIdle()
+    }
+
+    private fun clickSide(label: String) {
+        composeRule.onNodeWithText(label).performClick()
+        composeRule.waitForIdle()
     }
 
     private fun buildCatalogWithCard(): FakeDeckCatalog =
@@ -716,5 +825,8 @@ class AppRootTest {
 
     private companion object {
         const val DECK_ID = 1L
+
+        // Период полного обновления из ТЗ: первый экран после запуска и затем каждая 30-я смена.
+        const val REFRESH_PERIOD = 30
     }
 }

@@ -252,10 +252,11 @@ private fun CardFrameTimingEffect(card: ShownCard?) {
     }
 }
 
-// Полное обновление — после кадра с новым экраном; ключ меняется — прежнее обновление отменяется.
+// Каждая смена ключа считается; когда обновление должное (первый экран и каждая 30-я смена), оно идёт после кадра с новым
+// экраном. Ключ меняется — прежнее обновление отменяется и остаётся должным.
 @Composable
 private fun RefreshEffect(environment: ScreenEnvironment, key: RefreshKey, onPenPause: ((Boolean) -> Unit)? = null) {
     LaunchedEffect(key) {
-        refreshScreenIfNeeded(environment.refresher, key, onPenPause, awaitFrame = { withFrameNanos { } }, refresh = environment.refreshScreen)
+        refreshScreenIfDue(environment.refresher, key, onPenPause, awaitFrame = { withFrameNanos { } }, refresh = environment.refreshScreen)
     }
 }

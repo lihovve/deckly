@@ -2,52 +2,62 @@ package app.deckly.ui
 
 import app.deckly.ui.contract.CardSideShown
 
+/** Каждые 30 смен полное обновление экрана; первая смена после запуска тоже должная (решение владельца 5 ноября). */
+private const val FULL_REFRESH_PERIOD = 30
+
 /**
- * Всё, от чего зависит полное обновление экрана (решение 4 плана 4). [screenToken] — номер перехода
- * ([app.deckly.navigation.ScreenEntry.token]): он растёт при каждом `navigate`, в том числе при возврате на
- * экран, равный прежнему (из редактора в ту же колоду), и заменяет отдельный счётчик выходов из редактора.
- * [cardId] — карточка на листе колоды, [editorSide] — сторона в редакторе; вне своих экранов оба `null`.
+ * Что считается сменой для полного обновления. [screenToken] — номер перехода ([app.deckly.navigation.ScreenEntry.token]):
+ * он растёт при каждом `navigate`, в том числе при возврате на экран, равный прежнему (из редактора в ту же колоду), и
+ * заменяет отдельный счётчик выходов из редактора. [cardId] — карточка на листе колоды, [editorSide] — сторона в
+ * редакторе; вне своих экранов оба `null`.
  *
- * Переворот карточки при обучении и просмотре в ключ не входит: он обновляется частично, как делает прошивка.
+ * Смены экрана, карточки и стороны считаются вместе. Переворот карточки при обучении и просмотре в ключ не входит:
+ * его показывает прошивка и без полного обновления.
  */
 data class RefreshKey(val screenToken: Long, val cardId: Long?, val editorSide: CardSideShown?)
 
 /**
- * Нужно ли полное обновление экрана. Правило здесь одно, чтобы поменять его после проверки на планшете: полное
- * при смене экрана, при смене показанной карточки и в редакторе при смене стороны.
- */
-fun isFullRefreshNeeded(previous: RefreshKey?, next: RefreshKey): Boolean {
-    if (previous == null) return true
-    return previous.screenToken != next.screenToken ||
-        previous.cardId != next.cardId ||
-        previous.editorSide != next.editorSide
-}
-
-/**
- * Помнит, для какого ключа полное обновление уже выполнено. Ключ записывается только после обновления: эффект,
- * отменённый на полпути (экран ушёл из композиции и вернулся), обновление не сделал и должен сделать его снова.
+ * Решает, когда звать полное обновление: на первом экране после запуска и затем на каждой 30-й смене ключа; остальные
+ * смены обновляет прошивка. Чаще полное обновление мигает всем экраном, а совсем без него копятся следы. Правило здесь
+ * одно, чтобы поменять период после проверки на планшете. Счётчик живёт в памяти.
+ *
+ * Смена ключа считается один раз, сколько бы раз за неё ни спросили: эффект перезапускается, когда экран уходит из
+ * композиции и возвращается. Счётчик обнуляет только [markRefreshed], то есть обновление, которое дошло до конца:
+ * отменённое на полпути остаётся должным и на том же ключе, и на следующем.
  */
 class ScreenRefresher {
-    private var refreshed: RefreshKey? = null
+    private var countedKey: RefreshKey? = null
 
-    fun isNeeded(key: RefreshKey): Boolean = isFullRefreshNeeded(refreshed, key)
+    // С запасом в одну смену до порога: первая же смена после запуска делает обновление должным.
+    private var changesSinceRefresh = FULL_REFRESH_PERIOD - 1
 
-    fun markRefreshed(key: RefreshKey) {
-        refreshed = key
+    fun isRefreshDue(key: RefreshKey): Boolean {
+        if (key != countedKey) {
+            countedKey = key
+            changesSinceRefresh++
+        }
+        return changesSinceRefresh >= FULL_REFRESH_PERIOD
+    }
+
+    fun markRefreshed() {
+        changesSinceRefresh = 0
     }
 }
 
-/** Выполняет полное обновление для [key], если оно нужно, и запоминает ключ только после его завершения. */
-suspend fun refreshScreenIfNeeded(
+/**
+ * Выполняет полное обновление, если для [key] оно должное, и обнуляет счётчик только после его завершения. Без должного
+ * обновления ничего не делает: кадров не ждёт и перо не выключает.
+ */
+suspend fun refreshScreenIfDue(
     refresher: ScreenRefresher,
     key: RefreshKey,
     onPenPause: ((Boolean) -> Unit)?,
     awaitFrame: suspend () -> Unit,
     refresh: () -> Unit,
 ) {
-    if (!refresher.isNeeded(key)) return
+    if (!refresher.isRefreshDue(key)) return
     performFullRefresh(onPenPause, awaitFrame, refresh)
-    refresher.markRefreshed(key)
+    refresher.markRefreshed()
 }
 
 /**
