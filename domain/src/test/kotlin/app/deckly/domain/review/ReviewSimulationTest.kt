@@ -46,11 +46,12 @@ class ReviewSimulationTest {
         assertTrue(firstDayInSection.getValue(Section.EPOCH_2) > firstDayInSection.getValue(Section.EPOCH_1))
         assertEquals(38, firstDayInSection[Section.LEARNED])
         // Дни первого появления в секции (пул новых не виден: первое открытие в день 0 добирает карточку в эпоху 1).
-        // Эпоха 2 — на следующий день; 4 прохода по одному в день дают выпуск в день 5; 4 прохода эпохи 3 через 3 дня —
+        // Четыре «знал» в день 0 отправляют карточку в ожидание ночи; эпоха 2 — на следующий день; 4 прохода по одному в день дают выпуск в день 5; 4 прохода эпохи 3 через 3 дня —
         // выпуск в день 17; 3 прохода эпохи 4 через 7 дней — стек выученных в день 38.
         assertEquals(
             mapOf(
                 Section.EPOCH_1 to 0,
+                Section.RESTING to 0,
                 Section.EPOCH_2 to 1,
                 Section.EPOCH_3 to 5,
                 Section.EPOCH_4 to 17,

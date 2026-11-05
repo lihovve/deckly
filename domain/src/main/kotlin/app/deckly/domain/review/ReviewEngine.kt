@@ -112,7 +112,7 @@ object ReviewEngine {
         val state = countRatingInPortion(rated)
         if (isPassExhausted(state)) return endPass(state, today, random)
         if (!isPortionFull(state.deck)) return showCurrent(state)
-        if (hasCardsToInsert(state)) return startInsertedPass(state, today, random)
+        if (hasFirstEpochWork(state, today)) return startInsertedPass(state, today, random)
         return showCurrent(state.copy(deck = state.deck.copy(portionRatedCount = 0)))
     }
 
@@ -136,9 +136,6 @@ object ReviewEngine {
 
     /** Порция полна после каждых 40 оценённых карточек. Курсор прохода здесь ни при чём: удаления его сдвигают. */
     private fun isPortionFull(deck: Deck): Boolean = isPortionCounting(deck) && deck.portionRatedCount == PORTION_SIZE
-
-    private fun hasCardsToInsert(state: DeckState): Boolean =
-        state.cards.any { it.section == Section.EPOCH_1 || it.section == Section.NEW }
 
     /** Прерывает проход эпохи 2–4 и стартует вставной проход эпохи 1; пустую вставку проскакивает молча. */
     private fun startInsertedPass(state: DeckState, today: Int, random: Random): ReviewResult {
@@ -202,9 +199,10 @@ object ReviewEngine {
  * бага, а не часть логики.
  *
  * Шаги одной итерации:
- * 1. пул, эпохи 1–4 и готовые выученные пусты — `NeedNewCard`;
- * 2. ожидающая эпоха: созрела — получает ход; не созрела и эпоха 1 с пулом пусты — `DoneForToday`;
- *    иначе ход у эпохи 1;
+ * 1. пул, эпохи 1–4, готовые выученные и ждущие с прошедшей ночью пусты — проход не начинается: если есть ждущие
+ *    карточки, `DoneForToday`, иначе `NeedNewCard`;
+ * 2. ожидающая эпоха: созрела — получает ход; не созрела, а эпоха 1, пул и ждущие с прошедшей ночью пусты —
+ *    `DoneForToday`; иначе ход у эпохи 1;
  * 3. выбранная эпоха 2–4 не созрела — она становится ожидающей, ход у эпохи 1, снова шаг 2;
  * 4. старт прохода: непустой — `Transition`; пустой — его завершение, счётчик и выбор следующей эпохи.
  */
@@ -216,7 +214,7 @@ internal fun runStartChain(
 ): ReviewResult {
     var state = initial
     repeat(maxIterations) {
-        if (isNothingToStudy(state, today)) return buildIdleResult(state, ReviewOutcome.NeedNewCard)
+        findIdleOutcome(state, today)?.let { return buildIdleResult(state, it) }
 
         when (val step = settleWaitingEpoch(state, today)) {
             is WaitingStep.Finish -> return step.result
@@ -266,8 +264,7 @@ private fun settleWaitingEpoch(state: DeckState, today: Int): WaitingStep {
     if (isEpochMature(state, waiting, today)) {
         return WaitingStep.Proceed(state.copy(deck = deck.copy(currentEpoch = waiting, waitingEpoch = 0)))
     }
-    val isFirstEpochAndPoolEmpty = state.cards.none { it.section == Section.EPOCH_1 || it.section == Section.NEW }
-    if (isFirstEpochAndPoolEmpty) {
+    if (!hasFirstEpochWork(state, today)) {
         val idle = state.copy(deck = deck.copy(currentEpoch = waiting))
         return WaitingStep.Finish(buildIdleResult(idle, ReviewOutcome.DoneForToday))
     }
@@ -280,12 +277,32 @@ private fun buildIdleResult(state: DeckState, outcome: ReviewOutcome): ReviewRes
     return ReviewResult(state.copy(deck = idle), outcome)
 }
 
-/** В пуле и эпохах 1–4 ничего нет, а выученных, готовых к проверке, нет тоже. */
-private fun isNothingToStudy(state: DeckState, today: Int): Boolean = state.cards.none {
-    it.section != Section.LEARNED || isReadyForCheck(it, today)
+/**
+ * Исход без прохода, если учить нечего, и `null`, если есть что: карточка в пуле или эпохе, готовая к проверке
+ * выученная или ждущая, у которой прошла ночь. Ждущие карточки дают «На сегодня всё»: колода не пуста, просто ночь
+ * ещё не прошла. Совсем пустая колода просит создать карточку.
+ */
+private fun findIdleOutcome(state: DeckState, today: Int): ReviewOutcome? {
+    val hasWork = state.cards.any {
+        when (it.section) {
+            Section.LEARNED -> isReadyForCheck(it, today)
+            Section.RESTING -> isRestOver(it, today)
+            else -> true
+        }
+    }
+    if (hasWork) return null
+    val hasResting = state.cards.any { it.section == Section.RESTING }
+    return if (hasResting) ReviewOutcome.DoneForToday else ReviewOutcome.NeedNewCard
 }
 
-/** Завершение обычного прохода: шаги 1–4 `finishPass`, затем счётчик эпохи и выбор следующей. */
+/**
+ * Будет ли у эпохи 1 работа: карточка в пуле (добор) или в самой эпохе, либо ждущая, которую её старт выпустит.
+ * Пока работы нет, ожидающая эпоха не уступает ей ход, а порция эпохи 2–4 не прерывается вставным проходом.
+ */
+internal fun hasFirstEpochWork(state: DeckState, today: Int): Boolean =
+    state.cards.any { it.section == Section.NEW || it.section == Section.EPOCH_1 || isRestOver(it, today) }
+
+/** Завершение обычного прохода: шаги 1–5 `finishPass`, затем счётчик эпохи и выбор следующей. */
 private fun completePass(state: DeckState, epoch: Int, today: Int): DeckState {
     val finished = finishPass(state, epoch, today)
     val deck = finished.deck

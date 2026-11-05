@@ -7,6 +7,7 @@ import app.deckly.data.Scenario
 import app.deckly.data.SCENARIO_DAY
 import app.deckly.data.TestRepositories
 import app.deckly.data.assertSuspendThrows
+import app.deckly.data.buildEpochCard
 import app.deckly.data.buildFlaggedCard
 import app.deckly.data.buildFullDeck
 import app.deckly.data.buildInterruptedPassScenario
@@ -128,6 +129,24 @@ class JsonDeckTransferTest {
 
         assertEquals(loadNormalizedDeck(repos, 1), loadNormalizedDeck(repos, imported.id))
         assertEquals(3, imported.tail.epoch1.size)
+    }
+
+    @Test
+    fun restingCardSurvivesDeckFileRoundTrip() = runTest {
+        val deck = buildFullDeck(1).copy(tail = EpochValues(listOf(11L), emptyList(), emptyList(), emptyList()))
+        val cards = listOf(
+            buildEpochCard(11, Section.RESTING, position = 0),
+            buildEpochCard(12, Section.EPOCH_1, position = 0, successes = 2),
+        )
+        seedDeck(repos, DeckState(deck, cards))
+
+        val text = exportToText(1)
+        val imported = repos.transfer.importDeck(asStream(text))
+
+        assertTrue(text.contains("\"RESTING\""))
+        val copy = loadNormalizedDeck(repos, imported.id)
+        assertEquals(loadNormalizedDeck(repos, 1), copy)
+        assertEquals(listOf(Section.RESTING, Section.EPOCH_1), copy.state.cards.sortedBy { it.id }.map { it.section })
     }
 
     @Test

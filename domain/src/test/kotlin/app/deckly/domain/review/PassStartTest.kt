@@ -19,8 +19,8 @@ class PassStartTest {
     fun firstEpochCardLeavesOnlyAfterNight() {
         val state = buildDeckState(
             buildDeck(),
-            buildCard(1, Section.EPOCH_1, successes = 4, sectionDay = 5, lastSuccessDay = 5),
-            buildCard(2, Section.EPOCH_1, successes = 4, sectionDay = 5, lastSuccessDay = 6),
+            buildCard(1, Section.EPOCH_1, successes = 4, sectionDay = 9),
+            buildCard(2, Section.EPOCH_1, successes = 4, sectionDay = 8),
         )
 
         val after = startPass(state, 1, today = 9, random = Random(1))
@@ -33,6 +33,93 @@ class PassStartTest {
         assertEquals(0, released.successes)
         assertEquals(9, released.sectionDay)
         assertTrue(released.excludedFromPass)
+    }
+
+    @Test
+    fun nightAfterEntryReleasesCardWithoutNewKnewAfterIt() {
+        // Все четыре «знал» получены в день попадания: lastSuccessDay равен sectionDay. Ночь прошла, и нового
+        // «знал» не нужно: карточку выпускает сама дата. Прежнее правило по lastSuccessDay оставило бы её в эпохе 1.
+        val state = buildDeckState(
+            buildDeck(),
+            buildCard(1, Section.EPOCH_1, successes = 4, sectionDay = 5, lastSuccessDay = 5),
+            buildCard(2, Section.EPOCH_1, successes = 4, sectionDay = 5, lastSuccessDay = null),
+        )
+
+        val after = startPass(state, 1, today = 6, random = Random(1))
+
+        assertEquals(Section.EPOCH_2, after.findCard(1).section)
+        assertEquals(Section.EPOCH_2, after.findCard(2).section)
+    }
+
+    @Test
+    fun firstEpochCardBelowThresholdStaysAfterNight() {
+        val state = buildDeckState(buildDeck(), buildCard(1, Section.EPOCH_1, successes = 3, sectionDay = 5))
+
+        assertEquals(Section.EPOCH_1, startPass(state, 1, today = 9, random = Random(1)).findCard(1).section)
+    }
+
+    @Test
+    fun restingCardMovesToSecondEpochAtFirstStartNextDay() {
+        val state = buildDeckState(
+            buildDeck(),
+            buildCard(1, Section.RESTING, position = 0, sectionDay = 9),
+            buildCard(2, Section.EPOCH_1, position = 0),
+        )
+
+        val after = startPass(state, 1, today = 10, random = Random(1))
+
+        val released = after.findCard(1)
+        assertEquals(Section.EPOCH_2, released.section)
+        assertEquals(0, released.successes)
+        assertEquals(10, released.sectionDay)
+        assertTrue(released.excludedFromPass)
+        // Без нового «знал»: в проход эпохи 2 карточка попадает на его старте.
+        assertTrue(1L in listPassCards(startPass(after, 2, today = 10, random = Random(1)), 2).map { it.id })
+    }
+
+    @Test
+    fun restingCardStaysOnSameDayStarts() {
+        val state = buildDeckState(
+            buildDeck(),
+            buildCard(1, Section.RESTING, position = 0, sectionDay = 9),
+            buildCard(2, Section.EPOCH_1, position = 0),
+        )
+
+        val sameDay = startPass(state, 1, today = 9, random = Random(1))
+        assertEquals(Section.RESTING, sameDay.findCard(1).section)
+        assertEquals(9, sameDay.findCard(1).sectionDay)
+
+        // Дату перевели назад: ночь не прошла.
+        assertEquals(Section.RESTING, startPass(state, 1, today = 8, random = Random(1)).findCard(1).section)
+        // Старт прохода другой эпохи ждущих не трогает, даже когда ночь прошла.
+        assertEquals(Section.RESTING, startPass(state, 2, today = 10, random = Random(1)).findCard(1).section)
+    }
+
+    @Test
+    fun restingCardsReleaseAfterReadyFirstEpochCardsInPositionOrder() {
+        val state = buildDeckState(
+            buildDeck(),
+            buildCard(1, Section.RESTING, position = 1, sectionDay = 5),
+            buildCard(2, Section.RESTING, position = 0, sectionDay = 5),
+            buildCard(3, Section.EPOCH_1, position = 0, successes = 4, sectionDay = 5),
+            buildCard(4, Section.EPOCH_2, position = 7),
+        )
+
+        val after = startPass(state, 1, today = 9, random = Random(1))
+
+        assertEquals(listOf(4L, 3L, 2L, 1L), after.listSectionCards(Section.EPOCH_2).map { it.id })
+    }
+
+    @Test
+    fun restingCardsDoNotTakeRefillRoom() {
+        val resting = (1L..40L).map { buildCard(it, Section.RESTING, position = (it - 1).toInt(), sectionDay = 9) }
+        val pool = (101L..140L).map { buildCard(it, Section.NEW, position = (it - 101).toInt()) }
+
+        val after = startPass(buildDeckState(buildDeck(), resting + pool), 1, today = 9, random = Random(1))
+
+        assertEquals(40, after.listSectionCards(Section.EPOCH_1).size)
+        assertEquals(0, after.listSectionCards(Section.NEW).size)
+        assertEquals(40, after.listSectionCards(Section.RESTING).size)
     }
 
     @Test
@@ -76,7 +163,7 @@ class PassStartTest {
     fun nightRuleHoldsWhenDateMovedBack() {
         val state = buildDeckState(
             buildDeck(),
-            buildCard(1, Section.EPOCH_1, successes = 4, sectionDay = 10, lastSuccessDay = 8),
+            buildCard(1, Section.EPOCH_1, successes = 4, sectionDay = 10),
         )
 
         val after = startPass(state, 1, today = 8, random = Random(1))
@@ -269,7 +356,7 @@ class PassStartTest {
         )
         val state = buildDeckState(
             deck,
-            buildCard(1, Section.EPOCH_1, successes = 4, sectionDay = 1, lastSuccessDay = 3),
+            buildCard(1, Section.EPOCH_1, successes = 4, sectionDay = 1),
             buildCard(2, Section.NEW),
         )
 

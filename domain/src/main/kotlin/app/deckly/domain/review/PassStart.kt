@@ -12,9 +12,9 @@ private const val LEARNED_CHECK_LIMIT = 10
 private const val MAX_OFFSET = 5
 
 /**
- * Старт прохода эпохи (ТЗ, «Алгоритм обучения»): выпуск, проверка выученных, добор, перемешивание —
- * строго в таком порядке; затем у карточек эпохи сбрасываются флаги прохода. Поля прохода в `Deck`
- * не трогает: их ставит движок.
+ * Старт прохода эпохи (ТЗ, «Алгоритм обучения»): выпуск (на старте эпохи 1 и ждущих карточек, у которых прошла
+ * ночь), проверка выученных, добор, перемешивание — строго в таком порядке; затем у карточек эпохи сбрасываются
+ * флаги прохода. Поля прохода в `Deck` не трогает: их ставит движок.
  */
 fun startPass(state: DeckState, epoch: Int, today: Int, random: Random): DeckState {
     val section = findEpochSection(epoch)
@@ -72,20 +72,28 @@ fun shuffleWithOffset(cardIds: List<Long>, previousTail: List<Long>, random: Ran
 
 private fun releaseCards(cards: List<Card>, epoch: Int, today: Int): List<Card> {
     val section = findEpochSection(epoch)
-    val releasedIds = cards
-        .filter { it.section == section && isReadyForRelease(it, epoch) }
+    val readyIds = cards
+        .filter { it.section == section && isReadyForRelease(it, epoch, today) }
         .sortedBy { it.position }
         .map { it.id }
-    return moveCards(cards, releasedIds, findReleaseSection(epoch), today)
+    // Ночь ждущих карточек кончается на старте прохода эпохи 1: они уезжают следом за готовыми карточками эпохи.
+    val restOverIds = cards
+        .filter { epoch == 1 && isRestOver(it, today) }
+        .sortedBy { it.position }
+        .map { it.id }
+    return moveCards(cards, readyIds + restOverIds, findReleaseSection(epoch), today)
 }
 
-private fun isReadyForRelease(card: Card, epoch: Int): Boolean {
-    if (card.successes < findReleaseThreshold(epoch)) return false
-    if (epoch != 1) return true
-    // Между заучиванием и выпуском из эпохи 1 должна пройти хотя бы одна ночь.
-    val lastSuccessDay = card.lastSuccessDay ?: return false
-    return lastSuccessDay > card.sectionDay
-}
+/**
+ * Выпуск по порогу успехов. Из эпохи 1 карточка уходит, только если день её попадания в эпоху уже прошёл: между
+ * заучиванием и выпуском должна пройти хотя бы одна ночь. Нового «знал» после ночи не нужно, `lastSuccessDay` не
+ * читается. Если порог набран в день попадания, карточка до конца прохода ждёт в `RESTING` ([isRestOver]).
+ */
+private fun isReadyForRelease(card: Card, epoch: Int, today: Int): Boolean =
+    card.successes >= findReleaseThreshold(epoch) && (epoch != 1 || today > card.sectionDay)
+
+/** Прошла ли ночь у ждущей карточки: день, когда она ушла в ожидание, уже позади. */
+internal fun isRestOver(card: Card, today: Int): Boolean = card.section == Section.RESTING && today > card.sectionDay
 
 /** Сколько успехов выпускает карточку из эпохи: 4, 4, 4 и 3 (ТЗ, «Пороги успехов»). */
 fun findReleaseThreshold(epoch: Int): Int = if (epoch == 4) 3 else 4

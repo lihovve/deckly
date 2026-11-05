@@ -25,6 +25,7 @@ import app.deckly.domain.model.createDeck
 import app.deckly.domain.port.DeckSummary
 import app.deckly.domain.review.ReviewAction
 import app.deckly.domain.review.ReviewEngine
+import app.deckly.domain.review.finishPass
 import kotlin.random.Random
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -93,6 +94,26 @@ class RoomDeckRepositoryTest {
         repos.reopen()
 
         assertEquals(scenario.after, repos.decks.loadDeckState(scenario.after.deck.id))
+    }
+
+    @Test
+    fun restingCardSurvivesDatabaseRoundTrip() = runTest {
+        val before = DeckState(
+            buildFullDeck(),
+            listOf(
+                buildEpochCard(1, Section.EPOCH_1, position = 0, successes = 4),
+                buildEpochCard(2, Section.EPOCH_1, position = 1, successes = 1),
+            ),
+        )
+        // sectionDay карточек из buildEpochCard — 150: четвёртый успех получен в день попадания.
+        val after = finishPass(before, 1, today = 150)
+        assertEquals(Section.RESTING, after.cards.single { it.id == 1L }.section)
+        seedDeck(repos, before)
+
+        repos.decks.saveDeckChanges(collectDeckChanges(before, after))
+        repos.reopen()
+
+        assertEquals(after, repos.decks.loadDeckState(after.deck.id))
     }
 
     @Test

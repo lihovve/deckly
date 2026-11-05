@@ -12,6 +12,7 @@ import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
 import app.deckly.domain.model.createDeck
+import app.deckly.domain.model.findEpochSection
 import app.deckly.domain.model.listSectionCards
 import app.deckly.domain.review.Availability.Available
 import app.deckly.domain.review.Availability.Unavailable
@@ -199,7 +200,7 @@ class ReviewEngineTest {
     }
 
     @Test
-    fun demotedSecondEpochCardWaitsForNight() {
+    fun demotedCardKnewOnDemotionDayRestsThenReleases() {
         val state = buildDeckState(buildPassDeck(2), listOf(buildCard(1, Section.EPOCH_2, successes = 2)))
 
         val afterFail = playDidNotKnow(state)
@@ -207,15 +208,229 @@ class ReviewEngineTest {
         assertEquals(3, afterFail.state.findCard(1).successes)
         assertEquals(Transition(1, 1, REGULAR), afterFail.outcome)
 
-        // «Знал» в день спуска карточку не выпускает: день последнего «знал» равен дню попадания.
+        // «Знал» в день спуска: четвёртый успех получен в день попадания, карточка уходит в ожидание.
         val sameDay = playKnew(afterFail.state)
-        assertEquals(Section.EPOCH_1, sameDay.state.findCard(1).section)
-        assertEquals(4, sameDay.state.findCard(1).successes)
+        assertEquals(Section.RESTING, sameDay.state.findCard(1).section)
+        assertEquals(0, sameDay.state.findCard(1).successes)
+        assertEquals(DoneForToday, sameDay.outcome)
 
-        // «Знал» на следующий день выпускает на ближайшем старте прохода первой эпохи.
-        val nextDay = playKnew(act(sameDay.state, OpenSection(Section.EPOCH_1), day = today + 1).state, today + 1)
+        // Первый старт прохода эпохи 1 на следующий день выпускает её без нового «знал».
+        val nextDay = act(sameDay.state, OpenSection(Section.EPOCH_1), day = today + 1)
         assertEquals(Section.EPOCH_2, nextDay.state.findCard(1).section)
         assertEquals(0, nextDay.state.findCard(1).successes)
+        assertEquals(today + 1, nextDay.state.findCard(1).sectionDay)
+        assertEquals(Transition(2, 1, REGULAR), nextDay.outcome)
+    }
+
+    @Test
+    fun demotedCardKnewNextDayIsReleasedAtNextStartSameDay() {
+        val afterFail = playDidNotKnow(buildDeckState(buildPassDeck(2), listOf(buildCard(1, Section.EPOCH_2, successes = 2))))
+
+        val result = playKnew(afterFail.state, today + 1)
+
+        assertEquals(Section.EPOCH_2, result.state.findCard(1).section)
+        assertEquals(0, result.state.findCard(1).successes)
+        assertEquals(Transition(2, 1, REGULAR), result.outcome)
+    }
+
+    @Test
+    fun thresholdOnEntryDayMovesCardToRestingAtPassEnd() {
+        val state = buildDeckState(
+            buildPassDeck(1),
+            listOf(buildCard(1, Section.EPOCH_1, successes = 3, sectionDay = today)),
+        )
+
+        val result = playKnew(state)
+
+        assertEquals(DoneForToday, result.outcome)
+        assertEquals(Section.RESTING, result.state.findCard(1).section)
+        assertEquals(0, result.state.findCard(1).successes)
+        assertEquals(emptyList<Long>(), result.state.listSectionCards(Section.EPOCH_1).map { it.id })
+        assertEquals(emptyList<Long>(), result.state.listSectionCards(Section.EPOCH_2).map { it.id })
+        assertEquals(1, result.state.deck.passCount[1])
+    }
+
+    @Test
+    fun countersNeverExceedThresholdOnEntryDay() {
+        // Сценарий владельца: четыре новые карточки, по кругу «Знал» на всех.
+        val pool = (1L..4L).map { buildCard(it, Section.NEW, position = it.toInt()) }
+        var result = act(buildDeckState(createDeck(1, "Слова"), pool), OpenSection(Section.EPOCH_1))
+        var highestSuccesses = 0
+        var ratings = 0
+
+        while ((result.outcome is Transition || result.outcome is ShowCard) && ratings < 40) {
+            result = playKnew(result.state)
+            ratings++
+            highestSuccesses = maxOf(highestSuccesses, result.state.cards.maxOf { it.successes })
+        }
+
+        assertEquals(16, ratings)
+        assertEquals(4, highestSuccesses)
+        assertEquals(DoneForToday, result.outcome)
+        assertTrue(result.state.cards.all { it.section == Section.RESTING })
+    }
+
+    @Test
+    fun restingCardWaitsForNightAcrossRepeatedOpenings() {
+        val state = buildDeckState(buildPassDeck(1), listOf(buildCard(1, Section.EPOCH_1, successes = 3, sectionDay = today)))
+        var result = playKnew(state)
+
+        repeat(3) {
+            result = act(result.state, OpenSection(Section.EPOCH_1))
+            assertEquals(DoneForToday, result.outcome)
+            assertEquals(Section.RESTING, result.state.findCard(1).section)
+        }
+
+        assertEquals(1, result.state.deck.passCount[1])
+    }
+
+    @Test
+    fun thresholdAfterNightIsReleasedAtNextStartSameDay() {
+        // Три «знал» в день попадания, четвёртое на следующий день: ожидания нет.
+        val state = buildDeckState(
+            buildPassDeck(1),
+            listOf(buildCard(1, Section.EPOCH_1, successes = 3, sectionDay = today)),
+        )
+
+        val result = playKnew(state, today + 1)
+
+        assertEquals(Transition(2, 1, REGULAR), result.outcome)
+        val released = result.state.findCard(1)
+        assertEquals(Section.EPOCH_2, released.section)
+        assertEquals(0, released.successes)
+        assertEquals(today + 1, released.sectionDay)
+    }
+
+    @Test
+    fun passFinishedNextDayDoesNotRest() {
+        val state = buildDeckState(
+            buildPassDeck(1),
+            listOf(
+                buildCard(1, Section.EPOCH_1, position = 0, successes = 3, sectionDay = today),
+                buildCard(2, Section.EPOCH_1, position = 1, sectionDay = today),
+            ),
+        )
+
+        // Четвёртый успех получен в день попадания, но проход не закончен.
+        val afterFirst = playKnew(state)
+        assertEquals(ShowCard(2), afterFirst.outcome)
+        assertEquals(Section.EPOCH_1, afterFirst.state.findCard(1).section)
+        assertEquals(4, afterFirst.state.findCard(1).successes)
+
+        // Проход закончился после ночи: ожидания нет, выпуск на ближайшем старте.
+        val afterSecond = playKnew(afterFirst.state, today + 1)
+
+        assertEquals(Section.EPOCH_2, afterSecond.state.findCard(1).section)
+        assertTrue(afterSecond.state.cards.none { it.section == Section.RESTING })
+        assertEquals(Transition(1, 1, REGULAR), afterSecond.outcome)
+    }
+
+    @Test
+    fun legacyCardOverThresholdLeavesEpochByNewRule() {
+        // Карточка «5/4» из прошлой сборки, колода открывается без миграции.
+        val legacy = buildCard(1, Section.EPOCH_1, position = 0, successes = 5, sectionDay = today)
+        val other = buildCard(2, Section.EPOCH_1, position = 1)
+
+        val midPass = buildDeckState(buildPassDeck(1, passCursor = 1), listOf(legacy, other))
+        val sameDay = playKnew(midPass)
+        assertEquals(Section.RESTING, sameDay.state.findCard(1).section)
+        assertEquals(Transition(1, 1, REGULAR), sameDay.outcome)
+
+        val atStart = buildDeckState(buildDeck(currentEpoch = 1), listOf(legacy, other))
+        val nextDay = act(atStart, OpenSection(Section.EPOCH_1), day = today + 1)
+        assertEquals(Section.EPOCH_2, nextDay.state.findCard(1).section)
+        assertEquals(Transition(1, 1, REGULAR), nextDay.outcome)
+    }
+
+    @Test
+    fun onlyRestingCardsGiveDoneForToday() {
+        val resting = buildDeckState(createDeck(1, "Слова"), listOf(buildCard(1, Section.RESTING, sectionDay = today)))
+
+        for (epoch in 1..4) {
+            val state = resting.copy(deck = resting.deck.copy(currentEpoch = epoch))
+            val section = findEpochSection(epoch)
+
+            val first = act(state, OpenSection(section))
+
+            assertEquals(DoneForToday, first.outcome, "эпоха $epoch")
+            assertEquals(Section.NEW, first.state.deck.activeSection, "эпоха $epoch")
+            assertFalse(first.state.deck.passStarted, "эпоха $epoch")
+            assertEquals(EpochValues(0, 0, 0, 0), first.state.deck.passCount, "эпоха $epoch")
+            assertEquals(first, act(first.state, OpenSection(section)), "повторное открытие, эпоха $epoch")
+        }
+    }
+
+    @Test
+    fun restingCardsWithYoungLearnedStillGiveDoneForToday() {
+        val state = buildDeckState(
+            createDeck(1, "Слова"),
+            listOf(
+                buildCard(1, Section.RESTING, sectionDay = today),
+                buildCard(2, Section.LEARNED, sectionDay = today - 29),
+            ),
+        )
+
+        assertEquals(DoneForToday, act(state, OpenSection(Section.EPOCH_1)).outcome)
+    }
+
+    @Test
+    fun dueRestingCardsReachSecondEpochThroughChain() {
+        val state = buildDeckState(createDeck(1, "Слова"), listOf(buildCard(1, Section.RESTING, sectionDay = today - 1)))
+
+        val result = act(state, OpenSection(Section.EPOCH_1))
+
+        assertEquals(Transition(2, 1, REGULAR), result.outcome)
+        assertEquals(Section.EPOCH_2, result.state.findCard(1).section)
+        assertEquals(5, result.state.deck.passCount[1])
+    }
+
+    @Test
+    fun dueRestingCardsAreReleasedWhileWaitingEpochIsImmature() {
+        val deck = createDeck(1, "Слова").copy(
+            passCount = EpochValues(4, 0, 0, 0),
+            waitingEpoch = 3,
+            lastPassDay = EpochValues<Int?>(null, null, today, null),
+        )
+        val state = buildDeckState(
+            deck,
+            listOf(buildCard(50, Section.EPOCH_3), buildCard(1, Section.RESTING, sectionDay = today - 1)),
+        )
+
+        val result = act(state, OpenSection(Section.EPOCH_1))
+
+        assertEquals(DoneForToday, result.outcome)
+        assertEquals(Section.EPOCH_2, result.state.findCard(1).section)
+        assertEquals(3, result.state.deck.waitingEpoch)
+    }
+
+    @Test
+    fun restingCardsWithoutDueDoNotTriggerInsertedPass() {
+        val resting = (201L..202L).map { buildCard(it, Section.RESTING, sectionDay = today) }
+        val deck = buildPassDeck(3).copy(tail = EpochValues(listOf(901L, 902L), emptyList(), emptyList(), emptyList()))
+        val state = buildDeckState(deck, buildEpochRange(3, 1, 45) + resting)
+
+        val result = playKnewTimes(state, 40)
+
+        assertEquals(ShowCard(41), result.outcome)
+        assertEquals(0, result.state.deck.pausedEpoch)
+        assertEquals(0, result.state.deck.portionRatedCount)
+        assertEquals(40, result.state.deck.passCursor)
+        // Пустой вставной проход, даже пропущенный молча, стёр бы tail эпохи 1: здесь он не стартует вовсе.
+        assertEquals(listOf(901L, 902L), result.state.deck.tail[1])
+        assertEquals(setOf(Section.RESTING), result.state.cards.filter { it.id > 200 }.map { it.section }.toSet())
+    }
+
+    @Test
+    fun dueRestingCardsAreReleasedByInsertedPassCheck() {
+        val resting = (201L..202L).map { buildCard(it, Section.RESTING, sectionDay = today - 1) }
+        val state = buildDeckState(buildPassDeck(3), buildEpochRange(3, 1, 45) + resting)
+
+        val result = playKnewTimes(state, 40)
+
+        // Вставной проход пуст и пропущен молча, но ждущие карточки он выпустил.
+        assertEquals(ShowCard(41), result.outcome)
+        assertEquals(0, result.state.deck.pausedEpoch)
+        assertEquals(setOf(Section.EPOCH_2), result.state.cards.filter { it.id > 200 }.map { it.section }.toSet())
     }
 
     @Test
@@ -348,7 +563,7 @@ class ReviewEngineTest {
 
     @Test
     fun insertSkippedWhenFirstEpochEmptiesOnStart() {
-        val releasable = buildCard(201, Section.EPOCH_1, successes = 4, sectionDay = 1, lastSuccessDay = 3)
+        val releasable = buildCard(201, Section.EPOCH_1, successes = 4, sectionDay = 1)
         val state = buildDeckState(buildPassDeck(3), buildEpochRange(3, 1, 41) + releasable)
 
         val result = playKnewTimes(state, 40)
@@ -383,7 +598,7 @@ class ReviewEngineTest {
 
     @Test
     fun promotedIntoPausedEpochWaitsForItsPass() {
-        val promoted = buildCard(201, Section.EPOCH_1, position = 0, successes = 4, sectionDay = 1, lastSuccessDay = 3)
+        val promoted = buildCard(201, Section.EPOCH_1, position = 0, successes = 4, sectionDay = 1)
         val staying = buildCard(202, Section.EPOCH_1, position = 1)
         val state = buildDeckState(buildPassDeck(2), buildEpochRange(2, 1, 45) + promoted + staying)
 

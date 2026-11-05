@@ -117,6 +117,65 @@ class PassEndTest {
     }
 
     @Test
+    fun thresholdOnEntryDayMovesCardToRestingAtPassEnd() {
+        val state = buildDeckState(
+            buildDeck(),
+            buildCard(1, Section.EPOCH_1, position = 0, successes = 4, sectionDay = 9),
+            buildCard(2, Section.EPOCH_1, position = 1, successes = 3, sectionDay = 9),
+            buildCard(3, Section.EPOCH_1, position = 2, successes = 4, sectionDay = 9, postponed = true),
+        )
+
+        val after = finishPass(state, 1, today = 9)
+
+        val resting = after.findCard(1)
+        assertEquals(Section.RESTING, resting.section)
+        assertEquals(0, resting.successes)
+        assertEquals(9, resting.sectionDay)
+        assertFalse(resting.excludedFromPass)
+        assertEquals(Section.RESTING, after.findCard(3).section)
+        assertEquals(listOf(0, 1), after.listSectionCards(Section.RESTING).map { it.position })
+        assertEquals(listOf(2L), after.listSectionCards(Section.EPOCH_1).map { it.id })
+        assertEquals(emptyList<Long>(), after.listSectionCards(Section.EPOCH_2).map { it.id })
+        assertEquals(listOf(1L, 2L, 3L), after.deck.tail[1])
+    }
+
+    @Test
+    fun legacyCardOverThresholdRestsOnEntryDayAndNotAfterIt() {
+        // Карточка «5/4» из прошлой сборки: счётчик выше порога.
+        val legacy = buildCard(1, Section.EPOCH_1, successes = 5, sectionDay = 9)
+
+        assertEquals(Section.RESTING, finishPass(buildDeckState(buildDeck(), legacy), 1, today = 9).findCard(1).section)
+        assertEquals(Section.EPOCH_1, finishPass(buildDeckState(buildDeck(), legacy), 1, today = 10).findCard(1).section)
+    }
+
+    @Test
+    fun passFinishedNextDayDoesNotRest() {
+        val state = buildDeckState(buildDeck(), buildCard(1, Section.EPOCH_1, successes = 4, sectionDay = 9))
+
+        val after = finishPass(state, 1, today = 10)
+
+        assertEquals(Section.EPOCH_1, after.findCard(1).section)
+        assertEquals(4, after.findCard(1).successes)
+    }
+
+    @Test
+    fun belowThresholdCardDoesNotRest() {
+        val state = buildDeckState(buildDeck(), buildCard(1, Section.EPOCH_1, successes = 3, sectionDay = 9))
+
+        assertEquals(state.cards, finishPass(state, 1, today = 9).cards)
+    }
+
+    @Test
+    fun restingIsOnlyForFirstEpoch() {
+        for (epoch in 2..4) {
+            val section = findEpochSection(epoch)
+            val state = buildDeckState(buildDeck(), buildCard(1, section, successes = 4, sectionDay = 9))
+
+            assertEquals(section, finishPass(state, epoch, today = 9).findCard(1).section, "эпоха $epoch")
+        }
+    }
+
+    @Test
     fun firstEpochPassOnlyRemembersTail() {
         val deck = buildDeck(
             pausedEpoch = 4,

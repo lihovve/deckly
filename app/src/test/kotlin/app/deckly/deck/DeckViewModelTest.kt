@@ -400,6 +400,31 @@ class DeckViewModelTest {
     }
 
     @Test
+    fun onlyRestingCardsShowDoneForTodayAgainOnEveryOpening() {
+        // Сценарий владельца: четыре карточки набрали порог в день попадания, пул пуст. Раньше цепочка старта на этом
+        // упиралась в страховку на сотне итераций, и приложение падало.
+        val deck = buildDeck(activeSection = Section.NEW, currentEpoch = 1)
+        val resting = (1L..4L).map { buildCard(it, Section.RESTING, position = (it - 1).toInt(), sectionDay = today) }
+        startWith(buildDeckState(deck, resting))
+        runUntilIdle()
+
+        repeat(2) {
+            viewModel.onAction(DeckAction.OpenSection(SectionTab.EPOCH_1))
+            runUntilIdle()
+
+            assertEquals(DeckDialog.DONE_FOR_TODAY, readScreen().dialog)
+            assertEquals(DeckBody.EmptySection(isPool = true), readScreen().body)
+            assertTrue(readScreen().tabs[SectionTab.NEW.ordinal].isOpen)
+            assertEquals(0, readScreen().tabs[SectionTab.EPOCH_1.ordinal].count)
+            assertEquals(EpochValues(0, 0, 0, 0), repository.stored.deck.passCount)
+
+            viewModel.onAction(DeckAction.ConfirmDialog)
+            runUntilIdle()
+            assertNull(readScreen().dialog)
+        }
+    }
+
+    @Test
     fun doneForTodayDialogKeepsWaitingEpochActive() {
         // II не созрела (проход был сегодня), в I и новых пусто.
         val deck = buildDeck(

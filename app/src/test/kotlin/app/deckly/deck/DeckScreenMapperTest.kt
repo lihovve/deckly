@@ -311,6 +311,27 @@ class DeckScreenMapperTest {
         )
     }
 
+    @Test
+    fun restingCardIsNotCountedInTabs() {
+        val deck = buildDeck(activeSection = Section.NEW, currentEpoch = 1)
+        val cards = buildEpochRange(1, 1, 2) + listOf(buildCard(50, Section.NEW)) +
+            listOf(buildCard(60, Section.RESTING), buildCard(61, Section.RESTING, position = 1))
+
+        val tabs = map(buildDeckState(deck, cards)).tabs
+
+        assertEquals(
+            listOf(
+                TabState(SectionTab.NEW, 1, isOpen = true, isActive = false),
+                TabState(SectionTab.EPOCH_1, 2, isOpen = false, isActive = true),
+                TabState(SectionTab.EPOCH_2, 0, isOpen = false, isActive = false),
+                TabState(SectionTab.EPOCH_3, 0, isOpen = false, isActive = false),
+                TabState(SectionTab.EPOCH_4, 0, isOpen = false, isActive = false),
+                TabState(SectionTab.LEARNED, 0, isOpen = false, isActive = false),
+            ),
+            tabs,
+        )
+    }
+
     // --- ожидание ------------------------------------------------------------------------------
 
     @Test

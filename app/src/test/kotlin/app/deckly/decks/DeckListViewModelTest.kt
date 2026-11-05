@@ -86,6 +86,18 @@ class DeckListViewModelTest {
     }
 
     @Test
+    fun restingCardsAreCountedInDeckRow() {
+        // Колода из одних ждущих карточек: на вкладках их нет, но строка не показывает «0 карточек».
+        val resting = (1L..3L).map { buildCard(it, Section.RESTING, position = it.toInt()) }
+
+        val row = buildDeckRow(buildDeckState(buildDeck(id = 9, name = "Ожидание", currentEpoch = 1), resting), isCurrent = false)
+
+        assertEquals(3, row.cardCount)
+        assertEquals(1, row.activeEpoch)
+        assertFalse(row.isAllLearned)
+    }
+
+    @Test
     fun rowsKeepCreationOrder() {
         startWith(buildTypicalDecks().reversed())
 
