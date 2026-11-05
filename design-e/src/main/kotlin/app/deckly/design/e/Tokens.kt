@@ -66,6 +66,17 @@ object Tokens {
     val PopupItemHeight = 80.dp
     val PopupItemGap = 16.dp
 
+    // --- лист: пустая секция и экран перехода ---
+    val SheetPadding = 48.dp
+    val SheetGap = 28.dp
+    val EmptyIconGap = 4.dp
+    val EmptyTitleMaxWidth = 700.dp
+    val HintMaxWidth = 580.dp
+
+    // --- название колоды в шапке ---
+    val DeckHeadingGap = 10.dp
+    val DeckArrow = 20.dp
+
     // --- рамки и скругления ---
     val BorderThin = 1.dp
     val BorderMedium = 2.dp
@@ -83,6 +94,15 @@ object Tokens {
     val TabCountText = 24.sp
     val BodyText = 24.sp
     val DialogTitleText = 36.sp
+    val EmptyTitleText = 48.sp
+    val BigNumeralText = 80.sp
+    val HintText = 24.sp
+
+    // --- межбуквенный интервал заголовков ---
+    val DeckHeadingSpacing = (-0.5).sp
+    val DialogTitleSpacing = (-0.7).sp
+    val EmptyTitleSpacing = (-1.3).sp
+    val BigNumeralSpacing = (-3).sp
 
     // --- цвета ---
     val Black = Color.Black

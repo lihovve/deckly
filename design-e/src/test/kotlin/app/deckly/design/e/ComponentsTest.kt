@@ -98,6 +98,20 @@ class ComponentsTest {
     }
 
     @Test
+    fun squareButtonKeepsFullIconAtSixtyFourDp() {
+        showOnWhite {
+            DecklyButton(null, DecklyIcons.Plus, ButtonKind.QUIET, "Создать карточку", {}, Modifier.size(64.dp).testTag("square"), isSquare = true)
+        }
+
+        composeRule.onNodeWithTag("square").assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(64.dp)
+        // Значок 32 dp в середине без полей: крест плюса шириной 16 клеток сетки 24 и линия 1,8 с круглыми концами дают
+        // около 23,7 пикселя. С полями обычной кнопки значок сжался бы по высоте до 28 dp, то есть до 20,7 пикселя.
+        val bitmap = capture("square")
+        val inkColumns = (0 until bitmap.width).filter { x -> (0 until bitmap.height).any { y -> bitmap.isInk(x, y) } }
+        assertEquals(23.7f, (inkColumns.last() - inkColumns.first() + 1).toFloat(), 1f)
+    }
+
+    @Test
     fun iconBesideLabelIs26dpAndSeparatedBy12dp() {
         showOnWhite {
             Column {

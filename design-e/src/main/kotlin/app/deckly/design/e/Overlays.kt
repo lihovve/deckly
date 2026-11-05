@@ -33,10 +33,9 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.sp
 
-/** Кнопка окна: [isPrimary] — основная (рамка 3), иначе обычная. */
-data class DialogAction(val label: String, val isPrimary: Boolean, val onClick: () -> Unit)
+/** Кнопка окна: [isPrimary] — основная (рамка 3), иначе обычная; [icon] — значок перед подписью. */
+data class DialogAction(val label: String, val isPrimary: Boolean, val icon: ImageVector? = null, val onClick: () -> Unit)
 
 /** Пункт меню: [isDanger] отделён линией сверху (удаление). */
 data class PopupItem(val label: String, val icon: ImageVector, val isDanger: Boolean, val onClick: () -> Unit)
@@ -82,11 +81,11 @@ fun Dialog(title: String, text: String?, actions: List<DialogAction>, modifier: 
                 .padding(Tokens.BorderThick + Tokens.DialogPadding),
             verticalArrangement = Arrangement.spacedBy(Tokens.DialogGap),
         ) {
-            BasicText(title, style = buildTextStyle(Tokens.DialogTitleText, FontWeight.Bold, lineHeightFactor = 1.15f, letterSpacing = (-0.7).sp))
+            BasicText(title, style = buildTextStyle(Tokens.DialogTitleText, FontWeight.Bold, lineHeightFactor = 1.15f, letterSpacing = Tokens.DialogTitleSpacing))
             if (text != null) BasicText(text, style = buildTextStyle(Tokens.BodyText, lineHeightFactor = 1.5f))
             val cells = actions.map { action ->
                 val cell: @Composable (Modifier) -> Unit = { cellModifier ->
-                    DecklyButton(action.label, null, if (action.isPrimary) ButtonKind.PRIMARY else ButtonKind.NORMAL, null, action.onClick, cellModifier)
+                    DecklyButton(action.label, action.icon, if (action.isPrimary) ButtonKind.PRIMARY else ButtonKind.NORMAL, null, action.onClick, cellModifier)
                 }
                 cell
             }

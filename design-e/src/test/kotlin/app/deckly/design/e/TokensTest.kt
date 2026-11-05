@@ -104,6 +104,28 @@ class TokensTest {
     }
 
     @Test
+    fun sheetMessagesAndDeckHeadingMatchStyles() {
+        assertDp(findCssNumber(".card", "padding"), Tokens.SheetPadding)
+        assertDp(findCssNumber(".card", "gap"), Tokens.SheetGap)
+        assertDp(findCssNumber(".card .empty-icon", "margin-bottom"), Tokens.EmptyIconGap)
+        assertDp(findCssNumber(".card h2", "max-width"), Tokens.EmptyTitleMaxWidth)
+        assertDp(findCssNumber(".card .hint", "max-width"), Tokens.HintMaxWidth)
+        assertSp(findCssNumber(".card h2", "font-size"), Tokens.EmptyTitleText)
+        assertSp(findCssNumber(".card .big", "font-size"), Tokens.BigNumeralText)
+        assertSp(findCssNumber(".card .hint", "font-size"), Tokens.HintText)
+        assertDp(findCssNumber(".deck", "gap"), Tokens.DeckHeadingGap)
+        assertDp(findCssNumber(".deck svg", "width"), Tokens.DeckArrow)
+    }
+
+    @Test
+    fun letterSpacingsMatchStyles() {
+        assertSp(findCssNumber(".deck", "letter-spacing"), Tokens.DeckHeadingSpacing)
+        assertSp(findCssNumber(".dialog h2", "letter-spacing"), Tokens.DialogTitleSpacing)
+        assertSp(findCssNumber(".card h2", "letter-spacing"), Tokens.EmptyTitleSpacing)
+        assertSp(findCssNumber(".card .big", "letter-spacing"), Tokens.BigNumeralSpacing)
+    }
+
+    @Test
     fun titlesMatchStyles() {
         assertSp(findCssNumber(".heading h1", "font-size"), Tokens.TitleText)
         assertSp(findCssNumber(".deck", "font-size"), Tokens.TitleText)
@@ -115,7 +137,8 @@ class TokensTest {
         assertTrue(Tokens.ControlMin >= 64.dp)
         val texts = listOf(
             Tokens.LabelText, Tokens.ValueText, Tokens.TitleText, Tokens.ButtonText, Tokens.FooterButtonText,
-            Tokens.TabLabelText, Tokens.TabCountText, Tokens.DialogTitleText, Tokens.BodyText,
+            Tokens.TabLabelText, Tokens.TabCountText, Tokens.DialogTitleText, Tokens.BodyText, Tokens.EmptyTitleText,
+            Tokens.BigNumeralText, Tokens.HintText,
         )
         assertTrue(texts.all { it >= 18.sp })
     }

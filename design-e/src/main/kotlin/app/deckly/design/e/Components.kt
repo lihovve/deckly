@@ -82,7 +82,8 @@ internal fun requireButtonContent(label: String?, icon: ImageVector?, descriptio
 /**
  * Кнопка макета. Минимум 64 × 64 dp. [label] и [icon] можно сочетать; кнопка только со значком обязана иметь
  * [description] (в макете это `aria-label`). Описание есть и у кнопки с подписью, если причина недоступности или
- * смысл шире подписи: оно читается вместо неё. Размер задаёт [modifier] (квадратные кнопки шапки и нижней строки).
+ * смысл шире подписи: оно читается вместо неё. Размер задаёт [modifier]. [isSquare] — квадратная кнопка шапки без
+ * полей (`.btn.square`: ширина 64, padding 0), иначе значок 32 при полях 18 не поместился бы в 64.
  */
 @Composable
 fun DecklyButton(
@@ -93,6 +94,7 @@ fun DecklyButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     textSize: TextUnit = Tokens.ButtonText,
+    isSquare: Boolean = false,
 ) {
     requireButtonContent(label, icon, description)
     val isEnabled = kind != ButtonKind.OFF
@@ -109,7 +111,9 @@ fun DecklyButton(
             .border(borderWidth, borderColor, shape)
             // Рамка занимает место, как в макете (border-box): у тихой и недоступной она прозрачна.
             .padding(borderWidth)
-            .padding(horizontal = Tokens.ButtonPaddingHorizontal, vertical = Tokens.ButtonPaddingVertical),
+            .then(
+                if (isSquare) Modifier else Modifier.padding(horizontal = Tokens.ButtonPaddingHorizontal, vertical = Tokens.ButtonPaddingVertical),
+            ),
         horizontalArrangement = Arrangement.spacedBy(if (label != null && icon != null) Tokens.ButtonGap else 0.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {

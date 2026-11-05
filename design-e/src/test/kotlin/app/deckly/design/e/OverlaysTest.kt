@@ -189,6 +189,22 @@ class OverlaysTest {
     }
 
     @Test
+    fun dialogActionMayCarryAnIcon() {
+        showFrame {
+            Dialog("На сегодня всё", null, listOf(DialogAction("Открыть новые", isPrimary = true, onClick = {}, icon = DecklyIcons.Right)))
+        }
+
+        // Кнопка на всю ширину; стрелка 26 dp стоит левее подписи, внутри рамки.
+        val label = composeRule.onNodeWithText("Открыть новые", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val buttonNode = composeRule.onNodeWithText("Открыть новые")
+        val button = buttonNode.getUnclippedBoundsInRoot()
+        val bitmap = buttonNode.captureToImage().asAndroidBitmap()
+        val textLeft = (label.left.value - button.left.value).toInt()
+        val ink = measureInkBox(bitmap, 8 until textLeft - 4, 8 until bitmap.height - 8)
+        assertIconInk("кнопка окна", IconId.RIGHT, 26f, Tokens.IconStroke, ink)
+    }
+
+    @Test
     fun twoActionsShareTheWidthWithGap() {
         showFrame { Dialog("Удалить карточку?", "Вопрос и ответ будут удалены безвозвратно.", buildTwoActions()) }
 
