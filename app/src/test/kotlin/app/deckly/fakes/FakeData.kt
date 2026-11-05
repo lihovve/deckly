@@ -30,9 +30,11 @@ fun buildFakeData(
     appState: AppStateRepository = FakeAppStateRepository(),
     drafts: DraftRepository = FakeDraftRepository(),
     onClose: () -> Unit = {},
+    decks: DeckRepository = UnusedDeckRepository,
+    contents: CardContentRepository = UnusedCardContentRepository,
 ): DecklyData = DecklyData(
-    decks = UnusedDeckRepository,
-    contents = UnusedCardContentRepository,
+    decks = decks,
+    contents = contents,
     drafts = drafts,
     appState = appState,
     transfer = UnusedDeckTransfer,

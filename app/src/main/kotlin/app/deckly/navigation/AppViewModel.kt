@@ -2,6 +2,7 @@ package app.deckly.navigation
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewModelScope
 import app.deckly.data.DecklyData
 import app.deckly.startup.StartupLoader
@@ -13,11 +14,27 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
+ * Показанный экран вместе с хранилищем его ViewModel. Каждый переход даёт новую запись, даже на экран, равный
+ * прежнему: ключ — сам факт перехода, а не значение [screen], поэтому запись сравнивается по ссылке. ViewModel
+ * экрана читают данные один раз в `init`, и экран, на который вернулись (из редактора в ту же колоду), обязан
+ * прочитать их заново. [token] растёт с каждым переходом.
+ */
+class ScreenEntry internal constructor(val screen: AppScreen, val token: Long) {
+    val viewModelStore = ViewModelStore()
+}
+
+/**
  * Текущий экран приложения. Запуск начинается сам; события жизненного цикла activity передаёт
- * [handleLifecycleEvent].
+ * [handleLifecycleEvent]. Хранилище ViewModel текущего экрана держит эта модель, поэтому оно переживает смену
+ * конфигурации; при переходе старое очищается, при очистке модели очищается и текущее.
  */
 class AppViewModel(private val loader: StartupLoader) : ViewModel() {
+    private var nextToken = 0L
+    private val mutableEntry = MutableStateFlow(ScreenEntry(AppScreen.Loading, nextToken++))
     private val mutableScreen = MutableStateFlow<AppScreen>(AppScreen.Loading)
+
+    /** Экран вместе с хранилищем его ViewModel; обновляется при каждом переходе. */
+    val entry: StateFlow<ScreenEntry> = mutableEntry.asStateFlow()
     val screen: StateFlow<AppScreen> = mutableScreen.asStateFlow()
 
     private var data: DecklyData? = null
@@ -28,7 +45,19 @@ class AppViewModel(private val loader: StartupLoader) : ViewModel() {
     }
 
     fun navigate(to: AppScreen) {
+        show(to)
+    }
+
+    // Новая запись публикуется раньше, чем очищается старая: экран, ещё стоящий на прежней, не остаётся без хранилища.
+    private fun show(to: AppScreen) {
+        val previous = mutableEntry.value
+        mutableEntry.value = ScreenEntry(to, nextToken++)
         mutableScreen.value = to
+        previous.viewModelStore.clear()
+    }
+
+    override fun onCleared() {
+        mutableEntry.value.viewModelStore.clear()
     }
 
     /**
@@ -51,7 +80,7 @@ class AppViewModel(private val loader: StartupLoader) : ViewModel() {
         loadJob = viewModelScope.launch {
             val result = loader.loadStart()
             result.data?.let { data = it }
-            mutableScreen.value = result.screen
+            show(result.screen)
         }
     }
 }

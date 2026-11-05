@@ -4,15 +4,22 @@ import android.graphics.Color
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -38,6 +45,29 @@ class CardSideImageTest {
         composeRule.onNodeWithContentDescription("Рисунок не открылся")
             .assertWidthIsEqualTo(SHEET_DP.dp)
             .assertHeightIsEqualTo(SHEET_DP.dp)
+    }
+
+    @Test
+    fun imageWithoutDescriptionKeepsTheOneOfItsCaller() {
+        // Дизайн ставит описание листа сам через модификатор слота и передаёт null, чтобы описание не затёрлось.
+        composeRule.setContent {
+            CardSideImage(emptyList(), Modifier.size(SHEET_DP.dp).semantics { contentDescription = "Вопрос" }, description = null)
+        }
+
+        composeRule.onNodeWithContentDescription("Вопрос").assertExists()
+        val descriptions = composeRule.onNodeWithContentDescription("Вопрос").fetchSemanticsNode().config
+            .getOrNull(SemanticsProperties.ContentDescription)
+        assertEquals(listOf("Вопрос"), descriptions)
+    }
+
+    @Test
+    fun imageWithoutDescriptionAddsNoneOfItsOwn() {
+        composeRule.setContent {
+            CardSideImage(emptyList(), Modifier.size(SHEET_DP.dp).testTag("sheet"), description = null)
+        }
+
+        val config = composeRule.onNodeWithTag("sheet").fetchSemanticsNode().config
+        assertEquals(null, config.getOrNull(SemanticsProperties.ContentDescription))
     }
 
     @Test

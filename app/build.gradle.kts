@@ -1,10 +1,13 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "app.deckly"
     compileSdk = 37
+
+    buildFeatures { compose = true }
 
     defaultConfig {
         applicationId = "app.deckly"
@@ -46,9 +49,20 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.coroutines.android)
     implementation(libs.lifecycle.viewmodel)
+    implementation(libs.lifecycle.viewmodel.compose)
+
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.ui)
+    implementation(libs.activity.compose)
 
     testImplementation(libs.junit4)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    // Activity для createAndroidComposeRule<ComponentActivity>: без неё Robolectric не находит, куда поставить содержимое.
+    debugImplementation(platform(libs.compose.bom))
+    debugImplementation(libs.compose.ui.test.manifest)
 }

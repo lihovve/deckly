@@ -3,7 +3,7 @@ package app.deckly
 import android.app.Application
 import app.deckly.ink.OnyxSdk
 
-class DecklyApplication : Application() {
+open class DecklyApplication : Application() {
     lateinit var container: AppContainer
         private set
 
@@ -11,6 +11,9 @@ class DecklyApplication : Application() {
         super.onCreate()
         // Без поднятого SDK перо работает на запасном холсте: ошибка инициализации приложение не останавливает.
         OnyxSdk.initialize(this)
-        container = AppContainer(this)
+        container = createContainer()
     }
+
+    /** Тестовое приложение подменяет проверку доступа и открытие хранения: на JVM системной проверки нет. */
+    protected open fun createContainer(): AppContainer = AppContainer(this)
 }

@@ -32,6 +32,22 @@
         android:allowBackup="false"
         android:label="Deckly"
         android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar"
-        tools:replace="android:allowBackup,android:label" />
+        tools:replace="android:allowBackup,android:label">
+
+        <!--
+            Одна activity, только портрет. adjustResize вместе с отступом под клавиатуру в Compose: при targetSdk 35
+            окно всегда во весь экран, и без отступа поле имени и холст прятались бы под клавиатурой.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
 
 </manifest>

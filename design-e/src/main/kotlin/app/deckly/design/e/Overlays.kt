@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -105,6 +106,8 @@ fun Dialog(title: String, text: String?, actions: List<DialogAction>, modifier: 
  */
 @Composable
 fun Popup(title: String, items: List<PopupItem>, onDismiss: () -> Unit, modifier: Modifier = Modifier, top: Dp = Tokens.PopupTop) {
+    // Системная «Назад» закрывает меню, пока оно открыто; обработчик снимается вместе с ним.
+    BackHandler(onBack = onDismiss)
     val shape = RoundedCornerShape(Tokens.RadiusSmall)
     Box(modifier.fillMaxSize()) {
         Box(
