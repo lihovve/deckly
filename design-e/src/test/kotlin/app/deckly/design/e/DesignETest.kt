@@ -44,6 +44,13 @@ class DesignETest {
     }
 
     @Test
+    fun loadingScreenShowsBrand() {
+        showFrame { design.LoadingScreen() }
+
+        composeRule.onNodeWithText("Deckly").assertExists()
+    }
+
+    @Test
     fun startupScreenIsStartupDialog() {
         showFrame { design.StartupScreen(StartupState.DATABASE_MISSING) {} }
 

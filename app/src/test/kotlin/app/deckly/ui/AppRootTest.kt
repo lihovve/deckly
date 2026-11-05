@@ -154,15 +154,19 @@ class AppRootTest {
     }
 
     @Test
-    fun loadingScreenShowsNothing() {
+    fun loadingScreenShowsOnlyBrandUntilStorageOpens() {
         val gate = CompletableDeferred<Unit>()
         startApp(buildData(), openGate = gate)
 
-        composeRule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)).assertCountEquals(0)
+        // Пока хранилище открывается, на экране одно слово «Deckly»: ни кнопок, ни других надписей.
+        composeRule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)).assertCountEquals(1)
+        composeRule.onNodeWithText("Deckly").assertExists()
+        composeRule.onAllNodes(hasClickAction()).assertCountEquals(0)
         gate.complete(Unit)
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("Decks").assertExists()
+        composeRule.onNodeWithText("Deckly").assertDoesNotExist()
     }
 
     @Test
@@ -493,6 +497,21 @@ class AppRootTest {
     }
 
     @Test
+    fun loadingScreenIsDrawnByDesign() {
+        val probe = ProbeDesign()
+        startApp(buildData(), design = probe, openGate = CompletableDeferred())
+
+        assertTrue("экран загрузки рисует дизайн", probe.loadingShown)
+    }
+
+    @Test
+    fun loadingScreenShowsBrandOfDesign() {
+        startApp(buildData(), openGate = CompletableDeferred())
+
+        composeRule.onNodeWithText("Deckly").assertExists()
+    }
+
+    @Test
     fun loadingScreenIsNotRefreshed() {
         startApp(buildData(), openGate = CompletableDeferred())
 
@@ -792,11 +811,17 @@ class AppRootTest {
 
     // Дизайн, который ничего не рисует, а запоминает, что видит дерево над экраном.
     private class ProbeDesign : Design {
+        var loadingShown = false
         var indication: Any? = null
         var overscroll: Any? = null
         var storeOwnerStore: Any? = null
         val listMarkers = mutableListOf<Any>()
         val editorStates = mutableListOf<EditorScreenState>()
+
+        @Composable
+        override fun LoadingScreen() {
+            SideEffect { loadingShown = true }
+        }
 
         @Composable
         override fun StartupScreen(state: StartupState, onAction: (StartupAction) -> Unit) {

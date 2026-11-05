@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
@@ -31,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -38,6 +40,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -139,12 +142,23 @@ fun TopBar(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Un
     )
 }
 
-/** Счётчик шапки: подпись и значение; слева линия в 1 dp, отступ 24 dp, минимум 132 dp. */
+/**
+ * Счётчик шапки: подпись над значением «текущее / всего»; слева линия в 1 dp, отступ 24 dp, минимум 132 dp. Значение
+ * разложено по сетке `.metric-value`: боковые колонки равной ширины, не уже трёх нулей шрифта значения, между ними
+ * косая черта с промежутками 8 dp. Левое число прижато к черте справа, правое слева, подпись стоит по центру над
+ * чертой, поэтому она не сдвигается, когда число становится длиннее. Читается диктором как одно целое.
+ */
 @Composable
-fun Metric(label: String, value: String, modifier: Modifier = Modifier) {
+fun Metric(label: String, current: Int, total: Int, modifier: Modifier = Modifier) {
+    val valueStyle = buildTextStyle(Tokens.ValueText, FontWeight.Medium)
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val sideMin = with(density) { (measurer.measure("0", valueStyle).size.width * Tokens.MetricSideDigits).toDp() }
     Column(
         modifier
             .widthIn(min = Tokens.MetricMinWidth)
+            .width(IntrinsicSize.Max)
+            .semantics(mergeDescendants = true) {}
             .drawWithContent {
                 drawContent()
                 drawRect(Tokens.Black, Offset.Zero, Size(Tokens.BorderThin.toPx(), size.height))
@@ -152,8 +166,16 @@ fun Metric(label: String, value: String, modifier: Modifier = Modifier) {
             .padding(start = Tokens.BorderThin + Tokens.MetricPadding),
         verticalArrangement = Arrangement.spacedBy(Tokens.MetricGap),
     ) {
-        BasicText(label, style = buildTextStyle(Tokens.LabelText))
-        BasicText(value, style = buildTextStyle(Tokens.ValueText, FontWeight.Medium), softWrap = false)
+        BasicText(label, Modifier.fillMaxWidth(), style = buildTextStyle(Tokens.LabelText, align = TextAlign.Center))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Tokens.MetricValueGap)) {
+            Box(Modifier.weight(1f).widthIn(min = sideMin), contentAlignment = Alignment.TopEnd) {
+                BasicText(current.toString(), style = valueStyle, softWrap = false)
+            }
+            BasicText("/", style = valueStyle, softWrap = false)
+            Box(Modifier.weight(1f).widthIn(min = sideMin), contentAlignment = Alignment.TopStart) {
+                BasicText(total.toString(), style = valueStyle, softWrap = false)
+            }
+        }
     }
 }
 

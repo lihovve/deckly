@@ -71,8 +71,6 @@ internal object DeckTexts {
 
     private val epochNames = listOf("I", "II", "III", "IV")
 
-    fun formatPositionValue(position: Int, total: Int): String = "$position / $total"
-
     fun findPositionLabel(kind: PositionKind): String = when (kind) {
         PositionKind.LEARNING -> LEARNING
         PositionKind.BROWSING -> BROWSING
@@ -81,8 +79,6 @@ internal object DeckTexts {
     /** «Learning, card 14 of 40»: `aria-label` счётчика позиции. */
     fun describePosition(kind: PositionKind, position: Int, total: Int): String =
         "${findPositionLabel(kind)}, card $position of $total"
-
-    fun formatSuccessesValue(successes: Int, threshold: Int): String = "$successes / $threshold"
 
     /** «English A2. Choose deck»: `aria-label` названия колоды. */
     fun describeDeckHeading(deckName: String): String = "$deckName. $DECK_HEADING_SUFFIX"

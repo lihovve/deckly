@@ -9,7 +9,8 @@ import java.io.File
 object MockupSources {
     private val designDir = File("../design")
 
-    val css: String by lazy { read("styles.css") }
+    // Комментарии вырезаны: иначе «/* ... */» перед правилом попадает в его селектор.
+    val css: String by lazy { read("styles.css").replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), "") }
     val buildScript: String by lazy { read("build.py") }
 
     private fun read(name: String): String {

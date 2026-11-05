@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -85,13 +86,14 @@ private fun DeckTopBar(header: DeckHeader, onAction: (DeckAction) -> Unit, onMen
         header.position?.let { position ->
             Metric(
                 DeckTexts.findPositionLabel(position.kind),
-                DeckTexts.formatPositionValue(position.position, position.total),
+                position.position,
+                position.total,
                 Modifier.semantics(mergeDescendants = true) {
                     contentDescription = DeckTexts.describePosition(position.kind, position.position, position.total)
                 },
             )
         }
-        header.successes?.let { Metric(DeckTexts.SUCCESSES, DeckTexts.formatSuccessesValue(it.successes, it.threshold)) }
+        header.successes?.let { Metric(DeckTexts.SUCCESSES, it.successes, it.threshold) }
         if (header.canCreateCard) {
             DecklyButton(null, DecklyIcons.Plus, ButtonKind.QUIET, DeckTexts.CREATE_CARD, { onAction(DeckAction.CreateCard) }, Modifier.size(Tokens.ControlMin), isSquare = true)
         }
@@ -138,7 +140,9 @@ private fun DeckSheet(state: DeckScreenState, sheet: @Composable (Modifier) -> U
         }
         is DeckBody.Transition -> Sheet(modifier.semantics { contentDescription = describeTransitionSheet(body) }) {
             SheetMessage(DecklyIcons.get(findTransitionIcon(body.kind), Tokens.IconEmptyStroke)) {
-                SheetTitle(DeckTexts.formatEpoch(body.epoch), Tokens.BigNumeralText, Tokens.BigNumeralSpacing)
+                // Только у обычного перехода цифра сдвинута влево оптически (`.next-epoch`), раскладку сдвиг не меняет.
+                val shift = if (body.kind == TransitionKind.REGULAR) Modifier.offset(x = Tokens.NextEpochShift) else Modifier
+                SheetTitle(DeckTexts.formatEpoch(body.epoch), Tokens.BigNumeralText, Tokens.BigNumeralSpacing, shift)
                 BasicText(
                     describeTransitionHint(body),
                     modifier = Modifier.widthIn(max = Tokens.HintMaxWidth),
@@ -198,10 +202,11 @@ internal fun SheetTitle(
     text: String,
     size: TextUnit = Tokens.EmptyTitleText,
     letterSpacing: TextUnit = Tokens.EmptyTitleSpacing,
+    modifier: Modifier = Modifier,
 ) {
     BasicText(
         text,
-        modifier = Modifier.widthIn(max = Tokens.EmptyTitleMaxWidth),
+        modifier = modifier.widthIn(max = Tokens.EmptyTitleMaxWidth),
         style = buildTextStyle(size, FontWeight.Bold, lineHeightFactor = 1.15f, letterSpacing = letterSpacing, align = TextAlign.Center),
     )
 }

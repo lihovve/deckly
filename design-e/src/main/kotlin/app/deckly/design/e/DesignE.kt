@@ -20,6 +20,9 @@ import app.deckly.ui.contract.StartupState
  */
 object DesignE : Design {
     @Composable
+    override fun LoadingScreen() = app.deckly.design.e.LoadingScreen()
+
+    @Composable
     override fun StartupScreen(state: StartupState, onAction: (StartupAction) -> Unit) =
         app.deckly.design.e.StartupScreen(state, onAction)
 

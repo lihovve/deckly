@@ -41,6 +41,14 @@ import androidx.compose.ui.test.down
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.up
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.deckly.ui.contract.SectionTab
@@ -59,6 +67,10 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = "w1000dp-h1400dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ComponentsTest {
+    private companion object {
+        val METRIC_CASES = listOf(3 to 4, 14 to 40, 41 to 100, 100 to 100)
+    }
+
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -247,17 +259,16 @@ class ComponentsTest {
 
     @Test
     fun topBarIs64dpHigh() {
-        showOnWhite { TopBar(Modifier.testTag("bar")) { Metric("Learning", "14 / 40") } }
+        showOnWhite { TopBar(Modifier.testTag("bar")) { Metric("Learning", 14, 40) } }
 
         composeRule.onNodeWithTag("bar").assertHeightIsEqualTo(64.dp)
     }
 
     @Test
     fun metricShowsLabelAndValueWithDivider() {
-        showOnWhite { Metric("Successes", "3 / 4", Modifier.testTag("metric")) }
+        showOnWhite { Metric("Successes", 3, 4, Modifier.testTag("metric")) }
 
-        composeRule.onNodeWithText("Successes").assertExists()
-        composeRule.onNodeWithText("3 / 4").assertExists()
+        composeRule.onNode(hasText("Successes") and hasText("3") and hasText("/") and hasText("4")).assertExists()
         composeRule.onNodeWithTag("metric").assertWidthIsAtLeast(132.dp)
         val bitmap = capture("metric")
         // Слева линия в 1 пиксель, дальше белое поле отступа.
@@ -280,15 +291,102 @@ class ComponentsTest {
 
     @Test
     fun metricIsPaddedFromDividerAndLabelSitsAboveValue() {
-        showOnWhite { Metric("Successes", "3 / 4") }
+        showMetrics()
 
-        // Линия 1 dp и отступ 24 dp: подпись начинается с 25 dp. Между подписью и значением 2 dp.
-        composeRule.onNodeWithText("Successes").assertLeftPositionInRootIsEqualTo(25.dp)
-        composeRule.onNodeWithText("3 / 4").assertLeftPositionInRootIsEqualTo(25.dp)
-        val label = composeRule.onNodeWithText("Successes").getUnclippedBoundsInRoot()
-        val value = composeRule.onNodeWithText("3 / 4").getUnclippedBoundsInRoot()
-        assertEquals(2f, value.top.value - label.bottom.value, 0.6f)
+        // Линия 1 dp и отступ 24 dp: содержимое начинается с 25 dp. Между подписью и значением 2 dp.
+        for (index in METRIC_CASES.indices) {
+            val (label, current, _, total) = listMetricBounds(index)
+            val metric = composeRule.onNodeWithTag("metric$index").getUnclippedBoundsInRoot()
+            assertTrue("подпись левее поля отступа", label.left.value >= 25f - 0.5f)
+            assertEquals(2f, current.top.value - label.bottom.value, 0.6f)
+            assertTrue("значение не выходит за счётчик", total.right.value <= metric.right.value + 0.5f)
+        }
     }
+
+    @Test
+    fun metricLabelIsCenteredOverSlash() {
+        showMetrics()
+
+        for ((index, case) in METRIC_CASES.withIndex()) {
+            val (label, _, slash, _) = listMetricBounds(index)
+            assertEquals("${case.first} / ${case.second}", centerX(slash), centerX(label), 1f)
+            // Косая черта лежит в середине содержимого: боковые колонки равной ширины.
+            val metric = composeRule.onNodeWithTag("metric$index").getUnclippedBoundsInRoot()
+            assertEquals("${case.first} / ${case.second}", (25f + metric.right.value) / 2f, centerX(slash), 1f)
+        }
+    }
+
+    @Test
+    fun metricLabelTextIsCenteredOverSlash() {
+        showMetrics()
+
+        // Узел подписи занимает всю ширину, поэтому по границам узла выравнивание текста не видно: смотрим на чернила.
+        for ((index, case) in METRIC_CASES.withIndex()) {
+            val metric = composeRule.onNodeWithTag("metric$index").getUnclippedBoundsInRoot()
+            val bitmap = capture("metric$index")
+            val (label, _, slash, _) = listMetricBounds(index)
+            val rows = (label.top.value - metric.top.value).toInt() until (label.bottom.value - metric.top.value).toInt()
+            // Линия слева (x = 0) — не подпись.
+            val columns = rows.flatMap { y -> (2 until bitmap.width).filter { x -> bitmap.isInk(x, y) } }
+            val inkCenter = metric.left.value + (columns.min() + columns.max()) / 2f
+            assertEquals("${case.first} / ${case.second}", centerX(slash), inkCenter, 1.5f)
+        }
+    }
+
+    @Test
+    fun metricNumbersStickToSlashFromBothSides() {
+        showMetrics()
+
+        for ((index, case) in METRIC_CASES.withIndex()) {
+            val (_, current, slash, total) = listMetricBounds(index)
+            // Левое число прижато вправо к черте, правое — влево, между ними column-gap 8 dp.
+            assertEquals("${case.first} / ${case.second} слева", 8f, slash.left.value - current.right.value, 1f)
+            assertEquals("${case.first} / ${case.second} справа", 8f, total.left.value - slash.right.value, 1f)
+        }
+    }
+
+    @Test
+    fun metricSideColumnsAreEqualAndNotNarrowerThanThreeZeros() {
+        var threeZeros = 0f
+        showOnWhite {
+            val measurer = rememberTextMeasurer()
+            val density = LocalDensity.current
+            val zero = measurer.measure("0", buildTextStyle(Tokens.ValueText, FontWeight.Medium)).size.width
+            threeZeros = with(density) { zero.toDp().value } * Tokens.MetricSideDigits
+            Column { METRIC_CASES.forEachIndexed { index, (current, total) -> Metric("Learning", current, total, Modifier.testTag("metric$index")) } }
+        }
+
+        for ((index, case) in METRIC_CASES.withIndex()) {
+            val metric = composeRule.onNodeWithTag("metric$index").getUnclippedBoundsInRoot()
+            val slash = listMetricBounds(index)[2]
+            val left = slash.left.value - 8f - 25f
+            val right = metric.right.value - (slash.right.value + 8f)
+            assertEquals("${case.first} / ${case.second}", left, right, 1f)
+            assertTrue("${case.first} / ${case.second}: колонка $left уже трёх нулей $threeZeros", left >= threeZeros - 0.5f)
+        }
+    }
+
+    @Test
+    fun metricIsOneNodeForScreenReader() {
+        showOnWhite { Metric("Successes", 3, 4) }
+
+        composeRule.onAllNodes(hasText("Successes") and hasText("3") and hasText("/") and hasText("4")).assertCountEquals(1)
+    }
+
+    private fun showMetrics() {
+        showOnWhite { Column { METRIC_CASES.forEachIndexed { index, (current, total) -> Metric("Learning", current, total, Modifier.testTag("metric$index")) } } }
+    }
+
+    // Подпись, левое число, косая черта и правое число счётчика с тегом `metric<index>`, в порядке разметки.
+    private fun listMetricBounds(index: Int): List<DpRect> {
+        val nodes = composeRule.onAllNodes(
+            hasAnyAncestor(hasTestTag("metric$index")) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Text),
+            useUnmergedTree = true,
+        )
+        return (0 until 4).map { nodes[it].getUnclippedBoundsInRoot() }
+    }
+
+    private fun centerX(bounds: DpRect) = (bounds.left.value + bounds.right.value) / 2f
 
     // --- вкладки секций ------------------------------------------------------------------------
 

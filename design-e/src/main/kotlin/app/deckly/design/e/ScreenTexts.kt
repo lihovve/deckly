@@ -74,6 +74,7 @@ internal object DeckNameTexts {
 
 /** Тексты экранов запуска из `design/build.py`: цикл `startup-*` (окна доступа, повреждённой и пропавшей базы). */
 internal object StartupTexts {
+    const val APP_NAME = "Deckly"
     const val ACCESS_TITLE = "We need file access"
     const val ACCESS_TEXT = "Your decks are in the Deckly folder. Allow file access to open them."
     const val OPEN_SETTINGS = "Open settings"

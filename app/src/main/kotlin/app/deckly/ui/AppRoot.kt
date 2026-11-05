@@ -126,7 +126,7 @@ private class ScreenEnvironment(
 @Composable
 private fun ScreenHost(entry: ScreenEntry, environment: ScreenEnvironment) {
     when (val screen = entry.screen) {
-        AppScreen.Loading -> Box(Modifier.fillMaxSize().background(Color.White))
+        AppScreen.Loading -> environment.design.LoadingScreen()
         is AppScreen.Startup -> {
             RefreshEffect(environment, RefreshKey(entry.token, cardId = null, editorSide = null))
             environment.design.StartupScreen(screen.state) { action ->

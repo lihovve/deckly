@@ -36,6 +36,27 @@ class TokensTest {
     }
 
     @Test
+    fun metricValueGridMatchesStyles() {
+        assertDp(findCssNumber(".metric-value", "column-gap"), Tokens.MetricValueGap)
+        assertEquals("minmax(3ch,1fr) auto minmax(3ch,1fr)", findCssValue(".metric-value", "grid-template-columns"))
+        assertEquals(3, Tokens.MetricSideDigits)
+        assertEquals("500", findCssValue(".metric-value", "font-weight"))
+        assertEquals("right", findCssValue(".metric-value>span:first-child", "text-align"))
+        assertEquals("left", findCssValue(".metric-value>span:last-child", "text-align"))
+        assertEquals("center", findCssValue(".metric>span", "text-align"))
+    }
+
+    @Test
+    fun nextEpochShiftAndLoadingBrandMatchStyles() {
+        assertEquals("translateX(-6px)", findCssValue(".card .next-epoch", "transform"))
+        assertDp(findCssNumber(".card .next-epoch", "transform"), Tokens.NextEpochShift)
+        assertSp(findCssNumber(".loading-brand h1", "font-size"), Tokens.LoadingBrandText)
+        assertSp(findCssNumber(".loading-brand h1", "letter-spacing"), Tokens.LoadingBrandSpacing)
+        assertEquals(findCssNumber(".loading-brand h1", "line-height"), Tokens.LoadingBrandLineHeightFactor, 0f)
+        assertEquals("700", findCssValue(".loading-brand h1", "font-weight"))
+    }
+
+    @Test
     fun buttonsMatchStyles() {
         assertDp(findCssNumber(".btn", "min-width"), Tokens.ControlMin)
         assertDp(findCssNumber(".btn", "min-height"), Tokens.ControlMin)

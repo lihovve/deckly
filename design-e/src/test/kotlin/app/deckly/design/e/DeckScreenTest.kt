@@ -36,6 +36,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.dp
 import app.deckly.ui.contract.ActionBlock
 import app.deckly.ui.contract.ActionState
@@ -192,7 +193,7 @@ class DeckScreenTest {
         showScreen(buildBrowsingState(position = PositionMetric(PositionKind.BROWSING, 2, 112), successes = null))
 
         composeRule.onNodeWithText("Browse").assertExists()
-        composeRule.onNodeWithText("2 / 112").assertExists()
+        assertMetricShown("Browse", 2, 112)
         composeRule.onNodeWithContentDescription("Browse, card 2 of 112").assertExists()
         composeRule.onNodeWithText("Successes").assertDoesNotExist()
     }
@@ -238,8 +239,8 @@ class DeckScreenTest {
         assertTrue(successes.right.value <= create.left.value)
         assertTrue(create.right.value <= menu.left.value)
         composeRule.onNodeWithText("Learning").assertExists()
-        composeRule.onNodeWithText("14 / 40").assertExists()
-        composeRule.onNodeWithText("3 / 4").assertExists()
+        assertMetricShown("Learning", 14, 40)
+        assertMetricShown("Successes", 3, 4)
         composeRule.onNodeWithText("English A2").assertExists()
         // Кнопки шапки квадратные 64 × 64, у «⋯» правый край совпадает с полем кадра.
         composeRule.onNodeWithContentDescription("Create card").assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(64.dp)
@@ -326,7 +327,7 @@ class DeckScreenTest {
         showScreen(buildLearningState())
 
         // Подпись и значение читаются одной фразой «Обучение, карточка 14 из 40», а не отдельно от неё.
-        composeRule.onNode(hasContentDescription("Learning, card 14 of 40") and hasText("14 / 40") and hasText("Learning")).assertExists()
+        composeRule.onNode(hasContentDescription("Learning, card 14 of 40") and hasText("14") and hasText("/") and hasText("40") and hasText("Learning")).assertExists()
     }
 
     // --- вкладки -------------------------------------------------------------------------------
@@ -465,6 +466,44 @@ class DeckScreenTest {
         val hintStyle = readTextStyle(hint)
         assertEquals(24f, hintStyle.fontSize.value, 0.01f)
         assertEquals(36f, hintStyle.lineHeight.value, 0.01f)
+    }
+
+    @Test
+    fun regularTransitionNumeralIsShiftedLeft() {
+        showScreen(buildTransitionState(TransitionKind.REGULAR, 2, 23, 23))
+
+        val numeral = findNumeralBounds("Next pass: epoch II", "II")
+        val hint = composeRule.onNodeWithText("23 cards", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        // `.card .next-epoch`: translateX(-6px), на подпись под цифрой сдвиг не действует.
+        assertEquals(-6f, centerX(numeral) - centerX(hint), 1f)
+    }
+
+    @Test
+    fun insertedAndResumedNumeralsAreNotShifted() {
+        showScreen(buildTransitionState(TransitionKind.INSERTED, 1, 40, 40))
+        val inserted = findNumeralBounds("Extra pass", "I")
+        val insertedHint = composeRule.onNodeWithText("40 cards", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(0f, centerX(inserted) - centerX(insertedHint), 1f)
+
+        showScreen(buildTransitionState(TransitionKind.RESUMED, 4, 60, 100))
+        val resumed = findNumeralBounds("Resume pass", "IV")
+        val resumedHint = composeRule.onNodeWithText("60 of 100 remaining", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(0f, centerX(resumed) - centerX(resumedHint), 1f)
+    }
+
+    @Test
+    fun numeralShiftDoesNotChangeVerticalLayout() {
+        showScreen(buildTransitionState(TransitionKind.REGULAR, 2, 23, 23))
+        val regular = findNumeralBounds("Next pass: epoch II", "II")
+        val regularHint = composeRule.onNodeWithText("23 cards", useUnmergedTree = true).getUnclippedBoundsInRoot()
+
+        showScreen(buildTransitionState(TransitionKind.INSERTED, 2, 23, 23))
+        val inserted = findNumeralBounds("Extra pass", "II")
+        val insertedHint = composeRule.onNodeWithText("23 cards", useUnmergedTree = true).getUnclippedBoundsInRoot()
+
+        assertEquals(inserted.top.value, regular.top.value, 0.5f)
+        assertEquals(insertedHint.top.value, regularHint.top.value, 0.5f)
+        assertEquals(inserted.right.value - inserted.left.value, regular.right.value - regular.left.value, 0.5f)
     }
 
     @Test
@@ -687,6 +726,16 @@ class DeckScreenTest {
     // Экран один на весь тест; повторный вызов подменяет состояние, как это делает приложение.
     private var screenState by mutableStateOf<DeckScreenState?>(null)
     private var isHosted = false
+
+    private fun assertMetricShown(label: String, current: Int, total: Int) {
+        composeRule.onNode(hasText(label) and hasText("$current") and hasText("/") and hasText("$total")).assertExists()
+    }
+
+    private fun findNumeralBounds(sheetDescription: String, numeral: String) =
+        composeRule.onNode(hasText(numeral) and hasAnyAncestor(hasContentDescription(sheetDescription)), useUnmergedTree = true)
+            .getUnclippedBoundsInRoot()
+
+    private fun centerX(bounds: DpRect) = (bounds.left.value + bounds.right.value) / 2f
 
     private fun showScreen(state: DeckScreenState) {
         screenState = state

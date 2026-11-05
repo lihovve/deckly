@@ -24,10 +24,8 @@ class DeckTextsTest {
 
     @Test
     fun composedPhrasesFollowMockupFormats() {
-        assertEquals("14 / 40", DeckTexts.formatPositionValue(14, 40))
         assertEquals("Learning, card 14 of 40", DeckTexts.describePosition(PositionKind.LEARNING, 14, 40))
         assertEquals("Browse, card 2 of 112", DeckTexts.describePosition(PositionKind.BROWSING, 2, 112))
-        assertEquals("3 / 4", DeckTexts.formatSuccessesValue(3, 4))
         assertEquals("English A2. Choose deck", DeckTexts.describeDeckHeading("English A2"))
         assertEquals("60 of 100 remaining", DeckTexts.formatRemaining(60, 100))
         assertEquals("Next pass: epoch II", DeckTexts.describeNextPass(2))

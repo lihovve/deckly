@@ -10,6 +10,9 @@ import androidx.compose.ui.Modifier
  */
 interface Design {
     @Composable
+    fun LoadingScreen()
+
+    @Composable
     fun StartupScreen(state: StartupState, onAction: (StartupAction) -> Unit)
 
     @Composable

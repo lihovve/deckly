@@ -22,6 +22,10 @@ object Tokens {
     val MetricMinWidth = 132.dp
     val MetricPadding = 24.dp
     val MetricGap = 2.dp
+    val MetricValueGap = 8.dp
+
+    /** Боковые колонки значения счётчика не уже трёх нулей его шрифта: `minmax(3ch,1fr)` в `.metric-value`. */
+    const val MetricSideDigits = 3
 
     // --- кнопки и значки ---
     val ControlMin = 64.dp
@@ -140,6 +144,14 @@ object Tokens {
     val DialogTitleSpacing = (-0.7).sp
     val EmptyTitleSpacing = (-1.3).sp
     val BigNumeralSpacing = (-3).sp
+
+    /** Оптический сдвиг цифры эпохи на экране «Next pass»: `.card .next-epoch` в `styles.css`. */
+    val NextEpochShift = (-6).dp
+
+    // --- экран загрузки: `.loading-brand h1` ---
+    val LoadingBrandText = 64.sp
+    val LoadingBrandSpacing = (-2).sp
+    const val LoadingBrandLineHeightFactor = 1.1f
 
     // --- цвета ---
     val Black = Color.Black
