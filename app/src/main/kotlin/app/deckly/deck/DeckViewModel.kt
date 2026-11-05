@@ -60,6 +60,7 @@ class DeckViewModel(
     private val clock: DayClock,
     private val random: Random,
     private val navigate: (AppScreen) -> Unit,
+    private val initialSection: Section? = null,
 ) : ViewModel() {
     private val cache = CardContentCache(contents)
     private val actions = Channel<DeckAction>(Channel.UNLIMITED)
@@ -84,7 +85,8 @@ class DeckViewModel(
         viewModelScope.launch {
             deckState = decks.loadDeckState(deckId)
             writer.write { appState.saveCurrentDeckId(deckId) }
-            publish()
+            // Из редактора экран возвращается в ту секцию, откуда его вызвали; до этого прежняя не показывается.
+            if (initialSection != null) applyReview(ReviewAction.OpenSection(initialSection)) else publish()
             for (action in actions) handle(action)
         }
     }
@@ -157,8 +159,8 @@ class DeckViewModel(
         when (dialog) {
             DeckDialog.CONFIRM_DELETE_CARD -> confirmCardAction { ReviewAction.DeleteCard(it) }
             DeckDialog.CONFIRM_RETURN_TO_NEW -> confirmCardAction { ReviewAction.ReturnToNew(it) }
-            // Алгоритм уже оставил открытым пул; повторное открытие только приводит курсор и сторону в порядок.
-            DeckDialog.NEED_NEW_CARD, DeckDialog.DONE_FOR_TODAY -> applyReview(ReviewAction.OpenSection(Section.NEW))
+            // Алгоритм уже оставил открытым пул: окно только закрывается, писать нечего.
+            DeckDialog.NEED_NEW_CARD, DeckDialog.DONE_FOR_TODAY -> closeDialog()
             null -> Unit
         }
     }

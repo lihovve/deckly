@@ -32,8 +32,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -77,6 +79,53 @@ class DeckViewModelTest {
         assertEquals(DeckBody.Card(CardSideShown.FRONT, isContentDamaged = false), readScreen().body)
         assertEquals(1L, appState.currentDeckId)
         assertEquals(1L, viewModel.shownCard.value?.cardId)
+        assertTrue(repository.savedChanges.isEmpty())
+    }
+
+    @Test
+    fun initialSectionIsOpenedAfterLoadingAndPersisted() {
+        // Возврат из редактора: открыта секция, из которой его вызвали; сторона и курсор приведены в порядок.
+        val deck = buildPassDeck(1, passCursor = 2, visibleSide = Side.BACK)
+        val cards = buildEpochRange(1, 1, 5).map { if (it.id == 3L) it.copy(answerRevealed = true) else it } +
+            buildCard(10, Section.NEW)
+        startWith(buildDeckState(deck, cards), initialSection = Section.NEW)
+
+        runUntilIdle()
+
+        assertTrue(readScreen().tabs[SectionTab.NEW.ordinal].isOpen)
+        assertEquals(10L, viewModel.shownCard.value?.cardId)
+        assertEquals(Side.FRONT, viewModel.shownCard.value?.side)
+        assertEquals(Section.NEW, repository.stored.deck.activeSection)
+        assertEquals(1, repository.savedChanges.size)
+        // Позиция активного прохода сохранилась: вкладка I вернёт к ней.
+        assertEquals(2, repository.stored.deck.passCursor)
+    }
+
+    @Test
+    fun initialSectionIsTheOneGivenNotAlwaysPool() {
+        val cards = buildEpochRange(1, 1, 5) + buildEpochRange(2, 20, 3)
+        startWith(buildDeckState(buildPassDeck(1, passCursor = 2), cards), initialSection = Section.EPOCH_2)
+
+        runUntilIdle()
+
+        assertTrue(readScreen().tabs[SectionTab.EPOCH_2.ordinal].isOpen)
+        assertEquals(20L, viewModel.shownCard.value?.cardId)
+        assertEquals(Section.EPOCH_2, repository.stored.deck.activeSection)
+    }
+
+    @Test
+    fun previousSectionIsNeverShownBeforeInitialOne() {
+        // Экран не должен сперва показать прежнюю секцию и только потом нужную: на e-ink это лишнее обновление.
+        val cards = buildEpochRange(1, 1, 5) + buildCard(10, Section.NEW)
+        startWith(buildDeckState(buildPassDeck(1, passCursor = 2), cards), initialSection = Section.NEW)
+        val seen = mutableListOf<DeckScreenState?>()
+        val collector = CoroutineScope(UnconfinedTestDispatcher(scheduler)).launch { viewModel.state.collect { seen += it } }
+
+        runUntilIdle()
+        collector.cancel()
+
+        assertTrue(seen.filterNotNull().isNotEmpty())
+        assertTrue(seen.filterNotNull().all { it.tabs[SectionTab.NEW.ordinal].isOpen })
     }
 
     @Test
@@ -322,11 +371,14 @@ class DeckViewModelTest {
         assertTrue(readScreen().header.canCreateCard)
         assertEquals(DeckBody.EmptySection(isPool = true), readScreen().body)
 
+        val savedBeforeConfirm = repository.savedChanges.size
         viewModel.onAction(DeckAction.ConfirmDialog)
         runUntilIdle()
 
+        // Движок уже открыл пул: окно просто закрывается, ничего не пишется.
         assertNull(readScreen().dialog)
         assertTrue(readScreen().tabs[SectionTab.NEW.ordinal].isOpen)
+        assertEquals(savedBeforeConfirm, repository.savedChanges.size)
     }
 
     @Test
@@ -347,12 +399,15 @@ class DeckViewModelTest {
         assertTrue(readScreen().tabs[SectionTab.EPOCH_2.ordinal].isActive)
         assertTrue(readScreen().tabs[SectionTab.NEW.ordinal].isOpen)
 
+        val savedBeforeConfirm = repository.savedChanges.size
         viewModel.onAction(DeckAction.ConfirmDialog)
         runUntilIdle()
 
         assertNull(readScreen().dialog)
         assertTrue(readScreen().tabs[SectionTab.EPOCH_2.ordinal].isActive)
+        assertTrue(readScreen().tabs[SectionTab.NEW.ordinal].isOpen)
         assertTrue(readScreen().header.canCreateCard)
+        assertEquals(savedBeforeConfirm, repository.savedChanges.size)
     }
 
     @Test
@@ -611,7 +666,11 @@ class DeckViewModelTest {
     private fun buildLearningState(count: Int = 10, passCursor: Int = 0): DeckState =
         buildDeckState(buildPassDeck(1, passCursor), buildEpochRange(1, 1, count))
 
-    private fun startWith(state: DeckState, writerScheduler: TestCoroutineScheduler = scheduler) {
+    private fun startWith(
+        state: DeckState,
+        writerScheduler: TestCoroutineScheduler = scheduler,
+        initialSection: Section? = null,
+    ) {
         repository = FakeDeckRepository(state)
         viewModel = DeckViewModel(
             deckId = state.deck.id,
@@ -622,6 +681,7 @@ class DeckViewModelTest {
             clock = DayClock { now },
             random = Random(1),
             navigate = { navigated += it },
+            initialSection = initialSection,
         )
     }
 

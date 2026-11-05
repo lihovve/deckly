@@ -18,6 +18,7 @@ import app.deckly.domain.port.DeckSummary
 import app.deckly.domain.port.DeckTransfer
 import app.deckly.domain.port.DraftRepository
 import app.deckly.domain.port.StoredDraft
+import kotlinx.coroutines.CompletableDeferred
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -50,20 +51,38 @@ class FakeAppStateRepository(var currentDeckId: Long? = null) : AppStateReposito
     }
 }
 
-class FakeDraftRepository(var stored: StoredDraft? = null) : DraftRepository {
+/**
+ * Черновик в памяти. Вызовы записываются по порядку: [storedCalls] — все `storeDraft`, [commits] — все
+ * `commitDraft`, [discardCount] и [allocatedIds] — сколько раз сбросили черновик и выдали id. Пока задан
+ * [storeGate], `storeDraft` стоит и ждёт его завершения.
+ */
+class FakeDraftRepository(var stored: StoredDraft? = null, private var nextCardId: Long = 100) : DraftRepository {
+    val storedCalls = mutableListOf<StoredDraft>()
+    val commits = mutableListOf<Pair<DeckChanges, CardContent>>()
+    val allocatedIds = mutableListOf<Long>()
+    var discardCount = 0
+        private set
+    var storeGate: CompletableDeferred<Unit>? = null
+
     override suspend fun loadDraft(): StoredDraft? = stored
 
     override suspend fun storeDraft(stored: StoredDraft) {
+        storeGate?.await()
+        storedCalls += stored
         this.stored = stored
     }
 
     override suspend fun discardDraft() {
+        discardCount++
         stored = null
     }
 
-    override suspend fun allocateCardId(): Long = error("Порт не нужен тесту")
+    override suspend fun allocateCardId(): Long = nextCardId++.also { allocatedIds += it }
 
-    override suspend fun commitDraft(changes: DeckChanges, content: CardContent) = error("Порт не нужен тесту")
+    override suspend fun commitDraft(changes: DeckChanges, content: CardContent) {
+        commits += changes to content
+        stored = null
+    }
 }
 
 // Порты, которые тест не должен трогать: обращение к ним сразу видно как падение.
