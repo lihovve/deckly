@@ -19,7 +19,6 @@ PATHS = {
     'defer': '<path d="M3 12h13m-5-5 5 5-5 5M21 5v14"/>',
     'active': '<path d="m8 5 11 7-11 7Z" fill="currentColor" stroke="none"/>',
     'pen': '<path d="m4 16 11-11 4 4L8 20H4v-4Zm9-9 4 4m-1-7 1-1 4 4-1 1"/>',
-    'eraser': '<path d="m3 14 9-10 9 8-8 9H9l-6-7Zm4-4 9 8M13 21h8"/>',
     'undo': '<path d="M5 5v6h6M5 11c4-9 15-5 15 2 0 4-3 7-7 7"/>',
     'trash': '<path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/>',
     'file': '<path d="M5 3h9l5 5v13H5V3Zm9 0v6h5M8 14h8m-8 3h5"/>',
@@ -195,10 +194,8 @@ def editor(new=True, back=False):
     content = '' if back and new else handwriting('дерево' if back else 'der Baum')
     toolbar = '<div class="tools" aria-label="Инструменты рисования">'
     # Static controls intentionally do not pretend to draw or change application state.
-    toolbar += '<button class="btn icon-only selected" aria-pressed="true" aria-label="Перо" title="Перо">'+icon('pen')+'</button>'
-    toolbar += '<button class="btn icon-only quiet" aria-pressed="false" aria-label="Ластик" title="Ластик">'+icon('eraser')+'</button>'
     toolbar += '<div class="thickness" role="group" aria-label="Толщина пера">'
-    for i, (name, size) in enumerate([('Тонкая', 2), ('Средняя', 5), ('Толстая', 9)]):
+    for i, (name, size) in enumerate([('Тонкая', 2), ('Средняя', 7), ('Толстая', 15)]):
         toolbar += f'<button class="btn {"selected" if i == 1 else ""}" aria-label="{name} линия" aria-pressed="{str(i == 1).lower()}" title="Макет толщины"><i class="line-sample" style="height:{size}px"></i></button>'
     toolbar += '</div><button class="btn icon-only quiet undo" aria-label="Отменить штрих" title="Отменить штрих">'+icon('undo')+'</button></div>'
     return header + sides + card(content, 'Холст. Рисование только пером') + toolbar
@@ -207,7 +204,7 @@ def editor(new=True, back=False):
 for new in [True, False]:
     for back in [False, True]:
         key = ('editor-new' if new else 'editor-edit') + ('-back' if back else '')
-        add(key, ('Создание' if new else 'Правка') + (' · ответ' if back else ' · вопрос'), editor(new, back), 'Редактор', 'Тот же лист 928 × 963. Толщина выделена в отдельную группу; пустая сторона допустима.')
+        add(key, ('Создание' if new else 'Правка') + (' · ответ' if back else ' · вопрос'), editor(new, back), 'Редактор', 'Тот же лист 928 × 963. Панель: толщина пера и отмена штриха; ластик — боковая кнопка стилуса; пустая сторона допустима.')
 
 
 def modal(background, title, text, actions):

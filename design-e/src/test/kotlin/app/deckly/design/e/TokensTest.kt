@@ -7,7 +7,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.deckly.design.e.MockupSources.buildScript
 import app.deckly.design.e.MockupSources.findCssNumber
+import app.deckly.design.e.MockupSources.findCssValue
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -137,7 +140,6 @@ class TokensTest {
         assertDp(findCssNumber(".tools", "gap"), Tokens.ToolsGap)
         assertDp(findCssNumber(".tools>.btn", "width"), Tokens.ToolButton)
         assertDp(findCssNumber(".thickness", "gap"), Tokens.ThicknessGap)
-        assertDp(findCssNumber(".thickness", "padding", 1), Tokens.ThicknessPaddingHorizontal)
         assertDp(findCssNumber(".thickness", "margin", 0), Tokens.ThicknessMarginVertical)
         assertDp(findCssNumber(".thickness .btn", "width"), Tokens.ThicknessButtonWidth)
         assertDp(findCssNumber(".thickness .btn", "height"), Tokens.ThicknessButtonHeight)
@@ -145,8 +147,19 @@ class TokensTest {
         assertDp(findCssNumber(".line-sample", "border-radius"), Tokens.LineSampleRadius)
         assertSp(findCssNumber(".heading h1", "letter-spacing"), Tokens.HeadingSpacing)
         // Высоты образцов линии заданы в build.py, а не в стилях.
-        assertTrue(buildScript.contains("[('Тонкая', 2), ('Средняя', 5), ('Толстая', 9)]"))
-        assertEquals(listOf(2f, 5f, 9f), listOf(Tokens.LineThin, Tokens.LineMedium, Tokens.LineThick).map { it.value })
+        assertTrue(buildScript.contains("[('Тонкая', 2), ('Средняя', 7), ('Толстая', 15)]"))
+        assertEquals(listOf(2f, 7f, 15f), listOf(Tokens.LineThin, Tokens.LineMedium, Tokens.LineThick).map { it.value })
+    }
+
+    @Test
+    fun thicknessGroupOfMockupHasNoSideLinesOrPadding() {
+        // Переключателя инструмента нет, группа толщин стоит первой слева: разделять её не от чего.
+        for (property in listOf("border-left", "border-right", "padding")) {
+            assertThrows(property, IllegalStateException::class.java) { findCssValue(".thickness", property) }
+        }
+        assertFalse(buildScript.contains("icon('eraser')"))
+        assertFalse(buildScript.contains("aria-label=\"Ластик\""))
+        assertFalse(buildScript.contains("aria-label=\"Перо\""))
     }
 
     @Test

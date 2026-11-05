@@ -23,7 +23,6 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -34,7 +33,6 @@ import app.deckly.ui.contract.CardSideShown
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.EditorDialog
 import app.deckly.ui.contract.EditorScreenState
-import app.deckly.ui.contract.EditorTool
 import app.deckly.ui.contract.Thickness
 
 /**
@@ -120,17 +118,14 @@ private fun SideTab(label: String, isSelected: Boolean, modifier: Modifier, onCl
 
 // --- инструменты -----------------------------------------------------------------------------------
 
-// Перо, ластик, группа толщин; отмена штриха прижата вправо (`.tools>.undo{margin-left:auto}`).
+// Группа толщин слева; отмена штриха прижата вправо (`.tools>.undo{margin-left:auto}`). Переключателя инструмента нет:
+// пишет кончик пера, стирает боковая кнопка стилуса.
 @Composable
 private fun EditorTools(state: EditorScreenState, onAction: (EditorAction) -> Unit) {
     Row(
         Modifier.fillMaxWidth().height(Tokens.ToolsHeight).semantics { contentDescription = EditorTexts.TOOLS },
         horizontalArrangement = Arrangement.spacedBy(Tokens.ToolsGap),
     ) {
-        ToolButton(DecklyIcons.Pen, EditorTexts.PEN, state.tool == EditorTool.PEN) { onAction(EditorAction.SelectTool(EditorTool.PEN)) }
-        ToolButton(DecklyIcons.Eraser, EditorTexts.ERASER, state.tool == EditorTool.ERASER) {
-            onAction(EditorAction.SelectTool(EditorTool.ERASER))
-        }
         ThicknessGroup(state.thickness) { onAction(EditorAction.SelectThickness(it)) }
         Spacer(Modifier.weight(1f))
         DecklyButton(
@@ -140,30 +135,14 @@ private fun EditorTools(state: EditorScreenState, onAction: (EditorAction) -> Un
     }
 }
 
-// Выбранный инструмент в рамке 3 dp, как главная кнопка; остальные тихие.
-@Composable
-private fun ToolButton(icon: ImageVector, description: String, isSelected: Boolean, onClick: () -> Unit) {
-    DecklyButton(
-        null, icon, if (isSelected) ButtonKind.PRIMARY else ButtonKind.QUIET, description, onClick,
-        Modifier.size(Tokens.ToolButton).semantics { selected = isSelected },
-    )
-}
-
-// Группа «Толщина пера»: линии 1 dp слева и справа, три кнопки с образцом линии высотой 2, 5 и 9.
+// Группа «Толщина пера»: три кнопки с образцом линии высотой 2, 7 и 15, без черт по краям.
 @Composable
 private fun ThicknessGroup(selected: Thickness, onSelect: (Thickness) -> Unit) {
     Row(
         Modifier
             .fillMaxHeight()
             .padding(vertical = Tokens.ThicknessMarginVertical)
-            .semantics { contentDescription = EditorTexts.THICKNESS }
-            .drawWithContent {
-                drawContent()
-                val line = Tokens.BorderThin.toPx()
-                drawRect(Tokens.Black, Offset.Zero, Size(line, size.height))
-                drawRect(Tokens.Black, Offset(size.width - line, 0f), Size(line, size.height))
-            }
-            .padding(horizontal = Tokens.BorderThin + Tokens.ThicknessPaddingHorizontal),
+            .semantics { contentDescription = EditorTexts.THICKNESS },
         horizontalArrangement = Arrangement.spacedBy(Tokens.ThicknessGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -14,9 +14,8 @@ import kotlin.math.ceil
  * Запасной холст: обычный `View` с событиями `MotionEvent`. Включается, если Onyx SDK не поднялся; линия
  * здесь заметно отстаёт от пера. Рисует штрихи тем же кодом ([drawStrokes]), что и остальное приложение.
  *
- * Рисует стилус без кнопки. Ластик пера, стилус с нажатой кнопкой и стилус при инструменте
- * [DrawingTool.ERASER] стирают. Палец не рисует и не стирает, но касание поглощается: ладонь не должна
- * дойти до того, что под листом.
+ * Рисует стилус без кнопки. Ластик пера и стилус с нажатой кнопкой стирают. Палец не рисует и не стирает, но
+ * касание поглощается: ладонь не должна дойти до того, что под листом.
  *
  * Не проверено на планшете: тесты идут на JVM (Robolectric). Лист Onyx — [OnyxDrawingView].
  */
@@ -27,7 +26,6 @@ internal class CanvasDrawingView(context: Context) : View(context), DrawingSurfa
     private val gesturePoints = ArrayList<RawPoint>()
     private var gesture = Gesture.NONE
 
-    private var tool = DrawingTool.PEN
     private var penWidthPx = 0f
     private var isPenEnabled = true
     private var onStroke: (Stroke) -> Unit = {}
@@ -39,7 +37,6 @@ internal class CanvasDrawingView(context: Context) : View(context), DrawingSurfa
     }
 
     override fun bind(state: DrawingState) {
-        tool = state.tool
         penWidthPx = state.penWidthPx
         onStroke = state.onStroke
         onErase = state.onErase
@@ -82,7 +79,7 @@ internal class CanvasDrawingView(context: Context) : View(context), DrawingSurfa
         gesture = when {
             !isPenEnabled -> Gesture.IGNORE
             toolType == MotionEvent.TOOL_TYPE_ERASER -> Gesture.ERASE
-            toolType == MotionEvent.TOOL_TYPE_STYLUS && (isButtonPressed || tool == DrawingTool.ERASER) -> Gesture.ERASE
+            toolType == MotionEvent.TOOL_TYPE_STYLUS && isButtonPressed -> Gesture.ERASE
             toolType == MotionEvent.TOOL_TYPE_STYLUS -> Gesture.DRAW
             else -> Gesture.IGNORE
         }

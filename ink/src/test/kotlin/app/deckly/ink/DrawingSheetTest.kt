@@ -38,7 +38,6 @@ class DrawingSheetTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private var strokes by mutableStateOf(emptyList<Stroke>())
-    private var tool by mutableStateOf(DrawingTool.PEN)
     private var penWidthPx by mutableStateOf(6f)
     private var isPenEnabled by mutableStateOf(true)
     private var onStroke by mutableStateOf<(Stroke) -> Unit>({})
@@ -95,23 +94,6 @@ class DrawingSheetTest {
     }
 
     @Test
-    fun toolChangeFromComposeSwitchesStylusToEraser() {
-        val reported = mutableListOf<Stroke>()
-        val erased = mutableListOf<Pair<List<StrokePoint>, Float>>()
-        onStroke = { reported += it }
-        onErase = { path, radius -> erased += path to radius }
-        showSheet()
-
-        tool = DrawingTool.ERASER
-        composeRule.waitForIdle()
-        performStylusGesture(listOf(Triple(50f, 100f, 0.5f), Triple(250f, 100f, 1f)))
-
-        assertTrue(reported.isEmpty())
-        assertEquals(1, erased.size)
-        assertEquals(16f / 0.5f, erased.single().second, 1e-3f)
-    }
-
-    @Test
     fun penWidthFromComposeSetsStrokeWidth() {
         val reported = mutableListOf<Stroke>()
         onStroke = { reported += it }
@@ -141,7 +123,6 @@ class DrawingSheetTest {
         composeRule.setContent {
             DrawingSheet(
                 strokes = strokes,
-                tool = tool,
                 penWidthPx = penWidthPx,
                 isPenEnabled = isPenEnabled,
                 uiRevision = 0,

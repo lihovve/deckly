@@ -3,8 +3,6 @@ package app.deckly.ui.contract
 /** Три толщины пера: тонкая, средняя, толстая. */
 enum class Thickness { THIN, MEDIUM, THICK }
 
-enum class EditorTool { PEN, ERASER }
-
 /** Окна поверх редактора: отмена черновика, удаление карточки, выход из редактора. */
 enum class EditorDialog { DISCARD_DRAFT, DELETE_CARD, SAVE_ON_BACK }
 
@@ -15,7 +13,6 @@ enum class EditorDialog { DISCARD_DRAFT, DELETE_CARD, SAVE_ON_BACK }
 data class EditorScreenState(
     val isNewCard: Boolean,
     val side: CardSideShown,
-    val tool: EditorTool,
     val thickness: Thickness,
     val canUndo: Boolean,
     val dialog: EditorDialog?,
@@ -23,8 +20,6 @@ data class EditorScreenState(
 
 sealed interface EditorAction {
     data class SelectSide(val side: CardSideShown) : EditorAction
-
-    data class SelectTool(val tool: EditorTool) : EditorAction
 
     data class SelectThickness(val thickness: Thickness) : EditorAction
 

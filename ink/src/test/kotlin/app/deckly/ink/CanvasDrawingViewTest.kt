@@ -104,12 +104,23 @@ class CanvasDrawingViewTest {
     }
 
     @Test
-    fun eraserToolReportsPath() {
-        bind(tool = DrawingTool.ERASER)
-
+    fun stylusWithoutButtonDraws() {
         performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(183f, 366f, 0.5f), Sample(1830f, 183f, 0.5f)))
 
+        assertEquals(1, strokes.size)
+        assertTrue(erasures.isEmpty())
+    }
+
+    @Test
+    fun stylusButtonErases() {
+        performGesture(
+            MotionEvent.TOOL_TYPE_STYLUS,
+            listOf(Sample(183f, 366f, 0.5f), Sample(1830f, 183f, 0.5f)),
+            buttons = MotionEvent.BUTTON_STYLUS_PRIMARY,
+        )
+
         assertTrue(strokes.isEmpty())
+        // Путь ластика и его радиус приходят в единицах карточки.
         val (path, radius) = erasures.single()
         assertEquals(2, path.size)
         assertPoint(100f, 200f, 0f, path[0])
@@ -118,19 +129,7 @@ class CanvasDrawingViewTest {
     }
 
     @Test
-    fun stylusButtonErasesWithPenTool() {
-        performGesture(
-            MotionEvent.TOOL_TYPE_STYLUS,
-            listOf(Sample(183f, 366f, 0.5f), Sample(1830f, 183f, 0.5f)),
-            buttons = MotionEvent.BUTTON_STYLUS_PRIMARY,
-        )
-
-        assertTrue(strokes.isEmpty())
-        assertEquals(1, erasures.size)
-    }
-
-    @Test
-    fun eraserEndOfPenErasesWithPenTool() {
+    fun eraserToolTypeErases() {
         performGesture(MotionEvent.TOOL_TYPE_ERASER, listOf(Sample(100f, 100f, 0.5f), Sample(300f, 100f, 0.5f)))
 
         assertTrue(strokes.isEmpty())
@@ -228,11 +227,10 @@ class CanvasDrawingViewTest {
     }
 
     @Test
-    fun eraserToolDrawsNoLiveStroke() {
-        bind(tool = DrawingTool.ERASER)
+    fun erasingGestureDrawsNoLiveStroke() {
         val downTime = SystemClock.uptimeMillis()
-        dispatch(downTime, MotionEvent.ACTION_DOWN, MotionEvent.TOOL_TYPE_STYLUS, Sample(300f, 300f, 1f))
-        dispatch(downTime, MotionEvent.ACTION_MOVE, MotionEvent.TOOL_TYPE_STYLUS, Sample(600f, 300f, 1f))
+        dispatch(downTime, MotionEvent.ACTION_DOWN, MotionEvent.TOOL_TYPE_STYLUS, Sample(300f, 300f, 1f), MotionEvent.BUTTON_STYLUS_PRIMARY)
+        dispatch(downTime, MotionEvent.ACTION_MOVE, MotionEvent.TOOL_TYPE_STYLUS, Sample(600f, 300f, 1f), MotionEvent.BUTTON_STYLUS_PRIMARY)
 
         assertFalse(drawView().isInk(450, 300))
     }
@@ -264,14 +262,12 @@ class CanvasDrawingViewTest {
 
     private fun bind(
         strokes: List<Stroke> = emptyList(),
-        tool: DrawingTool = DrawingTool.PEN,
         penWidthPx: Float = 6f,
         isPenEnabled: Boolean = true,
     ) {
         view.bind(
             DrawingState(
                 strokes = strokes,
-                tool = tool,
                 penWidthPx = penWidthPx,
                 isPenEnabled = isPenEnabled,
                 uiRevision = 0,

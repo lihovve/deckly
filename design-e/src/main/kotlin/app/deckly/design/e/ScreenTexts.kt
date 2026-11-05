@@ -16,8 +16,6 @@ internal object EditorTexts {
     const val BACK = "Ответ"
     const val CANVAS = "Холст. Рисование только пером"
     const val TOOLS = "Инструменты рисования"
-    const val PEN = "Перо"
-    const val ERASER = "Ластик"
     const val THICKNESS = "Толщина пера"
     const val THIN = "Тонкая"
     const val MEDIUM = "Средняя"

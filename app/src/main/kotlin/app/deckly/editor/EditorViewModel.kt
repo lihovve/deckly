@@ -24,13 +24,11 @@ import app.deckly.domain.port.DraftRepository
 import app.deckly.domain.port.StoredDraft
 import app.deckly.domain.review.ReviewAction
 import app.deckly.domain.review.ReviewEngine
-import app.deckly.ink.DrawingTool
 import app.deckly.navigation.AppScreen
 import app.deckly.navigation.EditorStart
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.EditorDialog
 import app.deckly.ui.contract.EditorScreenState
-import app.deckly.ui.contract.EditorTool
 import app.deckly.ui.contract.Thickness
 import java.io.IOException
 import kotlin.random.Random
@@ -46,7 +44,6 @@ import kotlinx.coroutines.launch
  */
 data class CanvasState(
     val strokes: List<Stroke>,
-    val tool: DrawingTool,
     val penWidthPx: Float,
     val isPenEnabled: Boolean,
     val uiRevision: Int,
@@ -78,16 +75,14 @@ class EditorViewModel(
         data class Erased(val path: List<StrokePoint>, val radius: Float) : Input
     }
 
-    // Что вне черновика и не пишется в базу: инструмент, толщина, окно. `null` в session — редактор ещё грузится.
+    // Что вне черновика и не пишется в базу: толщина, окно. `null` в session — редактор ещё грузится.
     private var session: EditorSession? = (start as? EditorStart.NewCard)?.let { startNewCard(it.returnSection) }
     private var hasDraft = false
-    private var tool = EditorTool.PEN
     private var thickness = Thickness.MEDIUM
     private var dialog: EditorDialog? = null
     private var isLeaving = false
 
     private data class UiSignature(
-        val tool: EditorTool,
         val thickness: Thickness,
         val canUndo: Boolean,
         val dialog: EditorDialog?,
@@ -173,10 +168,6 @@ class EditorViewModel(
         }
         when (action) {
             is EditorAction.SelectSide -> applyChange(current.switchSide(action.side.toSide()), startsDraft = false)
-            is EditorAction.SelectTool -> {
-                tool = action.tool
-                publish()
-            }
             is EditorAction.SelectThickness -> {
                 thickness = action.thickness
                 publish()
@@ -270,21 +261,19 @@ class EditorViewModel(
         mutableCanvas.value = buildCanvas()
     }
 
-    // Видимое вне холста: инструмент, толщина, кнопка отмены, окно и вкладка стороны. Вкладка стороны тут нужна,
+    // Видимое вне холста: толщина, кнопка отмены, окно и вкладка стороны. Вкладка стороны тут нужна,
     // потому что у пустых сторон список штрихов не меняется, и лист сам смену стороны не заметит.
     private fun buildUiSignature() = UiSignature(
-        tool,
         thickness,
         canUndo = session?.history?.isNotEmpty() == true,
         dialog,
         side = session?.draft?.visibleSide ?: Side.FRONT,
     )
 
-    private fun buildState(): EditorScreenState? = session?.let { buildEditorScreenState(it, tool, thickness, dialog) }
+    private fun buildState(): EditorScreenState? = session?.let { buildEditorScreenState(it, thickness, dialog) }
 
     private fun buildCanvas() = CanvasState(
         strokes = session?.let { listVisibleStrokes(it) } ?: emptyList(),
-        tool = tool.toDrawingTool(),
         penWidthPx = thickness.toPenWidthPx(),
         isPenEnabled = session != null && dialog == null && !isLeaving,
         uiRevision = uiRevision,

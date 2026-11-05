@@ -28,7 +28,6 @@ enum class IconId(val key: String, val shapes: List<IconShape>) {
     DEFER("defer", listOf(IconShape("M3 12h13m-5-5 5 5-5 5M21 5v14"))),
     ACTIVE("active", listOf(IconShape("m8 5 11 7-11 7Z", isFilled = true))),
     PEN("pen", listOf(IconShape("m4 16 11-11 4 4L8 20H4v-4Zm9-9 4 4m-1-7 1-1 4 4-1 1"))),
-    ERASER("eraser", listOf(IconShape("m3 14 9-10 9 8-8 9H9l-6-7Zm4-4 9 8M13 21h8"))),
     UNDO("undo", listOf(IconShape("M5 5v6h6M5 11c4-9 15-5 15 2 0 4-3 7-7 7"))),
     TRASH("trash", listOf(IconShape("M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"))),
     FILE("file", listOf(IconShape("M5 3h9l5 5v13H5V3Zm9 0v6h5M8 14h8m-8 3h5"))),
@@ -58,7 +57,6 @@ object DecklyIcons {
     val Defer get() = get(IconId.DEFER)
     val Active get() = get(IconId.ACTIVE)
     val Pen get() = get(IconId.PEN)
-    val Eraser get() = get(IconId.ERASER)
     val Undo get() = get(IconId.UNDO)
     val Trash get() = get(IconId.TRASH)
     val File get() = get(IconId.FILE)

@@ -18,7 +18,6 @@ import app.deckly.ui.contract.DeckNameState
 import app.deckly.ui.contract.DeckScreenState
 import app.deckly.ui.contract.Design
 import app.deckly.ui.contract.EditorScreenState
-import app.deckly.ui.contract.EditorTool
 import app.deckly.ui.contract.StartupState
 import app.deckly.ui.contract.Thickness
 import org.junit.Assert.assertSame
@@ -69,7 +68,7 @@ class DesignETest {
 
     @Test
     fun editorScreenIsEditor() {
-        val state = EditorScreenState(true, CardSideShown.FRONT, EditorTool.PEN, Thickness.MEDIUM, canUndo = false, dialog = null)
+        val state = EditorScreenState(true, CardSideShown.FRONT, Thickness.MEDIUM, canUndo = false, dialog = null)
         showFrame { design.EditorScreen(state, {}) { Box(it.testTag("slot")) } }
 
         composeRule.onNodeWithText("Новая карточка").assertExists()

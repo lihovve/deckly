@@ -26,8 +26,6 @@ import com.onyx.android.sdk.pen.data.TouchPointList
  *
  * ПРОВЕРЕНО ТОЛЬКО НА JVM, а сам класс не проверялся и на JVM (там нет прошивки). На планшете это проверит
  * задача 12 плана 4. Не подтверждено устройством именно здесь:
- * - инструмент [DrawingTool.ERASER] через `setRawDrawingRenderEnabled(false)`: приходят ли точки штриха в
- *   колбэк рисования и не рисует ли прошивка линию; прототип проверял только ластик кнопкой пера;
  * - цикл «перо выключено → кадр → 150 мс → перо включено» для `uiRevision` и замены штрихов: виден ли
  *   интерфейс на экране, не пропадают ли штрихи;
  * - окно без фокуса или невидимое вместо явных `pause`/`resume` активити прототипа;
@@ -41,7 +39,6 @@ internal class OnyxDrawingView(context: Context) :
     private val surfaceLock = Any()
     private var touchHelper: TouchHelper? = null
 
-    private var tool = DrawingTool.PEN
     private var penWidthPx = 0f
     private var uiRevision: Int? = null
     private var onStroke: (Stroke) -> Unit = {}
@@ -73,7 +70,7 @@ internal class OnyxDrawingView(context: Context) :
 
         override fun onRawDrawingTouchPointListReceived(pointList: TouchPointList) {
             val points = collectPoints(pointList)
-            runOnUi { if (tool == DrawingTool.ERASER) reportErase(points) else reportStroke(points) }
+            runOnUi { reportStroke(points) }
         }
 
         override fun onBeginRawErasing(shortcutErasing: Boolean, point: TouchPoint) = Unit
@@ -82,7 +79,7 @@ internal class OnyxDrawingView(context: Context) :
 
         override fun onRawErasingTouchPointMoveReceived(point: TouchPoint) = Unit
 
-        // Кнопка пера стирает при любом инструменте.
+        // Стирает боковая кнопка стилуса.
         override fun onRawErasingTouchPointListReceived(pointList: TouchPointList) {
             val points = collectPoints(pointList)
             runOnUi { reportErase(points) }
@@ -96,16 +93,15 @@ internal class OnyxDrawingView(context: Context) :
     // --- DrawingSurface ------------------------------------------------------------------------
 
     override fun bind(state: DrawingState) {
-        val isPenConfigChanged = state.tool != tool || state.penWidthPx != penWidthPx
-        tool = state.tool
+        val isPenWidthChanged = state.penWidthPx != penWidthPx
         penWidthPx = state.penWidthPx
         onStroke = state.onStroke
         onErase = state.onErase
 
         gate.setHostEnabled(state.isPenEnabled)
-        // Инструмент и толщина обычно приходят вместе с новым uiRevision (цикл ниже включит перо с новыми
-        // настройками); если нет, настройки применяются сразу.
-        if (isPenConfigChanged && gate.isOn) reconfigurePen()
+        // Толщина обычно приходит вместе с новым uiRevision (цикл ниже включит перо с новой толщиной); если нет,
+        // она применяется сразу.
+        if (isPenWidthChanged && gate.isOn) reconfigurePen()
 
         val change = book.updateFromHost(state.strokes)
         val previousRevision = uiRevision
@@ -225,14 +221,14 @@ internal class OnyxDrawingView(context: Context) :
     }
 
     // Включение пера сбрасывает трек ластика, стиль и вид отрисовки, поэтому всё ставится заново.
-    // Серый след прошивки за ластиком выключен: колбэки ластика приходят и без него. При инструменте
-    // ластик прошивка линию не рисует, а точки штриха идут в стирание.
+    // Серый след прошивки за ластиком выключен: колбэки ластика приходят и без него. Рендер сырого пера
+    // включён всегда: кончик пера рисует.
     private fun configurePen(helper: TouchHelper) {
         helper.setEraserRawDrawingEnabled(false, ERASER_STROKE_ID)
         helper.setStrokeStyle(TouchHelper.STROKE_STYLE_FOUNTAIN)
         helper.setStrokeWidth(penWidthPx)
         helper.setStrokeColor(Color.BLACK)
-        helper.setRawDrawingRenderEnabled(tool == DrawingTool.PEN)
+        helper.setRawDrawingRenderEnabled(true)
     }
 
     // --- события пера --------------------------------------------------------------------------

@@ -17,14 +17,12 @@ import app.deckly.fixtures.buildDeck
 import app.deckly.fixtures.buildDeckState
 import app.deckly.fixtures.buildPath
 import app.deckly.fixtures.buildStroke
-import app.deckly.ink.DrawingTool
 import app.deckly.navigation.AppScreen
 import app.deckly.navigation.EditorStart
 import app.deckly.ui.contract.CardSideShown
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.EditorDialog
 import app.deckly.ui.contract.EditorScreenState
-import app.deckly.ui.contract.EditorTool
 import app.deckly.ui.contract.Thickness
 import java.time.LocalDateTime
 import kotlin.random.Random
@@ -130,10 +128,9 @@ class EditorViewModelTest {
         startNewCard()
         runUntilIdle()
 
-        // До первого штриха черновика нет: смена стороны, инструмента и толщины его не создаёт.
+        // До первого штриха черновика нет: смена стороны и толщины его не создаёт.
         viewModel.onAction(EditorAction.SelectSide(CardSideShown.BACK))
         viewModel.onAction(EditorAction.SelectSide(CardSideShown.FRONT))
-        viewModel.onAction(EditorAction.SelectTool(EditorTool.ERASER))
         viewModel.onAction(EditorAction.SelectThickness(Thickness.THICK))
         runUntilIdle()
         assertTrue(drafts.storedCalls.isEmpty())
@@ -584,7 +581,7 @@ class EditorViewModelTest {
         viewModel.onErase(touchingFirst, 2f)
         viewModel.onAction(EditorAction.Undo)
         viewModel.onAction(EditorAction.SelectSide(CardSideShown.BACK))
-        viewModel.onAction(EditorAction.SelectTool(EditorTool.ERASER))
+        viewModel.onAction(EditorAction.SelectThickness(Thickness.THIN))
         viewModel.onAction(EditorAction.Save)
         runUntilIdle()
 
@@ -592,7 +589,7 @@ class EditorViewModelTest {
         assertEquals(listOf(first), viewModel.canvas.value.strokes)
         assertTrue(drafts.commits.isEmpty())
         assertEquals(CardSideShown.FRONT, shown.side)
-        assertEquals(EditorTool.PEN, shown.tool)
+        assertEquals(Thickness.MEDIUM, shown.thickness)
         assertEquals(EditorDialog.SAVE_ON_BACK, shown.dialog)
     }
 
@@ -668,12 +665,11 @@ class EditorViewModelTest {
     }
 
     @Test
-    fun toolAndThicknessSetPenAndBumpRevision() {
+    fun thicknessSetsPenWidthAndBumpsRevision() {
         startNewCard()
         runUntilIdle()
         val initial = viewModel.canvas.value
-        assertEquals(DrawingTool.PEN, initial.tool)
-        assertEquals(6f, initial.penWidthPx, 0f)
+        assertEquals(10f, initial.penWidthPx, 0f)
 
         viewModel.onAction(EditorAction.SelectThickness(Thickness.THIN))
         runUntilIdle()
@@ -681,13 +677,10 @@ class EditorViewModelTest {
         assertEquals(initial.uiRevision + 1, viewModel.canvas.value.uiRevision)
 
         viewModel.onAction(EditorAction.SelectThickness(Thickness.THICK))
-        viewModel.onAction(EditorAction.SelectTool(EditorTool.ERASER))
         runUntilIdle()
-        assertEquals(10f, viewModel.canvas.value.penWidthPx, 0f)
-        assertEquals(DrawingTool.ERASER, viewModel.canvas.value.tool)
-        assertEquals(initial.uiRevision + 3, viewModel.canvas.value.uiRevision)
+        assertEquals(25f, viewModel.canvas.value.penWidthPx, 0f)
+        assertEquals(initial.uiRevision + 2, viewModel.canvas.value.uiRevision)
         assertEquals(Thickness.THICK, shown.thickness)
-        assertEquals(EditorTool.ERASER, shown.tool)
     }
 
     @Test
@@ -696,7 +689,6 @@ class EditorViewModelTest {
         runUntilIdle()
         val initial = viewModel.canvas.value.uiRevision
 
-        viewModel.onAction(EditorAction.SelectTool(EditorTool.PEN))
         viewModel.onAction(EditorAction.SelectThickness(Thickness.MEDIUM))
         viewModel.onAction(EditorAction.SelectSide(CardSideShown.FRONT))
         runUntilIdle()
@@ -735,7 +727,7 @@ class EditorViewModelTest {
 
         assertTrue(viewModel.canvas.value.isPenEnabled)
         assertEquals(
-            EditorScreenState(true, CardSideShown.FRONT, EditorTool.PEN, Thickness.MEDIUM, canUndo = false, dialog = null),
+            EditorScreenState(true, CardSideShown.FRONT, Thickness.MEDIUM, canUndo = false, dialog = null),
             shown,
         )
     }

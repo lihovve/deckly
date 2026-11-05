@@ -43,7 +43,6 @@ object InkSheetSlots : SheetSlots {
     ) {
         DrawingSheet(
             strokes = canvas.strokes,
-            tool = canvas.tool,
             penWidthPx = canvas.penWidthPx,
             isPenEnabled = canvas.isPenEnabled,
             uiRevision = canvas.uiRevision,

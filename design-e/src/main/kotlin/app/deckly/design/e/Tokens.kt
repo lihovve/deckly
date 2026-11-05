@@ -84,15 +84,14 @@ object Tokens {
     val ToolsGap = 16.dp
     val ToolButton = 112.dp
     val ThicknessGap = 4.dp
-    val ThicknessPaddingHorizontal = 16.dp
     val ThicknessMarginVertical = 12.dp
     val ThicknessButtonWidth = 80.dp
     val ThicknessButtonHeight = 72.dp
     val LineSampleWidth = 34.dp
     val LineSampleRadius = 8.dp
     val LineThin = 2.dp
-    val LineMedium = 5.dp
-    val LineThick = 9.dp
+    val LineMedium = 7.dp
+    val LineThick = 15.dp
 
     // --- список колод и поле ввода ---
     val ListMarginTop = 16.dp

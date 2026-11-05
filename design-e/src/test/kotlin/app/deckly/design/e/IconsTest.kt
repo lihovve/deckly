@@ -42,7 +42,10 @@ class IconsTest {
     @Test
     fun everyIconOfMockupHasAnImageVectorAndNothingExtra() {
         assertEquals(listIconElements().keys, IconId.entries.map { it.key }.toSet())
-        assertEquals(17, IconId.entries.size)
+        assertEquals(16, IconId.entries.size)
+        // Ластика на экране больше нет (стирает боковая кнопка стилуса), значок «перо» остаётся в меню карточки.
+        assertTrue("eraser" !in listIconElements().keys)
+        assertTrue("pen" in listIconElements().keys)
     }
 
     @Test

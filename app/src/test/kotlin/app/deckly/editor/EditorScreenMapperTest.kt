@@ -10,11 +10,9 @@ import app.deckly.domain.editor.switchSide
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
 import app.deckly.fixtures.buildStroke
-import app.deckly.ink.DrawingTool
 import app.deckly.ui.contract.CardSideShown
 import app.deckly.ui.contract.EditorDialog
 import app.deckly.ui.contract.EditorScreenState
-import app.deckly.ui.contract.EditorTool
 import app.deckly.ui.contract.Thickness
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -28,8 +26,8 @@ class EditorScreenMapperTest {
         val session = startNewCard(Section.NEW)
 
         assertEquals(
-            EditorScreenState(true, CardSideShown.FRONT, EditorTool.PEN, Thickness.MEDIUM, canUndo = false, dialog = null),
-            buildEditorScreenState(session, EditorTool.PEN, Thickness.MEDIUM, null),
+            EditorScreenState(true, CardSideShown.FRONT, Thickness.MEDIUM, canUndo = false, dialog = null),
+            buildEditorScreenState(session, Thickness.MEDIUM, null),
         )
     }
 
@@ -37,7 +35,7 @@ class EditorScreenMapperTest {
     fun editedCardIsNotNew() {
         val session = resumeDraft(Draft(7, emptyList(), emptyList(), Side.FRONT, Section.NEW))
 
-        assertEquals(false, buildEditorScreenState(session, EditorTool.PEN, Thickness.MEDIUM, null).isNewCard)
+        assertEquals(false, buildEditorScreenState(session, Thickness.MEDIUM, null).isNewCard)
     }
 
     @Test
@@ -45,19 +43,18 @@ class EditorScreenMapperTest {
         val empty = startNewCard(Section.NEW)
         val drawn = empty.addStroke(front)
 
-        assertEquals(false, buildEditorScreenState(empty, EditorTool.PEN, Thickness.MEDIUM, null).canUndo)
-        assertEquals(true, buildEditorScreenState(drawn, EditorTool.PEN, Thickness.MEDIUM, null).canUndo)
+        assertEquals(false, buildEditorScreenState(empty, Thickness.MEDIUM, null).canUndo)
+        assertEquals(true, buildEditorScreenState(drawn, Thickness.MEDIUM, null).canUndo)
         assertEquals(listOf<EditorStep>(EditorStep.StrokeAdded(Side.FRONT)), drawn.history)
     }
 
     @Test
-    fun sideToolThicknessAndDialogArePassedThrough() {
+    fun sideThicknessAndDialogArePassedThrough() {
         val session = startNewCard(Section.NEW).switchSide(Side.BACK)
 
-        val state = buildEditorScreenState(session, EditorTool.ERASER, Thickness.THICK, EditorDialog.SAVE_ON_BACK)
+        val state = buildEditorScreenState(session, Thickness.THICK, EditorDialog.SAVE_ON_BACK)
 
         assertEquals(CardSideShown.BACK, state.side)
-        assertEquals(EditorTool.ERASER, state.tool)
         assertEquals(Thickness.THICK, state.thickness)
         assertEquals(EditorDialog.SAVE_ON_BACK, state.dialog)
     }
@@ -71,15 +68,9 @@ class EditorScreenMapperTest {
     }
 
     @Test
-    fun thicknessesAreThreeSixAndTenPixels() {
+    fun thicknessesAreThreeTenAndTwentyFivePixels() {
         assertEquals(3f, Thickness.THIN.toPenWidthPx(), 0f)
-        assertEquals(6f, Thickness.MEDIUM.toPenWidthPx(), 0f)
-        assertEquals(10f, Thickness.THICK.toPenWidthPx(), 0f)
-    }
-
-    @Test
-    fun toolsMapToDrawingTools() {
-        assertEquals(DrawingTool.PEN, EditorTool.PEN.toDrawingTool())
-        assertEquals(DrawingTool.ERASER, EditorTool.ERASER.toDrawingTool())
+        assertEquals(10f, Thickness.MEDIUM.toPenWidthPx(), 0f)
+        assertEquals(25f, Thickness.THICK.toPenWidthPx(), 0f)
     }
 }

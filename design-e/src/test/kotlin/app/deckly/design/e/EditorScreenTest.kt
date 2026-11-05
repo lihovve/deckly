@@ -35,7 +35,6 @@ import app.deckly.ui.contract.CardSideShown
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.EditorDialog
 import app.deckly.ui.contract.EditorScreenState
-import app.deckly.ui.contract.EditorTool
 import app.deckly.ui.contract.Thickness
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -64,13 +63,24 @@ class EditorScreenTest {
         showScreen(buildState())
 
         val described = listOf(
-            "Перо", "Ластик", "Толщина пера", "Тонкая линия", "Средняя линия", "Толстая линия", "Отменить штрих",
+            "Толщина пера", "Тонкая линия", "Средняя линия", "Толстая линия", "Отменить штрих",
             "Сторона карточки", "Инструменты рисования", "Холст. Рисование только пером",
         )
         for (description in described) composeRule.onNodeWithContentDescription(description).assertExists()
         composeRule.onNodeWithText("Вопрос").assertExists()
         composeRule.onNodeWithText("Ответ").assertExists()
         composeRule.onNodeWithText("Сохранить").assertExists()
+    }
+
+    @Test
+    fun editorHasNoPenAndEraserButtons() {
+        showScreen(buildState())
+
+        // Переключателя инструмента нет: пишет кончик пера, стирает боковая кнопка стилуса.
+        composeRule.onNodeWithContentDescription("Перо").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Ластик").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Толщина пера").assertExists()
+        composeRule.onNodeWithContentDescription("Отменить штрих").assertExists()
     }
 
     @Test
@@ -203,53 +213,24 @@ class EditorScreenTest {
             assertEquals(928f, slot.right.value - slot.left.value, 0.5f)
             assertEquals(963f, slot.bottom.value - slot.top.value, 0.5f)
         }
-        val pen = composeRule.onNodeWithContentDescription("Перо").getUnclippedBoundsInRoot()
-        val eraser = composeRule.onNodeWithContentDescription("Ластик").getUnclippedBoundsInRoot()
         val group = composeRule.onNodeWithContentDescription("Толщина пера").getUnclippedBoundsInRoot()
         val undo = composeRule.onNodeWithContentDescription("Отменить штрих").getUnclippedBoundsInRoot()
-        assertEquals(1323f - 32f - 112f, pen.top.value, 0.5f)
-        assertEquals(32f, pen.left.value, 0.5f)
-        assertEquals(112f, pen.right.value - pen.left.value, 0.5f)
-        assertEquals(112f, pen.bottom.value - pen.top.value, 0.5f)
-        assertEquals(pen.right.value + 16f, eraser.left.value, 0.5f)
-        assertEquals(112f, eraser.right.value - eraser.left.value, 0.5f)
-        assertEquals(eraser.right.value + 16f, group.left.value, 0.5f)
-        // Группа: линия 1 + поле 16 + три кнопки по 80 с зазором 4 + поле 16 + линия 1 = 282; высота 112 − 2·12.
-        assertEquals(282f, group.right.value - group.left.value, 0.5f)
+        // Группа толщин прижата влево, без черт и боковых полей: три кнопки по 80 с зазором 4 = 248; высота 112 − 2·12.
+        assertEquals(32f, group.left.value, 0.5f)
+        assertEquals(248f, group.right.value - group.left.value, 0.5f)
         assertEquals(88f, group.bottom.value - group.top.value, 0.5f)
-        assertEquals(pen.top.value + 12f, group.top.value, 0.5f)
+        assertEquals(1323f - 32f - 112f + 12f, group.top.value, 0.5f)
+        // Отмена прижата вправо, 112 × 112, на нижней строке рядом с группой.
         assertEquals(960f, undo.right.value, 0.5f)
         assertEquals(112f, undo.right.value - undo.left.value, 0.5f)
         assertEquals(112f, undo.bottom.value - undo.top.value, 0.5f)
+        assertEquals(1323f - 32f - 112f, undo.top.value, 0.5f)
     }
 
     @Test
-    fun selectedToolIsFollowingState() {
-        showScreen(buildState(tool = EditorTool.PEN))
+    fun undoButtonCarriesItsIcon() {
+        showScreen(buildState())
 
-        // Выбранное перо в рамке 3 px, ластик без рамки.
-        assertEquals(3, measureBorder(composeRule.onNodeWithContentDescription("Перо")))
-        assertEquals(0, measureBorder(composeRule.onNodeWithContentDescription("Ластик")))
-        composeRule.onNodeWithContentDescription("Перо").assertIsSelected()
-        composeRule.onNodeWithContentDescription("Ластик").assertIsNotSelected()
-        composeRule.onNodeWithContentDescription("Ластик").performClick()
-        assertEquals(listOf<EditorAction>(EditorAction.SelectTool(EditorTool.ERASER)), actions)
-
-        showScreen(buildState(tool = EditorTool.ERASER))
-
-        assertEquals(0, measureBorder(composeRule.onNodeWithContentDescription("Перо")))
-        assertEquals(3, measureBorder(composeRule.onNodeWithContentDescription("Ластик")))
-        composeRule.onNodeWithContentDescription("Ластик").assertIsSelected()
-        composeRule.onNodeWithContentDescription("Перо").performClick()
-        assertEquals(EditorAction.SelectTool(EditorTool.PEN), actions.last())
-    }
-
-    @Test
-    fun toolButtonsCarryTheirIcons() {
-        showScreen(buildState(tool = EditorTool.PEN))
-
-        assertIconInButton("перо", composeRule.onNodeWithContentDescription("Перо"), IconId.PEN)
-        assertIconInButton("ластик", composeRule.onNodeWithContentDescription("Ластик"), IconId.ERASER)
         assertIconInButton("отмена штриха", composeRule.onNodeWithContentDescription("Отменить штрих"), IconId.UNDO)
     }
 
@@ -257,7 +238,7 @@ class EditorScreenTest {
     fun thicknessSamplesHaveMockupHeightsAndSelectionBorder() {
         showScreen(buildState(thickness = Thickness.MEDIUM))
 
-        val heights = listOf("Тонкая линия" to 2f, "Средняя линия" to 5f, "Толстая линия" to 9f)
+        val heights = listOf("Тонкая линия" to 2f, "Средняя линия" to 7f, "Толстая линия" to 15f)
         for ((description, height) in heights) {
             val button = composeRule.onNodeWithContentDescription(description)
             button.assertWidthIsEqualTo(80.dp).assertHeightIsEqualTo(72.dp)
@@ -302,18 +283,16 @@ class EditorScreenTest {
     }
 
     @Test
-    fun thicknessGroupIsFramedByTwoVerticalLines() {
+    fun thicknessGroupHasNoSideLines() {
         showScreen(buildState())
 
-        val group = composeRule.onNodeWithContentDescription("Толщина пера")
-        val bitmap = group.captureToImage().asAndroidBitmap()
+        val bitmap = composeRule.onNodeWithContentDescription("Толщина пера").captureToImage().asAndroidBitmap()
         val middle = bitmap.height / 2
-        // Линии по 1 px на левом и правом краях группы; между ними и кнопками поле 16 пустое.
-        assertTrue(bitmap.isInkAt(0, middle))
-        assertTrue(bitmap.isInkAt(bitmap.width - 1, middle))
-        assertTrue(!bitmap.isInkAt(1, middle))
-        assertTrue(!bitmap.isInkAt(bitmap.width - 2, middle))
-        assertTrue(!bitmap.isInkAt(10, middle))
+        // Разделять больше нечего: ни черт по краям группы, ни поля между чертой и кнопкой. Крайние кнопки без рамки.
+        assertTrue(!bitmap.isInkAt(0, middle))
+        assertTrue(!bitmap.isInkAt(bitmap.width - 1, middle))
+        // Группа — ровно три кнопки по 80 с зазором 4, без полей по краям.
+        assertEquals(248, bitmap.width)
     }
 
     @Test
@@ -414,9 +393,8 @@ class EditorScreenTest {
     private fun buildState(
         isNewCard: Boolean = true,
         side: CardSideShown = CardSideShown.FRONT,
-        tool: EditorTool = EditorTool.PEN,
         thickness: Thickness = Thickness.MEDIUM,
         canUndo: Boolean = true,
         dialog: EditorDialog? = null,
-    ) = EditorScreenState(isNewCard, side, tool, thickness, canUndo, dialog)
+    ) = EditorScreenState(isNewCard, side, thickness, canUndo, dialog)
 }
