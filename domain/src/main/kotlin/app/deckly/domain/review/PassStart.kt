@@ -87,7 +87,8 @@ private fun releaseCards(cards: List<Card>, epoch: Int, today: Int): List<Card> 
 /**
  * Выпуск по порогу успехов. Из эпохи 1 карточка уходит, только если день её попадания в эпоху уже прошёл: между
  * заучиванием и выпуском должна пройти хотя бы одна ночь. Нового «знал» после ночи не нужно, `lastSuccessDay` не
- * читается. Если порог набран в день попадания, карточка до конца прохода ждёт в `RESTING` ([isRestOver]).
+ * читается. Если порог набран в день попадания, карточка в конце прохода уходит в `RESTING` и ждёт там следующего дня
+ * ([isRestOver]).
  */
 private fun isReadyForRelease(card: Card, epoch: Int, today: Int): Boolean =
     card.successes >= findReleaseThreshold(epoch) && (epoch != 1 || today > card.sectionDay)

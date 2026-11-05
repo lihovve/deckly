@@ -341,6 +341,29 @@ class DeckViewModelTest {
     }
 
     @Test
+    fun confirmReturnToNewShowsPoolWithoutDialog() {
+        // Сценарий владельца: в колоде одна карточка, она в эпохе 1.
+        startWith(buildDeckState(buildPassDeck(1), listOf(buildCard(1, Section.EPOCH_1))))
+        runUntilIdle()
+        viewModel.onAction(DeckAction.ChooseMenuItem(CardMenuItem.RETURN_TO_NEW))
+        runUntilIdle()
+        assertEquals(DeckDialog.CONFIRM_RETURN_TO_NEW, readScreen().dialog)
+
+        viewModel.onAction(DeckAction.ConfirmDialog)
+        runUntilIdle()
+
+        assertNull(readScreen().dialog)
+        assertEquals(DeckBody.Card(CardSideShown.FRONT, isContentDamaged = false), readScreen().body)
+        assertTrue(readScreen().tabs[SectionTab.NEW.ordinal].isOpen)
+        assertEquals(1, readScreen().tabs[SectionTab.NEW.ordinal].count)
+        assertEquals(0, readScreen().tabs[SectionTab.EPOCH_1.ordinal].count)
+        assertEquals(1L, viewModel.shownCard.value?.cardId)
+        // Проход завершён, следующий не начат: карточка остаётся в пуле, пока владелец не откроет эпоху.
+        assertFalse(repository.stored.deck.passStarted)
+        assertEquals(Section.NEW, repository.stored.cards.single().section)
+    }
+
+    @Test
     fun dialogBlocksOtherActionsUntilAnswered() {
         startWith(buildLearningState())
         runUntilIdle()

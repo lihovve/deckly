@@ -66,8 +66,7 @@ object ReviewEngine {
             ReviewAction.DidNotKnow -> continueAfterRating(rateDidNotKnow(state), today, random)
             ReviewAction.Postpone -> showCurrent(postponeCard(state))
             is ReviewAction.DeleteCard -> continueAfterRemoval(deleteCard(state, action.cardId), today, random)
-            is ReviewAction.ReturnToNew ->
-                continueAfterRemoval(returnToNew(state, action.cardId, today), today, random)
+            is ReviewAction.ReturnToNew -> returnCardToPool(state, action.cardId, today)
         }
 
     /** Что показать после перезапуска приложения: текущую карточку или пустую секцию. */
@@ -116,7 +115,7 @@ object ReviewEngine {
         return showCurrent(state.copy(deck = state.deck.copy(portionRatedCount = 0)))
     }
 
-    /** После удаления или возврата в пул: удаление ничего не оценивает, поэтому границу порции не проверяем. */
+    /** После удаления карточки: оно ничего не оценивает, поэтому границу порции не проверяем. */
     private fun continueAfterRemoval(state: DeckState, today: Int, random: Random): ReviewResult {
         if (isActivePassOpen(state.deck) && isPassExhausted(state)) return endPass(state, today, random)
         return showCurrent(state)
@@ -161,11 +160,37 @@ object ReviewEngine {
      * возвращает к прерванному; обычный проход считается, выбирает следующую эпоху и запускает цепочку.
      */
     private fun endPass(state: DeckState, today: Int, random: Random): ReviewResult {
-        val deck = state.deck
-        if (deck.pausedEpoch != 0 && deck.currentEpoch == 1) {
+        if (isInsertedPass(state.deck)) {
             return returnToPausedPass(finishPass(state, 1, today), today, random, announce = true)
         }
-        return runStartChain(completePass(state, deck.currentEpoch, today), today, random)
+        return runStartChain(completePass(state, state.deck.currentEpoch, today), today, random)
+    }
+
+    /** Идёт ли вставной проход эпохи 1: он прервал проход эпохи 2–4, и тот ждёт в `pausedEpoch`. */
+    private fun isInsertedPass(deck: Deck): Boolean = deck.pausedEpoch != 0 && deck.currentEpoch == 1
+
+    /**
+     * Возврат карточки в пул (ТЗ, «Действия с карточкой»): открывается пул новых на возвращённой карточке. Если возврат
+     * исчерпал открытый проход, проход завершается, но цепочка старта не идёт: добор эпохи 1 сразу забрал бы карточку
+     * из пула обратно. Следующий проход стартует, когда пользователь сам откроет активную эпоху.
+     */
+    private fun returnCardToPool(state: DeckState, cardId: Long, today: Int): ReviewResult {
+        val returned = returnToNew(state, cardId, today)
+        val isExhausted = isActivePassOpen(returned.deck) && isPassExhausted(returned)
+        val settled = if (isExhausted) finishExhaustedPass(returned, today) else returned
+        val cursor = settled.listSectionCards(Section.NEW).indexOfFirst { it.id == cardId }
+        val poolDeck = settled.deck.copy(activeSection = Section.NEW, browseCursor = cursor)
+        return showCurrent(settled.copy(deck = poolDeck))
+    }
+
+    /**
+     * Конец исчерпанного прохода без цепочки старта, парный к [endPass]. Вставной проход возвращает к прерванному, а
+     * если и в нём ничего не осталось, тот завершается здесь же; обычный проход считается и выбирает следующую эпоху.
+     */
+    private fun finishExhaustedPass(state: DeckState, today: Int): DeckState {
+        if (!isInsertedPass(state.deck)) return completePass(state, state.deck.currentEpoch, today)
+        val resumed = resumePausedPass(finishPass(state, 1, today))
+        return if (isPassExhausted(resumed)) completePass(resumed, resumed.deck.currentEpoch, today) else resumed
     }
 
     /**
@@ -173,9 +198,19 @@ object ReviewEngine {
      * удалены во время вставки), он завершается здесь же.
      */
     private fun returnToPausedPass(state: DeckState, today: Int, random: Random, announce: Boolean): ReviewResult {
+        val resumed = resumePausedPass(state)
+        val epoch = resumed.deck.currentEpoch
+        val remaining = listPassCards(resumed, epoch).size - resumed.deck.passCursor
+        if (remaining <= 0) return endPass(resumed, today, random)
+        if (!announce) return showCurrent(resumed)
+        return ReviewResult(resumed, ReviewOutcome.Transition(epoch, remaining, TransitionKind.RESUMED))
+    }
+
+    /** Прерванная эпоха снова активна, её курсор на месте, порция в 40 оценок начинается заново. */
+    private fun resumePausedPass(state: DeckState): DeckState {
         val deck = state.deck
         val epoch = deck.pausedEpoch
-        val resumed = state.copy(
+        return state.copy(
             deck = deck.copy(
                 currentEpoch = epoch,
                 passCursor = deck.pausedCursor,
@@ -186,10 +221,6 @@ object ReviewEngine {
                 activeSection = findEpochSection(epoch),
             ),
         )
-        val remaining = listPassCards(resumed, epoch).size - resumed.deck.passCursor
-        if (remaining <= 0) return endPass(resumed, today, random)
-        if (!announce) return showCurrent(resumed)
-        return ReviewResult(resumed, ReviewOutcome.Transition(epoch, remaining, TransitionKind.RESUMED))
     }
 }
 
@@ -299,7 +330,7 @@ private fun findIdleOutcome(state: DeckState, today: Int): ReviewOutcome? {
  * Будет ли у эпохи 1 работа: карточка в пуле (добор) или в самой эпохе, либо ждущая, которую её старт выпустит.
  * Пока работы нет, ожидающая эпоха не уступает ей ход, а порция эпохи 2–4 не прерывается вставным проходом.
  */
-internal fun hasFirstEpochWork(state: DeckState, today: Int): Boolean =
+private fun hasFirstEpochWork(state: DeckState, today: Int): Boolean =
     state.cards.any { it.section == Section.NEW || it.section == Section.EPOCH_1 || isRestOver(it, today) }
 
 /** Завершение обычного прохода: шаги 1–5 `finishPass`, затем счётчик эпохи и выбор следующей. */

@@ -654,27 +654,188 @@ class ReviewEngineTest {
     fun deletingFirstCardOfFreshPassDoesNotInsertFirstEpochPass() {
         val fresh = buildDeckState(buildPassDeck(3), buildEpochRange(3, 1, 5) + buildEpochRange(1, 201, 2))
 
-        for (action in listOf(DeleteCard(1), ReturnToNew(1))) {
+        // Удаление показывает следующую карточку прохода, возврат открывает пул на возвращённой.
+        for ((action, expected) in listOf(DeleteCard(1) to ShowCard(2), ReturnToNew(1) to ShowCard(1))) {
             val result = act(fresh, action)
 
-            assertEquals(ShowCard(2), result.outcome, "$action")
+            assertEquals(expected, result.outcome, "$action")
             assertEquals(0, result.state.deck.pausedEpoch)
             assertEquals(3, result.state.deck.currentEpoch)
             assertEquals(0, result.state.deck.passCursor)
+            // Вставного прохода нет, и проход эпохи 3 продолжается с карточки 2.
+            assertEquals(ShowCard(2), act(result.state, OpenSection(Section.EPOCH_3)).outcome, "$action")
         }
 
         val longPass = buildDeckState(buildPassDeck(3), buildEpochRange(3, 1, 45) + buildEpochRange(1, 201, 2))
         val afterInsert = playKnewTimes(playKnewTimes(longPass, 40).state, 2)
         assertEquals(Transition(3, 5, RESUMED), afterInsert.outcome)
 
-        for (action in listOf(DeleteCard(41), ReturnToNew(41))) {
+        for ((action, expected) in listOf(DeleteCard(41) to ShowCard(42), ReturnToNew(41) to ShowCard(41))) {
             val result = act(afterInsert.state, action)
 
-            assertEquals(ShowCard(42), result.outcome, "$action")
+            assertEquals(expected, result.outcome, "$action")
             assertEquals(0, result.state.deck.pausedEpoch)
             assertEquals(3, result.state.deck.currentEpoch)
             assertEquals(40, result.state.deck.passCursor)
+            assertEquals(ShowCard(42), act(result.state, OpenSection(Section.EPOCH_3)).outcome, "$action")
         }
+    }
+
+    @Test
+    fun returnOfOnlyCardKeepsItInPool() {
+        // Сценарий владельца: в колоде одна карточка, она в эпохе 1.
+        val state = buildDeckState(buildPassDeck(1), listOf(buildCard(1, Section.EPOCH_1)))
+
+        val result = act(state, ReturnToNew(1))
+
+        assertEquals(ShowCard(1), result.outcome)
+        assertEquals(Section.NEW, result.state.findCard(1).section)
+        assertEquals(Section.NEW, result.state.deck.activeSection)
+        assertFalse(result.state.deck.passStarted)
+        assertEquals(1, result.state.deck.passCount[1])
+
+        // Проход завершён, но следующий не стартовал: добор забирает карточку, только когда владелец откроет эпоху.
+        val opened = act(result.state, OpenSection(Section.EPOCH_1))
+        assertEquals(Transition(1, 1, REGULAR), opened.outcome)
+        assertEquals(Section.EPOCH_1, opened.state.findCard(1).section)
+        assertEquals(1, opened.state.deck.passCount[1])
+    }
+
+    @Test
+    fun returnOpensPoolOnReturnedCard() {
+        val deck = buildPassDeck(1, passCursor = 1, visibleSide = Side.BACK)
+        val cards = buildEpochRange(1, 1, 3).map { if (it.id == 2L) it.copy(successes = 3, answerRevealed = true) else it } +
+            (101L..102L).map { buildCard(it, Section.NEW, position = (it - 101).toInt()) }
+
+        val result = act(buildDeckState(deck, cards), ReturnToNew(2))
+
+        assertEquals(ShowCard(2), result.outcome)
+        assertEquals(listOf(101L, 102L, 2L), result.state.listSectionCards(Section.NEW).map { it.id })
+        assertEquals(0, result.state.findCard(2).successes)
+        assertEquals(Section.NEW, result.state.deck.activeSection)
+        assertEquals(2, result.state.deck.browseCursor)
+        assertEquals(Side.FRONT, result.state.deck.visibleSide)
+    }
+
+    @Test
+    fun returnInMiddleOfPassKeepsPassPosition() {
+        val state = buildDeckState(buildPassDeck(2, passCursor = 2), buildEpochRange(2, 1, 5))
+
+        val returned = act(state, ReturnToNew(3))
+
+        assertEquals(ShowCard(3), returned.outcome)
+        assertTrue(returned.state.deck.passStarted)
+        assertEquals(2, returned.state.deck.passCursor)
+        assertEquals(EpochValues(0, 0, 0, 0), returned.state.deck.passCount)
+
+        // Активная эпоха открывается без экрана перехода, со следующей карточки.
+        val reopened = act(returned.state, OpenSection(Section.EPOCH_2))
+        assertEquals(ShowCard(4), reopened.outcome)
+        assertEquals(2, reopened.state.deck.passCursor)
+    }
+
+    @Test
+    fun returnFromInactiveEpochOpensPool() {
+        val deck = buildPassDeck(1, passCursor = 1).copy(activeSection = Section.EPOCH_3)
+        val state = buildDeckState(deck, buildEpochRange(1, 1, 4) + buildEpochRange(3, 11, 3))
+
+        val result = act(state, ReturnToNew(12))
+
+        assertEquals(ShowCard(12), result.outcome)
+        assertEquals(Section.NEW, result.state.deck.activeSection)
+        // Проход активной эпохи не тронут.
+        assertTrue(result.state.deck.passStarted)
+        assertEquals(1, result.state.deck.currentEpoch)
+        assertEquals(1, result.state.deck.passCursor)
+        assertEquals(EpochValues(0, 0, 0, 0), result.state.deck.passCount)
+        assertEquals(ShowCard(2), act(result.state, OpenSection(Section.EPOCH_1)).outcome)
+    }
+
+    @Test
+    fun returnEndingSecondEpochPassFinishesIt() {
+        val cards = listOf(
+            buildCard(1, Section.EPOCH_2, position = 0, successes = 2, failed = true),
+            buildCard(2, Section.EPOCH_2, position = 1),
+        )
+
+        val result = act(buildDeckState(buildPassDeck(2, passCursor = 1), cards), ReturnToNew(2))
+
+        assertEquals(ShowCard(2), result.outcome)
+        val after = result.state
+        assertEquals(Section.EPOCH_1, after.findCard(1).section)
+        assertEquals(3, after.findCard(1).successes)
+        assertEquals(today, after.deck.lastPassDay[2])
+        assertEquals(1, after.deck.passCount[2])
+        // Следующая эпоха выбрана, но не начата.
+        assertEquals(1, after.deck.currentEpoch)
+        assertFalse(after.deck.passStarted)
+        assertEquals(Section.NEW, after.deck.activeSection)
+        assertEquals(Section.NEW, after.findCard(2).section)
+    }
+
+    @Test
+    fun returnEndingInsertedPassResumesPausedPassOnOpen() {
+        val state = buildDeckState(buildPassDeck(3), buildEpochRange(3, 1, 45) + buildCard(201, Section.EPOCH_1))
+        var result = playKnewTimes(state, 40)
+        assertEquals(Transition(1, 1, INSERTED), result.outcome)
+
+        result = act(result.state, ReturnToNew(201))
+
+        assertEquals(ShowCard(201), result.outcome)
+        val deck = result.state.deck
+        assertEquals(Section.NEW, deck.activeSection)
+        assertEquals(3, deck.currentEpoch)
+        assertEquals(0, deck.pausedEpoch)
+        assertTrue(deck.passStarted)
+        assertEquals(40, deck.passCursor)
+        assertEquals(0, deck.passCount[1])
+
+        // Прерванная эпоха продолжается при открытии: без экрана перехода, со следующей карточки.
+        val reopened = act(result.state, OpenSection(Section.EPOCH_3))
+        assertEquals(ShowCard(41), reopened.outcome)
+        assertEquals(0, reopened.state.deck.passCount[1])
+    }
+
+    @Test
+    fun returnEndingInsertedPassFinishesItsFirstEpochPass() {
+        // Вставной проход: карточка 201 набрала порог в день попадания, карточку 202 владелец возвращает в пул.
+        val deck = buildPassDeck(1, passCursor = 1).copy(pausedEpoch = 3, pausedCursor = 40)
+        val cards = buildEpochRange(3, 1, 45) +
+            buildCard(201, Section.EPOCH_1, position = 0, successes = 4, sectionDay = today) +
+            buildCard(202, Section.EPOCH_1, position = 1)
+
+        val result = act(buildDeckState(deck, cards), ReturnToNew(202))
+
+        assertEquals(ShowCard(202), result.outcome)
+        // Конец вставного прохода — это `finishPass` эпохи 1: ожидание ночи и `tail`, как и при оценке «знал».
+        assertEquals(Section.RESTING, result.state.findCard(201).section)
+        assertEquals(listOf(201L), result.state.deck.tail[1])
+        assertEquals(0, result.state.deck.pausedEpoch)
+        assertEquals(3, result.state.deck.currentEpoch)
+        assertEquals(40, result.state.deck.passCursor)
+        assertEquals(EpochValues(0, 0, 0, 0), result.state.deck.passCount)
+    }
+
+    @Test
+    fun returnEndingInsertedPassCompletesExhaustedPausedPass() {
+        val state = buildDeckState(buildPassDeck(3), buildEpochRange(3, 1, 45) + buildCard(201, Section.EPOCH_1))
+        var result = playKnewTimes(state, 40)
+        // Во время вставки владелец убирает все оставшиеся карточки прерванной эпохи.
+        result = act(result.state, OpenSection(Section.EPOCH_3))
+        for (id in 41L..45L) result = act(result.state, DeleteCard(id))
+        result = act(result.state, OpenSection(Section.EPOCH_1))
+
+        result = act(result.state, ReturnToNew(201))
+
+        assertEquals(ShowCard(201), result.outcome)
+        val deck = result.state.deck
+        assertEquals(0, deck.pausedEpoch)
+        assertFalse(deck.passStarted)
+        assertEquals(1, deck.passCount[3])
+        assertEquals(0, deck.passCount[1])
+        assertEquals(today, deck.lastPassDay[3])
+        assertEquals(Section.NEW, deck.activeSection)
+        assertEquals(Section.NEW, result.state.findCard(201).section)
     }
 
     @Test
