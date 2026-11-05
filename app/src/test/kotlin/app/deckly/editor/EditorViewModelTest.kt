@@ -272,6 +272,34 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun cancellingNewCardReturnsToCardShownBefore() {
+        startWith(EditorStart.NewCard(Section.NEW, returnFocusCardId = 3))
+        runUntilIdle()
+        viewModel.onStroke(first)
+        runUntilIdle()
+
+        viewModel.onAction(EditorAction.Cancel)
+        viewModel.onAction(EditorAction.ConfirmDialog)
+        runUntilIdle()
+
+        // Созданной карточки нет, пул открывается там, где стоял до «+».
+        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, focusCardId = 3)), navigated)
+        assertTrue(drafts.commits.isEmpty())
+    }
+
+    @Test
+    fun savingNewCardIgnoresCardShownBefore() {
+        startWith(EditorStart.NewCard(Section.NEW, returnFocusCardId = 3))
+        runUntilIdle()
+
+        viewModel.onAction(EditorAction.Save)
+        runUntilIdle()
+
+        // Сохранённая карточка важнее прежней: показывается она.
+        assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, NEW_CARD_ID)), navigated)
+    }
+
+    @Test
     fun leavingWithoutSavingFocusesNoCard() {
         startNewCard()
         runUntilIdle()

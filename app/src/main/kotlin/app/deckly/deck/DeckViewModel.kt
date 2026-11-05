@@ -114,7 +114,7 @@ class DeckViewModel(
             is DeckAction.ChooseMenuItem -> chooseMenuItem(action.item)
             DeckAction.ConfirmDialog -> confirmDialog()
             DeckAction.DismissDialog -> closeDialog()
-            DeckAction.CreateCard -> navigate(AppScreen.Editor(deckId, EditorStart.NewCard(deckState.deck.activeSection)))
+            DeckAction.CreateCard -> createCard()
             DeckAction.OpenDeckList -> navigate(AppScreen.DeckList)
         }
     }
@@ -138,6 +138,12 @@ class DeckViewModel(
     private suspend fun startPass() {
         transition = null
         publish()
+    }
+
+    // Карточка, показанная в пуле до «+», запоминается: отмена нового черновика возвращает на неё.
+    private fun createCard() {
+        val shownCardId = findCurrentCard(deckState)?.id
+        navigate(AppScreen.Editor(deckId, EditorStart.NewCard(deckState.deck.activeSection, shownCardId)))
     }
 
     private suspend fun chooseMenuItem(item: CardMenuItem) {

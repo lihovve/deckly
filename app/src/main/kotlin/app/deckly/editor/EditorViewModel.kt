@@ -237,10 +237,12 @@ class EditorViewModel(
         navigate(AppScreen.Deck(deckId, draft.returnSection, focusCardId = content.cardId))
     }
 
+    // Отменённая карточка не создана: экран колоды показывает ту, что стояла перед «+» (после перезапуска её нет).
     private suspend fun discardAndLeave() {
         startLeaving()
         writer.write { drafts.discardDraft() }
-        navigate(AppScreen.Deck(deckId, current.draft.returnSection))
+        val shownBefore = (start as? EditorStart.NewCard)?.returnFocusCardId
+        navigate(AppScreen.Deck(deckId, current.draft.returnSection, focusCardId = shownBefore))
     }
 
     // Сначала карточка, потом черновик: убийство между ними оставляет черновик правки несуществующей карточки,

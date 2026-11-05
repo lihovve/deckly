@@ -553,16 +553,36 @@ class DeckViewModelTest {
     // --- переходы между экранами ---------------------------------------------------------------
 
     @Test
-    fun createCardOpensEditorWithReturnToPool() {
-        val deck = buildDeck(activeSection = Section.NEW, currentEpoch = 1)
-        startWith(buildDeckState(deck, listOf(buildCard(1, Section.NEW))))
+    fun createCardOpensEditorWithReturnToPoolAndShownCard() {
+        // Пул из трёх карточек, показана вторая: отмена нового черновика вернёт на неё.
+        val deck = buildDeck(activeSection = Section.NEW, currentEpoch = 1, browseCursor = 1)
+        val pool = (1L..3L).map { buildCard(it, Section.NEW, position = it.toInt()) }
+        startWith(buildDeckState(deck, pool))
         runUntilIdle()
 
         viewModel.onAction(DeckAction.CreateCard)
         runUntilIdle()
 
-        assertEquals(listOf<AppScreen>(AppScreen.Editor(1, EditorStart.NewCard(Section.NEW))), navigated)
+        assertEquals(
+            listOf<AppScreen>(AppScreen.Editor(1, EditorStart.NewCard(Section.NEW, returnFocusCardId = 2))),
+            navigated,
+        )
         assertTrue(repository.savedChanges.isEmpty())
+    }
+
+    @Test
+    fun createCardInEmptyPoolRemembersNoCard() {
+        val deck = buildDeck(activeSection = Section.NEW, currentEpoch = 1)
+        startWith(buildDeckState(deck, emptyList()))
+        runUntilIdle()
+
+        viewModel.onAction(DeckAction.CreateCard)
+        runUntilIdle()
+
+        assertEquals(
+            listOf<AppScreen>(AppScreen.Editor(1, EditorStart.NewCard(Section.NEW, returnFocusCardId = null))),
+            navigated,
+        )
     }
 
     @Test

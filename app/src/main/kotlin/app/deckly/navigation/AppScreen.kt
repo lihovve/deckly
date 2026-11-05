@@ -26,7 +26,11 @@ sealed interface AppScreen {
 
 /** Как открывается редактор; [returnSection] — секция, в которую вернётся экран колоды. */
 sealed interface EditorStart {
-    data class NewCard(val returnSection: Section) : EditorStart
+    /**
+     * [returnFocusCardId] — карточка, которая была показана до «+». Отмена черновика возвращает на неё. После
+     * перезапуска (черновик в хранилище) она не известна: черновик её не хранит.
+     */
+    data class NewCard(val returnSection: Section, val returnFocusCardId: Long? = null) : EditorStart
 
     data class EditCard(val cardId: Long, val returnSection: Section) : EditorStart
 
