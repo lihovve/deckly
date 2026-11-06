@@ -136,6 +136,22 @@ class SvgOutlineTest {
     }
 
     @Test
+    fun arcWithZeroRadiusIsAStraightLineToItsEnd() {
+        // По правилам SVG дуга с нулевым радиусом по любой оси превращается в отрезок.
+        assertPoints(points(10f to 10f, 50f to 30f), parse("""<path d="M10 10A0 5 0 0 1 50 30"/>""")[0])
+        assertPoints(points(10f to 10f, 50f to 30f), parse("""<path d="M10 10A5 0 0 0 1 50 30"/>""")[0])
+    }
+
+    @Test
+    fun arcToTheCurrentPointStaysAtThatPoint() {
+        val line = parse("""<path d="M10 10A5 5 0 0 1 10 10"/>""")[0]
+
+        assertEquals(10f, line.last().x, 0.001f)
+        assertEquals(10f, line.last().y, 0.001f)
+        assertTrue(line.all { it.x == 10f && it.y == 10f })
+    }
+
+    @Test
     fun cubicCurveReachesItsEndsAndStaysWithinTwoUnits() {
         val outline = parse("""<path d="M0 0C0 50 100 50 100 0"/>""")
 
