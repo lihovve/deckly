@@ -260,7 +260,7 @@ def editor(new=True, back=False, shape_state=""):
     toolbar += '<button class="btn icon-only quiet undo" aria-label="Undo stroke" title="Undo stroke">'+icon('undo')+'</button></div>'
     # Every state has a static board; the script lets the same design be tried with a pen or mouse.
     state = shape_state or 'idle'
-    bounds = {'selected': (320, 410, 220, 220), 'moved': (510, 490, 220, 220),
+    bounds = {'ready': (354, 371, 220, 220), 'selected': (320, 410, 220, 220), 'moved': (510, 490, 220, 220),
               'resized': (420, 390, 360, 300), 'placed': (420, 390, 360, 300),
               'arrow': (320, 410, 320, 80), 'rotated': (320, 410, 220, 220)}
     x, y, width, height = bounds.get(state, (320, 410, 220, 220))
@@ -296,13 +296,12 @@ def editor(new=True, back=False, shape_state=""):
                   + ('' if selected else ' disabled') + '>' + icon('check') + '</button></div>')
     palette = '<div class="overlay shape-overlay" data-shape-palette' + ('' if state == 'palette' else ' hidden') + '>'
     palette += f'<a class="scrim" href="{context}.html" data-close-shapes aria-label="Close shape menu"></a>'
-    palette += '<section class="shape-palette" role="dialog" aria-modal="true" aria-labelledby="shape-palette-title">'
+    palette += '<section class="shape-palette" role="dialog" aria-modal="true" aria-labelledby="shape-palette-title" tabindex="-1">'
     palette += '<header><h2 id="shape-palette-title">Shapes</h2>' + btn('', context, 'quiet square', 'cross', attrs='aria-label="Close shape menu" data-close-shapes') + '</header>'
     palette += '<div class="shape-grid">'
     for shape, (label, _) in SHAPES.items():
-        current = ' aria-current="true"' if shape == 'star' else ''
         palette += (f'<a class="shape-choice" href="{context}-shape-ready.html" data-choose-shape="{shape}" '
-                    f'aria-label="{label}" title="{label}"{current}>' + build_shape(shape) + '</a>')
+                    f'aria-label="{label}" title="{label}">' + build_shape(shape) + '</a>')
     palette += '</div><div class="shape-width"><label for="shape-width">Outline width</label><output for="shape-width" data-width-value>3</output>'
     palette += '<svg class="stroke-preview" viewBox="0 0 80 24" aria-hidden="true"><path d="M8 12H72" stroke="currentColor" stroke-width="3" fill="none" data-width-preview/></svg>'
     palette += '<input id="shape-width" type="range" min="1" max="12" step="1" value="3" aria-label="Outline width"></div></section></div>'
@@ -451,8 +450,8 @@ for new in [True, False]:
         label = ('New card' if new else 'Edit') + (' · answer' if back else ' · question')
         for suffix, state, title, note in [
             ('shapes', 'palette', 'Shapes', '15 outline shapes. A slider controls outline width independently of the pen; no fill.'),
-            ('shape-ready', 'ready', 'Placement', 'A star is selected. Tap the sheet with the pen to place it; the cross cancels insertion.'),
-            ('shape-selected', 'selected', 'Selection', 'Drag near the outline to move. Corners resize; the handle above the frame rotates. The hollow interior stays free for writing.'),
+            ('shape-ready', 'ready', 'Inserted shape', 'Choosing a shape closes the palette and inserts it at the center with the remembered outline width. No extra pen tap is needed.'),
+            ('shape-selected', 'selected', 'Selection', 'Drag near the outline to move. Corners resize; the upper handle rotates. Touch away from the outline to keep the shape and clear selection, including inside the hollow figure.'),
             ('shape-moved', 'moved', 'Moving', 'The shape has moved within the sheet. Its size and outline width are unchanged.'),
             ('shape-resized', 'resized', 'Resizing', 'Width and height change independently; stretching does not thicken the outline.'),
             ('shape-placed', 'placed', 'After placement', 'The selection frame is hidden and the normal toolbar returns. Tap near the outline to select the shape again; the interior stays free for writing.'),

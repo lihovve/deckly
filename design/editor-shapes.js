@@ -93,6 +93,19 @@ function buildLinearShape(kind, box, lineWidth) {
     return `<svg class="shape-graphic" viewBox="0 0 ${box.w} ${box.h}" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="${lineWidth}" aria-hidden="true"><path d="${path}"/></svg>`;
 }
 
+function readOutlineWidth() {
+    try {
+        const value = Number(localStorage.getItem('deckly.design.outlineWidth'));
+        if (Number.isInteger(value) && value >= 1 && value <= 12) return value;
+    } catch (_) { /* Storage can be blocked for local HTML files. */ }
+    return 3;
+}
+
+function rememberOutlineWidth(value) {
+    try { localStorage.setItem('deckly.design.outlineWidth', String(value)); }
+    catch (_) { /* Keep the current page usable without browser storage. */ }
+}
+
 (function initializeShapeEditor() {
     const stage = document.querySelector('[data-shape-editor]');
     if (!stage) return;
@@ -109,13 +122,12 @@ function buildLinearShape(kind, box, lineWidth) {
     }]));
     const [x, y, w, h] = stage.dataset.bounds.split(',').map(Number);
     const initial = stage.dataset.state;
-    let objects = ['selected', 'moved', 'resized', 'placed', 'arrow', 'rotated'].includes(initial)
-        ? [{kind: stage.dataset.kind, angle: Number(stage.dataset.angle), width: 3, x, y, w, h}] : [];
+    let lineWidth = readOutlineWidth();
+    let objects = ['ready', 'selected', 'moved', 'resized', 'placed', 'arrow', 'rotated'].includes(initial)
+        ? [{kind: stage.dataset.kind, angle: Number(stage.dataset.angle), width: initial === 'ready' ? lineWidth : 3, x, y, w, h}] : [];
     let selected = objects.length && initial !== 'placed' ? 0 : -1;
     let savedObject = null;
-    let pending = initial === 'ready';
     let kind = stage.dataset.kind;
-    let lineWidth = 3;
     let gesture = null;
     let returnFocus = null;
     const corners = {nw: 'top left', ne: 'top right', sw: 'bottom left', se: 'bottom right'};
@@ -162,14 +174,13 @@ function buildLinearShape(kind, box, lineWidth) {
             }
             return node.outerHTML;
         }).join('');
-        stage.classList.toggle('is-ready', pending);
-        normalTools.hidden = pending || selected >= 0;
+        normalTools.hidden = selected >= 0;
         shapeTools.hidden = !normalTools.hidden;
         apply.disabled = selected < 0;
         const preview = shapeTools.querySelector('[data-open-shapes]');
         preview.innerHTML = templates[kind].svg;
-        preview.querySelector('svg').setAttribute('stroke-width', lineWidth);
-        choices.forEach(choice => choice.setAttribute('aria-current', String(choice.dataset.chooseShape === kind)));
+        preview.querySelector('svg').setAttribute('stroke-width', selected >= 0 ? objects[selected].width : lineWidth);
+        choices.forEach(choice => choice.removeAttribute('aria-current'));
     }
 
     function updateShapeWidth() {
@@ -177,7 +188,7 @@ function buildLinearShape(kind, box, lineWidth) {
         palette.querySelector('[data-width-value]').textContent = lineWidth;
         palette.querySelector('[data-width-preview]').setAttribute('stroke-width', lineWidth);
         choices.forEach(choice => choice.querySelector('svg').setAttribute('stroke-width', lineWidth));
-        if (selected >= 0) objects[selected].width = lineWidth;
+        rememberOutlineWidth(lineWidth);
         renderShapeEditor();
     }
 
@@ -189,12 +200,13 @@ function buildLinearShape(kind, box, lineWidth) {
 
     screen.querySelectorAll('[data-open-shapes]').forEach(button => button.addEventListener('click', event => {
         event.preventDefault();
-        returnFocus = button;
+        if (selected >= 0) finishShapeEditing();
+        returnFocus = normalTools.querySelector('[data-open-shapes]');
         slider.value = lineWidth;
         updateShapeWidth();
         palette.hidden = false;
         frame.inert = true;
-        choices.find(choice => choice.dataset.chooseShape === kind).focus();
+        palette.querySelector('.shape-palette').focus();
     }));
     screen.querySelectorAll('[data-close-shapes]').forEach(button => button.addEventListener('click', event => {
         event.preventDefault();
@@ -203,21 +215,22 @@ function buildLinearShape(kind, box, lineWidth) {
     choices.forEach(choice => choice.addEventListener('click', event => {
         event.preventDefault();
         kind = choice.dataset.chooseShape;
-        if (selected >= 0) {
-            const previous = objects[selected];
-            objects[selected] = {...previous, kind, width: lineWidth, h: isLinearShape(kind) ? 80 : previous.h};
-        }
-        else pending = true;
+        const height = isLinearShape(kind) ? 80 : 220;
+        objects.push({kind, angle: 0, width: lineWidth,
+            x: (stage.clientWidth - 220) / 2, y: (stage.clientHeight - height) / 2, w: 220, h: height});
+        selected = objects.length - 1;
+        savedObject = null;
         renderShapeEditor();
         closeShapePalette();
     }));
     slider.addEventListener('input', updateShapeWidth);
-    apply.addEventListener('click', () => {
+    function finishShapeEditing() {
         selected = -1;
         savedObject = null;
-        pending = false;
+        gesture = null;
         renderShapeEditor();
-    });
+    }
+    apply.addEventListener('click', finishShapeEditing);
     screen.querySelector('[data-cancel-shape]').addEventListener('click', event => {
         event.preventDefault();
         if (selected >= 0) {
@@ -226,7 +239,6 @@ function buildLinearShape(kind, box, lineWidth) {
         }
         selected = -1;
         savedObject = null;
-        pending = false;
         gesture = null;
         renderShapeEditor();
     });
@@ -241,20 +253,18 @@ function buildLinearShape(kind, box, lineWidth) {
         if (event.button !== 0 || !event.isPrimary || frame.inert) return;
         const point = findSheetPoint(event);
         const target = event.target.closest('[data-object]');
-        if (pending) {
-            objects.push({kind, angle: 0, width: lineWidth, x: clampShapeValue(point.x - 110, 32, stage.clientWidth - 252),
-                y: clampShapeValue(point.y - (isLinearShape(kind) ? 40 : 110), 80, stage.clientHeight - 252), w: 220, h: isLinearShape(kind) ? 80 : 220});
-            selected = objects.length - 1;
-            savedObject = null;
-            pending = false;
-        } else if (target) {
+        if (target) {
             const index = Number(target.dataset.object);
             // Finish any previous figure before selecting another.
             if (selected !== index) savedObject = {...objects[index]};
             selected = index;
             kind = objects[index].kind;
-            lineWidth = objects[index].width;
-        } else return;
+        } else {
+            // Keep the shape and release selection without consuming pen input.
+            // A stroke can start here, including inside a hollow shape.
+            if (selected >= 0) finishShapeEditing();
+            return;
+        }
         gesture = {point, box: {...objects[selected]}, corner: event.target.closest('[data-resize]')?.dataset.resize,
                    endpoint: event.target.closest('[data-endpoint]')?.dataset.endpoint,
                    rotate: Boolean(event.target.closest('[data-rotate]')), pointerId: event.pointerId};
@@ -291,6 +301,7 @@ function buildLinearShape(kind, box, lineWidth) {
             else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
         }
     });
-    renderShapeEditor();
-    if (!palette.hidden && !palette.closest('[inert]')) choices.find(choice => choice.dataset.chooseShape === kind).focus();
+    slider.value = lineWidth;
+    updateShapeWidth();
+    if (!palette.hidden && !palette.closest('[inert]')) palette.querySelector('.shape-palette').focus();
 })();

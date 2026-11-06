@@ -25,7 +25,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:4px solid #000;
 /* Only a band around the outline selects a shape; its interior is not a target. */
 .shape-object{pointer-events:none;cursor:default}.shape-object>.shape-graphic{pointer-events:none}.shape-object>.shape-hit{position:absolute;inset:0;overflow:visible;stroke:transparent}.shape-hit>*{pointer-events:stroke;cursor:move}.shape-handle{pointer-events:auto}
 .shape-object.is-linear{outline:none}.shape-handle.start{left:calc(12% - 32px);top:calc(50% - 32px)}.shape-handle.end{left:calc(88% - 32px);top:calc(50% - 32px)}.shape-handle.start::after,.shape-handle.end::after{border-radius:50%}.shape-rotate{position:absolute;left:calc(50% - 32px);top:-80px;width:64px;height:64px;border:0;padding:0;background:transparent;display:grid;place-items:center;pointer-events:auto;touch-action:none;cursor:grab}.shape-rotate::before{content:"";position:absolute;top:64px;left:31px;width:1px;height:16px;background:#000}.shape-rotate .icon{width:24px;height:24px;background:#fff}
-</style><main class="screen" data-screen="dlg-editor-back"><div style="display:contents" inert><div class="shape-editor-frame" data-editor-frame><header class="bar"><a class="btn quiet" aria-label="Cancel card creation" href="dlg-discard.html"><span>Cancel</span></a><div class="heading"><h1>New card</h1></div><a class="btn primary"  href="pool.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg><span>Save</span></a></header><nav class="side-tabs" aria-label="Card side"><a class="side-tab selected" href="editor-new.html" aria-current="page">Question</a><a class="side-tab " href="editor-new-back.html">Answer</a></nav><section class="card" aria-label="Canvas. Draw with the pen only"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="hand-stack"><p class="hand">tree</p></div><div class="shape-stage" data-shape-editor data-state="idle" data-context="editor-new" data-kind="star" data-angle="0" data-bounds="320,410,220,220"></div></section><div class="tools" data-normal-tools aria-label="Drawing tools"><div class="thickness" role="group" aria-label="Pen width"><button class="btn " aria-label="Thin line" aria-pressed="false" title="Pen width preview"><i class="line-sample" style="height:2px"></i></button><button class="btn selected" aria-label="Medium line" aria-pressed="true" title="Pen width preview"><i class="line-sample" style="height:7px"></i></button><button class="btn " aria-label="Thick line" aria-pressed="false" title="Pen width preview"><i class="line-sample" style="height:15px"></i></button></div><a class="btn quiet square icon-only" aria-label="Shapes" title="Shapes" data-open-shapes href="editor-new-shapes.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="4"/><path d="m16 5 6 12H10Z M3 16v5h6"/></svg></a><button class="btn icon-only quiet undo" aria-label="Undo stroke" title="Undo stroke"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v6h6M5 11c4-9 15-5 15 2 0 4-3 7-7 7"/></svg></button></div><div class="tools shape-edit-tools" data-shape-tools hidden><a class="btn quiet icon-only" aria-label="Cancel shape insertion or changes" title="Cancel" data-cancel-shape href="editor-new.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></a><button type="button" class="btn quiet" data-open-shapes aria-label="Shape and outline width" title="Shape and outline width"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m50 10 12 27 29 3-22 20 6 30-25-15-25 15 6-30L9 40l29-3Z"/></svg></button><button type="button" class="btn primary apply-shape" data-apply-shape aria-label="Apply shape" title="Apply" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></button></div></div><div class="overlay shape-overlay" data-shape-palette hidden><a class="scrim" href="editor-new.html" data-close-shapes aria-label="Close shape menu"></a><section class="shape-palette" role="dialog" aria-modal="true" aria-labelledby="shape-palette-title"><header><h2 id="shape-palette-title">Shapes</h2><a class="btn quiet square icon-only" aria-label="Close shape menu" data-close-shapes href="editor-new.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></a></header><div class="shape-grid"><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="line" aria-label="Line" title="Line"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 50H88"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="arrow" aria-label="Arrow" title="Arrow"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 50H88L68 30M88 50 68 70"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="double-arrow" aria-label="Double arrow" title="Double arrow"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 50H88M32 30 12 50 32 70M68 30 88 50 68 70"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="rectangle" aria-label="Rectangle" title="Rectangle"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><rect x="14" y="20" width="72" height="60"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="oval" aria-label="Oval" title="Oval"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><ellipse cx="50" cy="50" rx="38" ry="30"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="triangle" aria-label="Triangle" title="Triangle"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 12 89 85H11Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="diamond" aria-label="Diamond" title="Diamond"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 10 86 50 50 90 14 50Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="hexagon" aria-label="Hexagon" title="Hexagon"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M30 15H70L90 50 70 85H30L10 50Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="star" aria-label="Star" title="Star" aria-current="true"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m50 10 12 27 29 3-22 20 6 30-25-15-25 15 6-30L9 40l29-3Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="moon" aria-label="Moon" title="Moon"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M65 12A39 39 0 1 0 87 70 38 38 0 0 1 65 12Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="sun" aria-label="Sun" title="Sun"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><circle cx="50" cy="50" r="23"/><path d="M50 7V16M50 84V93M7 50H16M84 50H93M20 20 27 27M73 73 80 80M20 80 27 73M73 27 80 20"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="heart" aria-label="Heart" title="Heart"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 86 16 53C-5 28 25 4 50 29 75 4 105 28 84 53Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="cloud" aria-label="Cloud" title="Cloud"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M25 77A20 20 0 0 1 19 38 27 27 0 0 1 71 32a23 23 0 0 1 8 45H25Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="bolt" aria-label="Lightning" title="Lightning"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M57 8 20 56H46L39 92 82 40H55Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="drop" aria-label="Drop" title="Drop"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 10C43 25 20 48 20 62A30 30 0 0 0 80 62C80 48 57 25 50 10Z"/></svg></a></div><div class="shape-width"><label for="shape-width">Outline width</label><output for="shape-width" data-width-value>3</output><svg class="stroke-preview" viewBox="0 0 80 24" aria-hidden="true"><path d="M8 12H72" stroke="currentColor" stroke-width="3" fill="none" data-width-preview/></svg><input id="shape-width" type="range" min="1" max="12" step="1" value="3" aria-label="Outline width"></div></section></div></div><div class="overlay"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><h2 id="dialog-title">Save and exit?</h2><footer class="foot two"><a class="btn primary"  href="editor-new.html"><span>Keep editing</span></a><a class="btn "  href="pool.html"><span>Save and exit</span></a></footer></section></div></main><script>/* Interactive design demo only. No application data or drawing is saved. */
+</style><main class="screen" data-screen="dlg-editor-back"><div style="display:contents" inert><div class="shape-editor-frame" data-editor-frame><header class="bar"><a class="btn quiet" aria-label="Cancel card creation" href="dlg-discard.html"><span>Cancel</span></a><div class="heading"><h1>New card</h1></div><a class="btn primary"  href="pool.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg><span>Save</span></a></header><nav class="side-tabs" aria-label="Card side"><a class="side-tab selected" href="editor-new.html" aria-current="page">Question</a><a class="side-tab " href="editor-new-back.html">Answer</a></nav><section class="card" aria-label="Canvas. Draw with the pen only"><i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i><div class="hand-stack"><p class="hand">tree</p></div><div class="shape-stage" data-shape-editor data-state="idle" data-context="editor-new" data-kind="star" data-angle="0" data-bounds="320,410,220,220"></div></section><div class="tools" data-normal-tools aria-label="Drawing tools"><div class="thickness" role="group" aria-label="Pen width"><button class="btn " aria-label="Thin line" aria-pressed="false" title="Pen width preview"><i class="line-sample" style="height:2px"></i></button><button class="btn selected" aria-label="Medium line" aria-pressed="true" title="Pen width preview"><i class="line-sample" style="height:7px"></i></button><button class="btn " aria-label="Thick line" aria-pressed="false" title="Pen width preview"><i class="line-sample" style="height:15px"></i></button></div><a class="btn quiet square icon-only" aria-label="Shapes" title="Shapes" data-open-shapes href="editor-new-shapes.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="4"/><path d="m16 5 6 12H10Z M3 16v5h6"/></svg></a><button class="btn icon-only quiet undo" aria-label="Undo stroke" title="Undo stroke"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v6h6M5 11c4-9 15-5 15 2 0 4-3 7-7 7"/></svg></button></div><div class="tools shape-edit-tools" data-shape-tools hidden><a class="btn quiet icon-only" aria-label="Cancel shape insertion or changes" title="Cancel" data-cancel-shape href="editor-new.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></a><button type="button" class="btn quiet" data-open-shapes aria-label="Shape and outline width" title="Shape and outline width"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m50 10 12 27 29 3-22 20 6 30-25-15-25 15 6-30L9 40l29-3Z"/></svg></button><button type="button" class="btn primary apply-shape" data-apply-shape aria-label="Apply shape" title="Apply" disabled><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></button></div></div><div class="overlay shape-overlay" data-shape-palette hidden><a class="scrim" href="editor-new.html" data-close-shapes aria-label="Close shape menu"></a><section class="shape-palette" role="dialog" aria-modal="true" aria-labelledby="shape-palette-title" tabindex="-1"><header><h2 id="shape-palette-title">Shapes</h2><a class="btn quiet square icon-only" aria-label="Close shape menu" data-close-shapes href="editor-new.html"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></a></header><div class="shape-grid"><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="line" aria-label="Line" title="Line"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 50H88"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="arrow" aria-label="Arrow" title="Arrow"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 50H88L68 30M88 50 68 70"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="double-arrow" aria-label="Double arrow" title="Double arrow"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 50H88M32 30 12 50 32 70M68 30 88 50 68 70"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="rectangle" aria-label="Rectangle" title="Rectangle"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><rect x="14" y="20" width="72" height="60"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="oval" aria-label="Oval" title="Oval"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><ellipse cx="50" cy="50" rx="38" ry="30"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="triangle" aria-label="Triangle" title="Triangle"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 12 89 85H11Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="diamond" aria-label="Diamond" title="Diamond"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 10 86 50 50 90 14 50Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="hexagon" aria-label="Hexagon" title="Hexagon"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M30 15H70L90 50 70 85H30L10 50Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="star" aria-label="Star" title="Star"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m50 10 12 27 29 3-22 20 6 30-25-15-25 15 6-30L9 40l29-3Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="moon" aria-label="Moon" title="Moon"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M65 12A39 39 0 1 0 87 70 38 38 0 0 1 65 12Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="sun" aria-label="Sun" title="Sun"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><circle cx="50" cy="50" r="23"/><path d="M50 7V16M50 84V93M7 50H16M84 50H93M20 20 27 27M73 73 80 80M20 80 27 73M73 27 80 20"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="heart" aria-label="Heart" title="Heart"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 86 16 53C-5 28 25 4 50 29 75 4 105 28 84 53Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="cloud" aria-label="Cloud" title="Cloud"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M25 77A20 20 0 0 1 19 38 27 27 0 0 1 71 32a23 23 0 0 1 8 45H25Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="bolt" aria-label="Lightning" title="Lightning"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M57 8 20 56H46L39 92 82 40H55Z"/></svg></a><a class="shape-choice" href="editor-new-shape-ready.html" data-choose-shape="drop" aria-label="Drop" title="Drop"><svg class="shape-graphic" viewBox="0 0 100 100" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M50 10C43 25 20 48 20 62A30 30 0 0 0 80 62C80 48 57 25 50 10Z"/></svg></a></div><div class="shape-width"><label for="shape-width">Outline width</label><output for="shape-width" data-width-value>3</output><svg class="stroke-preview" viewBox="0 0 80 24" aria-hidden="true"><path d="M8 12H72" stroke="currentColor" stroke-width="3" fill="none" data-width-preview/></svg><input id="shape-width" type="range" min="1" max="12" step="1" value="3" aria-label="Outline width"></div></section></div></div><div class="overlay"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><h2 id="dialog-title">Save and exit?</h2><footer class="foot two"><a class="btn primary"  href="editor-new.html"><span>Keep editing</span></a><a class="btn "  href="pool.html"><span>Save and exit</span></a></footer></section></div></main><script>/* Interactive design demo only. No application data or drawing is saved. */
 function clampShapeValue(value, minimum, maximum) {
     return Math.max(minimum, Math.min(maximum, value));
 }
@@ -120,6 +120,19 @@ function buildLinearShape(kind, box, lineWidth) {
     return `<svg class="shape-graphic" viewBox="0 0 ${box.w} ${box.h}" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="${lineWidth}" aria-hidden="true"><path d="${path}"/></svg>`;
 }
 
+function readOutlineWidth() {
+    try {
+        const value = Number(localStorage.getItem('deckly.design.outlineWidth'));
+        if (Number.isInteger(value) && value >= 1 && value <= 12) return value;
+    } catch (_) { /* Storage can be blocked for local HTML files. */ }
+    return 3;
+}
+
+function rememberOutlineWidth(value) {
+    try { localStorage.setItem('deckly.design.outlineWidth', String(value)); }
+    catch (_) { /* Keep the current page usable without browser storage. */ }
+}
+
 (function initializeShapeEditor() {
     const stage = document.querySelector('[data-shape-editor]');
     if (!stage) return;
@@ -136,13 +149,12 @@ function buildLinearShape(kind, box, lineWidth) {
     }]));
     const [x, y, w, h] = stage.dataset.bounds.split(',').map(Number);
     const initial = stage.dataset.state;
-    let objects = ['selected', 'moved', 'resized', 'placed', 'arrow', 'rotated'].includes(initial)
-        ? [{kind: stage.dataset.kind, angle: Number(stage.dataset.angle), width: 3, x, y, w, h}] : [];
+    let lineWidth = readOutlineWidth();
+    let objects = ['ready', 'selected', 'moved', 'resized', 'placed', 'arrow', 'rotated'].includes(initial)
+        ? [{kind: stage.dataset.kind, angle: Number(stage.dataset.angle), width: initial === 'ready' ? lineWidth : 3, x, y, w, h}] : [];
     let selected = objects.length && initial !== 'placed' ? 0 : -1;
     let savedObject = null;
-    let pending = initial === 'ready';
     let kind = stage.dataset.kind;
-    let lineWidth = 3;
     let gesture = null;
     let returnFocus = null;
     const corners = {nw: 'top left', ne: 'top right', sw: 'bottom left', se: 'bottom right'};
@@ -189,14 +201,13 @@ function buildLinearShape(kind, box, lineWidth) {
             }
             return node.outerHTML;
         }).join('');
-        stage.classList.toggle('is-ready', pending);
-        normalTools.hidden = pending || selected >= 0;
+        normalTools.hidden = selected >= 0;
         shapeTools.hidden = !normalTools.hidden;
         apply.disabled = selected < 0;
         const preview = shapeTools.querySelector('[data-open-shapes]');
         preview.innerHTML = templates[kind].svg;
-        preview.querySelector('svg').setAttribute('stroke-width', lineWidth);
-        choices.forEach(choice => choice.setAttribute('aria-current', String(choice.dataset.chooseShape === kind)));
+        preview.querySelector('svg').setAttribute('stroke-width', selected >= 0 ? objects[selected].width : lineWidth);
+        choices.forEach(choice => choice.removeAttribute('aria-current'));
     }
 
     function updateShapeWidth() {
@@ -204,7 +215,7 @@ function buildLinearShape(kind, box, lineWidth) {
         palette.querySelector('[data-width-value]').textContent = lineWidth;
         palette.querySelector('[data-width-preview]').setAttribute('stroke-width', lineWidth);
         choices.forEach(choice => choice.querySelector('svg').setAttribute('stroke-width', lineWidth));
-        if (selected >= 0) objects[selected].width = lineWidth;
+        rememberOutlineWidth(lineWidth);
         renderShapeEditor();
     }
 
@@ -216,12 +227,13 @@ function buildLinearShape(kind, box, lineWidth) {
 
     screen.querySelectorAll('[data-open-shapes]').forEach(button => button.addEventListener('click', event => {
         event.preventDefault();
-        returnFocus = button;
+        if (selected >= 0) finishShapeEditing();
+        returnFocus = normalTools.querySelector('[data-open-shapes]');
         slider.value = lineWidth;
         updateShapeWidth();
         palette.hidden = false;
         frame.inert = true;
-        choices.find(choice => choice.dataset.chooseShape === kind).focus();
+        palette.querySelector('.shape-palette').focus();
     }));
     screen.querySelectorAll('[data-close-shapes]').forEach(button => button.addEventListener('click', event => {
         event.preventDefault();
@@ -230,21 +242,22 @@ function buildLinearShape(kind, box, lineWidth) {
     choices.forEach(choice => choice.addEventListener('click', event => {
         event.preventDefault();
         kind = choice.dataset.chooseShape;
-        if (selected >= 0) {
-            const previous = objects[selected];
-            objects[selected] = {...previous, kind, width: lineWidth, h: isLinearShape(kind) ? 80 : previous.h};
-        }
-        else pending = true;
+        const height = isLinearShape(kind) ? 80 : 220;
+        objects.push({kind, angle: 0, width: lineWidth,
+            x: (stage.clientWidth - 220) / 2, y: (stage.clientHeight - height) / 2, w: 220, h: height});
+        selected = objects.length - 1;
+        savedObject = null;
         renderShapeEditor();
         closeShapePalette();
     }));
     slider.addEventListener('input', updateShapeWidth);
-    apply.addEventListener('click', () => {
+    function finishShapeEditing() {
         selected = -1;
         savedObject = null;
-        pending = false;
+        gesture = null;
         renderShapeEditor();
-    });
+    }
+    apply.addEventListener('click', finishShapeEditing);
     screen.querySelector('[data-cancel-shape]').addEventListener('click', event => {
         event.preventDefault();
         if (selected >= 0) {
@@ -253,7 +266,6 @@ function buildLinearShape(kind, box, lineWidth) {
         }
         selected = -1;
         savedObject = null;
-        pending = false;
         gesture = null;
         renderShapeEditor();
     });
@@ -268,20 +280,18 @@ function buildLinearShape(kind, box, lineWidth) {
         if (event.button !== 0 || !event.isPrimary || frame.inert) return;
         const point = findSheetPoint(event);
         const target = event.target.closest('[data-object]');
-        if (pending) {
-            objects.push({kind, angle: 0, width: lineWidth, x: clampShapeValue(point.x - 110, 32, stage.clientWidth - 252),
-                y: clampShapeValue(point.y - (isLinearShape(kind) ? 40 : 110), 80, stage.clientHeight - 252), w: 220, h: isLinearShape(kind) ? 80 : 220});
-            selected = objects.length - 1;
-            savedObject = null;
-            pending = false;
-        } else if (target) {
+        if (target) {
             const index = Number(target.dataset.object);
             // Finish any previous figure before selecting another.
             if (selected !== index) savedObject = {...objects[index]};
             selected = index;
             kind = objects[index].kind;
-            lineWidth = objects[index].width;
-        } else return;
+        } else {
+            // Keep the shape and release selection without consuming pen input.
+            // A stroke can start here, including inside a hollow shape.
+            if (selected >= 0) finishShapeEditing();
+            return;
+        }
         gesture = {point, box: {...objects[selected]}, corner: event.target.closest('[data-resize]')?.dataset.resize,
                    endpoint: event.target.closest('[data-endpoint]')?.dataset.endpoint,
                    rotate: Boolean(event.target.closest('[data-rotate]')), pointerId: event.pointerId};
@@ -318,7 +328,8 @@ function buildLinearShape(kind, box, lineWidth) {
             else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
         }
     });
-    renderShapeEditor();
-    if (!palette.hidden && !palette.closest('[inert]')) choices.find(choice => choice.dataset.chooseShape === kind).focus();
+    slider.value = lineWidth;
+    updateShapeWidth();
+    if (!palette.hidden && !palette.closest('[inert]')) palette.querySelector('.shape-palette').focus();
 })();
 </script></x-dc></body></html>

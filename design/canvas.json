@@ -697,7 +697,7 @@
       "y": 35592,
       "w": 992,
       "h": 1323,
-      "title": "E · Placement · New card · question"
+      "title": "E · Inserted shape · New card · question"
     },
     "E-editor-new-shape-selected.dc.html": {
       "x": 3216,
@@ -753,7 +753,7 @@
       "y": 38558,
       "w": 992,
       "h": 1323,
-      "title": "E · Placement · New card · answer"
+      "title": "E · Inserted shape · New card · answer"
     },
     "E-editor-new-back-shape-selected.dc.html": {
       "x": 3216,
@@ -809,7 +809,7 @@
       "y": 41524,
       "w": 992,
       "h": 1323,
-      "title": "E · Placement · Edit · question"
+      "title": "E · Inserted shape · Edit · question"
     },
     "E-editor-edit-shape-selected.dc.html": {
       "x": 3216,
@@ -865,7 +865,7 @@
       "y": 44490,
       "w": 992,
       "h": 1323,
-      "title": "E · Placement · Edit · answer"
+      "title": "E · Inserted shape · Edit · answer"
     },
     "E-editor-edit-back-shape-selected.dc.html": {
       "x": 3216,
