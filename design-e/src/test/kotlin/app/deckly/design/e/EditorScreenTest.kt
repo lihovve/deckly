@@ -375,7 +375,14 @@ class EditorScreenTest {
         isHosted = true
         composeRule.setContent {
             Box(Modifier.size(Tokens.FrameWidth, Tokens.FrameHeight).background(Color.White).testTag("frame")) {
-                screenState?.let { shown -> EditorScreen(shown, { actions += it }) { modifier -> Box(modifier.testTag("slot")) } }
+                screenState?.let { shown ->
+                    EditorScreen(
+                        shown,
+                        { actions += it },
+                        { modifier -> Box(modifier.testTag("slot")) },
+                        { kind, outline, modifier -> Box(modifier.testTag("glyph-${kind.name}-$outline")) },
+                    )
+                }
             }
         }
     }

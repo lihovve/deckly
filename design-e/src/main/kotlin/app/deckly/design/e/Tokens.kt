@@ -97,6 +97,49 @@ object Tokens {
     val LineMedium = 7.dp
     val LineThick = 15.dp
 
+    // --- фигуры: палитра (`.shape-palette` и вложенные правила) ---
+    val ShapePaletteLeft = 32.dp
+    val ShapePaletteBottom = 160.dp
+    val ShapePaletteWidth = 672.dp
+    val ShapePalettePaddingTop = 24.dp
+    val ShapePalettePaddingHorizontal = 32.dp
+    val ShapePalettePaddingBottom = 28.dp
+    val ShapePaletteGap = 20.dp
+    val ShapePaletteTitleText = 28.sp
+    val ShapePaletteTitleSpacing = (-0.6).sp
+    const val ShapeGridColumns = 5
+    val ShapeGridGap = 8.dp
+    val ShapeChoiceHeight = 104.dp
+    val ShapeChoiceGlyph = 56.dp
+    val ShapeWidthPaddingTop = 24.dp
+    val ShapeWidthColumnGap = 20.dp
+    val ShapeWidthPreview = 80.dp
+    val ShapeWidthPreviewHeight = 24.dp
+    val ShapeWidthText = 22.sp
+    val ShapeSliderHeight = 64.dp
+    val ShapeSliderMarginTop = 8.dp
+    val ShapeSliderTrack = 2.dp
+    val ShapeSliderThumb = 32.dp
+    val ShapeSliderThumbBorder = 3.dp
+    const val OutlineWidthMin = 1
+    const val OutlineWidthMax = 12
+
+    // --- фигуры: рамка и ручки выделенной фигуры, образец на панели ---
+    val ShapeHandleTarget = 64.dp
+    val ShapeHandleMark = 16.dp
+    val ShapeHandleMarkBorder = 2.dp
+    val ShapeHandleOffset = 32.dp
+    val ShapeRotateTop = 80.dp
+    val ShapeRotateIcon = 24.dp
+    val ShapeRotateLineWidth = 1.dp
+    val ShapeRotateLineHeight = 16.dp
+    val ShapeFrameDash = 1.dp
+    val ShapeEditSample = 40.dp
+
+    /** Доли ширины рамки линии, где стоят ручки концов: `.shape-handle.start` и `.end`. */
+    const val ShapeStartShare = 0.12f
+    const val ShapeEndShare = 0.88f
+
     // --- список колод и поле ввода ---
     val ListMarginTop = 16.dp
     val ItemMinHeight = 148.dp

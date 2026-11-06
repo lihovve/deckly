@@ -1,5 +1,7 @@
 package app.deckly.design.e
 
+import app.deckly.ui.contract.ShapeHandleKind
+import app.deckly.ui.contract.ShapeKind
 import app.deckly.ui.contract.Thickness
 
 /** Тексты редактора из `design/build.py`: функция `editor`, окна `dlg-discard`, `dlg-delete-edit`, `dlg-editor-back`. Интерфейс английский. */
@@ -32,6 +34,57 @@ internal object EditorTexts {
     const val DELETE_CARD_TEXT = "Both sides will be deleted. You can't undo this."
     const val SAVE_EXIT_TITLE = "Save and exit?"
     const val SAVE_EXIT = "Save and exit"
+
+    // --- фигуры ---
+    const val SHAPES = "Shapes"
+    const val CLOSE_SHAPES = "Close shape menu"
+    const val OUTLINE_WIDTH = "Outline width"
+    const val CANCEL_SHAPE = "Cancel shape insertion or changes"
+    const val SHAPE_AND_OUTLINE = "Shape and outline width"
+    const val APPLY_SHAPE = "Apply shape"
+    const val ROTATE_SHAPE = "Rotate shape"
+    const val RESIZE_TOP_LEFT = "Resize: top left corner"
+    const val RESIZE_TOP_RIGHT = "Resize: top right corner"
+    const val RESIZE_BOTTOM_LEFT = "Resize: bottom left corner"
+    const val RESIZE_BOTTOM_RIGHT = "Resize: bottom right corner"
+
+    // Части «Move start point» и «Move end point»: в макете это `Move {endpoint} point`.
+    const val MOVE = "Move"
+    const val POINT = "point"
+    const val START = "start"
+    const val END = "end"
+
+    /** «Resize: top left corner» и остальные углы: `aria-label` ручки угла. */
+    fun describeCorner(handle: ShapeHandleKind): String = when (handle) {
+        ShapeHandleKind.TOP_LEFT -> RESIZE_TOP_LEFT
+        ShapeHandleKind.TOP_RIGHT -> RESIZE_TOP_RIGHT
+        ShapeHandleKind.BOTTOM_LEFT -> RESIZE_BOTTOM_LEFT
+        ShapeHandleKind.BOTTOM_RIGHT -> RESIZE_BOTTOM_RIGHT
+        else -> error("Не угол: $handle")
+    }
+
+    /** «Move start point» или «Move end point»: `aria-label` ручки конца линии. */
+    fun describeEndpoint(handle: ShapeHandleKind): String =
+        "$MOVE ${if (handle == ShapeHandleKind.START) START else END} $POINT"
+
+    /** Имя вида: подпись значка в палитре и название фигуры на листе (`SHAPES` в макете). */
+    fun describeShape(kind: ShapeKind): String = when (kind) {
+        ShapeKind.LINE -> "Line"
+        ShapeKind.ARROW -> "Arrow"
+        ShapeKind.DOUBLE_ARROW -> "Double arrow"
+        ShapeKind.RECTANGLE -> "Rectangle"
+        ShapeKind.OVAL -> "Oval"
+        ShapeKind.TRIANGLE -> "Triangle"
+        ShapeKind.DIAMOND -> "Diamond"
+        ShapeKind.HEXAGON -> "Hexagon"
+        ShapeKind.STAR -> "Star"
+        ShapeKind.MOON -> "Moon"
+        ShapeKind.SUN -> "Sun"
+        ShapeKind.HEART -> "Heart"
+        ShapeKind.CLOUD -> "Cloud"
+        ShapeKind.BOLT -> "Lightning"
+        ShapeKind.DROP -> "Drop"
+    }
 
     /** «Thin line», «Medium line», «Thick line»: `aria-label="{name} line"`. */
     fun describeThickness(thickness: Thickness): String {

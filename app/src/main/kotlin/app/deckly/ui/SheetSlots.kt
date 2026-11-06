@@ -6,8 +6,10 @@ import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
 import app.deckly.editor.CanvasState
+import app.deckly.editor.toDomainKind
 import app.deckly.ink.CardSideImage
 import app.deckly.ink.DrawingSheet
+import app.deckly.ui.contract.ShapeKind
 
 /**
  * Листы, которые приложение вставляет в слоты дизайна. Отдельный интерфейс нужен, чтобы тесты сборки экранов
@@ -26,6 +28,10 @@ interface SheetSlots {
         onErase: (List<StrokePoint>, Float) -> Unit,
         modifier: Modifier,
     )
+
+    /** Значок вида фигуры в палитре и на панели: толщина контура [outlineDesignUnits] в единицах макета. */
+    @Composable
+    fun ShapeGlyph(kind: ShapeKind, outlineDesignUnits: Int, modifier: Modifier)
 }
 
 /** Настоящие листы из `ink`. Описание листа ставит дизайн через модификатор слота, поэтому здесь его нет. */
@@ -53,5 +59,10 @@ object InkSheetSlots : SheetSlots {
             onShapeTap = {},
             modifier = modifier,
         )
+    }
+
+    @Composable
+    override fun ShapeGlyph(kind: ShapeKind, outlineDesignUnits: Int, modifier: Modifier) {
+        app.deckly.ink.ShapeGlyph(kind.toDomainKind(), outlineDesignUnits, modifier)
     }
 }

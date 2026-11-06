@@ -230,10 +230,15 @@ private fun EditorHost(entry: ScreenEntry, screen: AppScreen.Editor, environment
         // С окном «Назад» закрывает окно, без него предлагает сохранить и выйти.
         BackHandler { viewModel.onAction(if (shown.dialog != null) EditorAction.DismissDialog else EditorAction.Back) }
         RefreshEffect(environment, RefreshKey(entry.token, cardId = null, editorSide = shown.side)) { isRefreshing = it }
-        environment.design.EditorScreen(shown, viewModel::onAction) { modifier ->
-            val shownCanvas = if (isRefreshing) canvas.copy(isPenEnabled = false) else canvas
-            environment.sheets.EditorSheet(shownCanvas, viewModel::onStroke, viewModel::onErase, modifier)
-        }
+        environment.design.EditorScreen(
+            shown,
+            viewModel::onAction,
+            sheet = { modifier ->
+                val shownCanvas = if (isRefreshing) canvas.copy(isPenEnabled = false) else canvas
+                environment.sheets.EditorSheet(shownCanvas, viewModel::onStroke, viewModel::onErase, modifier)
+            },
+            shapeGlyph = { kind, outline, modifier -> environment.sheets.ShapeGlyph(kind, outline, modifier) },
+        )
     }
 }
 

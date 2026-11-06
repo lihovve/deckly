@@ -11,6 +11,7 @@ import app.deckly.ui.contract.DeckScreenState
 import app.deckly.ui.contract.Design
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.EditorScreenState
+import app.deckly.ui.contract.ShapeKind
 import app.deckly.ui.contract.StartupAction
 import app.deckly.ui.contract.StartupState
 
@@ -31,8 +32,12 @@ object DesignE : Design {
         app.deckly.design.e.DeckScreen(state, onAction, sheet)
 
     @Composable
-    override fun EditorScreen(state: EditorScreenState, onAction: (EditorAction) -> Unit, sheet: @Composable (Modifier) -> Unit) =
-        app.deckly.design.e.EditorScreen(state, onAction, sheet)
+    override fun EditorScreen(
+        state: EditorScreenState,
+        onAction: (EditorAction) -> Unit,
+        sheet: @Composable (Modifier) -> Unit,
+        shapeGlyph: @Composable (ShapeKind, Int, Modifier) -> Unit,
+    ) = app.deckly.design.e.EditorScreen(state, onAction, sheet, shapeGlyph)
 
     @Composable
     override fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) =

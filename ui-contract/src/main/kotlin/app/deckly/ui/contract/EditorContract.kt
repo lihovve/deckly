@@ -6,9 +6,26 @@ enum class Thickness { THIN, MEDIUM, THICK }
 /** Окна поверх редактора: отмена черновика, удаление карточки, выход из редактора. */
 enum class EditorDialog { DISCARD_DRAFT, DELETE_CARD, SAVE_ON_BACK }
 
+/** Виды фигур в порядке палитры макета (`SHAPES` в `design/build.py`). */
+enum class ShapeKind { LINE, ARROW, DOUBLE_ARROW, RECTANGLE, OVAL, TRIANGLE, DIAMOND, HEXAGON, STAR, MOON, SUN, HEART, CLOUD, BOLT, DROP }
+
+/** Ручка выделенной фигуры: четыре угла, концы линии или стрелки и ручка поворота над рамкой. */
+enum class ShapeHandleKind { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, START, END, ROTATE }
+
+/**
+ * Рамка фигуры в единицах карточки: ширина листа 1000, `x` вправо, `y` вниз. [angle] в градусах по часовой стрелке
+ * вокруг центра рамки. У линии и стрелок ([isLinear]) ручек два, по концам оси, и ручки поворота нет.
+ */
+data class ShapeFrame(val left: Float, val top: Float, val right: Float, val bottom: Float, val angle: Float, val isLinear: Boolean)
+
+/** Выделенная фигура: вид, рамка и толщина контура 1…12 в единицах макета (dp). Контур самой фигуры рисует лист. */
+data class SelectedShape(val kind: ShapeKind, val frame: ShapeFrame, val outlineWidth: Int)
+
 /**
  * Состояние редактора. [isNewCard] определяет левое действие шапки: «Отменить» у новой карточки,
- * «Удалить» у правки.
+ * «Удалить» у правки. [selectedShape] — фигура в руках: пока она есть, вместо обычной панели панель фигуры, а над листом
+ * рамка и ручки. [isShapePaletteOpen] — открыта палитра видов и толщины контура, [paletteOutlineWidth] — толщина,
+ * которую получит новая фигура.
  */
 data class EditorScreenState(
     val isNewCard: Boolean,
@@ -16,6 +33,9 @@ data class EditorScreenState(
     val thickness: Thickness,
     val canUndo: Boolean,
     val dialog: EditorDialog?,
+    val selectedShape: SelectedShape? = null,
+    val isShapePaletteOpen: Boolean = false,
+    val paletteOutlineWidth: Int = 3,
 )
 
 sealed interface EditorAction {
@@ -39,4 +59,35 @@ sealed interface EditorAction {
     data object ConfirmDialog : EditorAction
 
     data object DismissDialog : EditorAction
+
+    /** Значок «Shapes» (или образец вида на панели фигуры): открыть палитру. */
+    data object OpenShapePalette : EditorAction
+
+    /** Крест палитры или касание мимо неё. */
+    data object CloseShapePalette : EditorAction
+
+    /** Вид выбран в палитре: фигура вставляется по центру и выделяется. */
+    data class ChooseShape(val kind: ShapeKind) : EditorAction
+
+    /** Ползунок толщины контура 1…12: действует на новые фигуры. */
+    data class SetOutlineWidth(val width: Int) : EditorAction
+
+    /**
+     * Перо коснулось листа при выделенной фигуре. [handle] — ручка, за которую взялись, `null` — любое другое место
+     * листа (перенос за контур или касание мимо, это решает модель). [x], [y] в единицах карточки.
+     */
+    data class StartShapeGesture(val handle: ShapeHandleKind?, val x: Float, val y: Float) : EditorAction
+
+    data class MoveShapeGesture(val x: Float, val y: Float) : EditorAction
+
+    data object EndShapeGesture : EditorAction
+
+    /** Жест прерван (отмена касания). */
+    data object CancelShapeGesture : EditorAction
+
+    /** Галочка: фигура применена. */
+    data object ApplyShape : EditorAction
+
+    /** Крест: новая фигура исчезает, правка возвращается как была. */
+    data object CancelShape : EditorAction
 }

@@ -33,6 +33,8 @@ import app.deckly.ui.contract.CardSideShown
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.EditorDialog
 import app.deckly.ui.contract.EditorScreenState
+import app.deckly.ui.contract.SelectedShape
+import app.deckly.ui.contract.ShapeKind
 import app.deckly.ui.contract.Thickness
 
 /**
@@ -40,14 +42,27 @@ import app.deckly.ui.contract.Thickness
  * лист, панель инструментов. Лист отдаёт приложение слотом [sheet]; холст на нём рисует `ink`.
  */
 @Composable
-fun EditorScreen(state: EditorScreenState, onAction: (EditorAction) -> Unit, sheet: @Composable (Modifier) -> Unit) {
-    ScreenFrame(overlay = { state.dialog?.let { EditorDialogHost(it, onAction) } }) {
+fun EditorScreen(
+    state: EditorScreenState,
+    onAction: (EditorAction) -> Unit,
+    sheet: @Composable (Modifier) -> Unit,
+    shapeGlyph: @Composable (ShapeKind, Int, Modifier) -> Unit,
+) {
+    ScreenFrame(
+        overlay = {
+            state.dialog?.let { EditorDialogHost(it, onAction) }
+            if (state.isShapePaletteOpen) ShapePalette(state.paletteOutlineWidth, onAction, shapeGlyph)
+        },
+    ) {
         EditorHeader(state.isNewCard, onAction)
         SideTabs(state.side) { onAction(EditorAction.SelectSide(it)) }
         Sheet(Modifier.weight(1f).fillMaxWidth()) {
             sheet(Modifier.fillMaxSize().semantics { contentDescription = EditorTexts.CANVAS })
+            // Рамка и ручки лежат над листом только пока фигура выделена.
+            state.selectedShape?.let { ShapeStage(it, onAction, Modifier.fillMaxSize()) }
         }
-        EditorTools(state, onAction)
+        val selected = state.selectedShape
+        if (selected != null) ShapeEditTools(selected, onAction, shapeGlyph) else EditorTools(state, onAction)
     }
 }
 
@@ -127,11 +142,62 @@ private fun EditorTools(state: EditorScreenState, onAction: (EditorAction) -> Un
         horizontalArrangement = Arrangement.spacedBy(Tokens.ToolsGap),
     ) {
         ThicknessGroup(state.thickness) { onAction(EditorAction.SelectThickness(it)) }
+        // Значок «Shapes» шириной 112 (`.tools>.btn` идёт в стилях позже `.btn.square`) открывает палитру.
+        DecklyButton(
+            null, DecklyIcons.Shapes, ButtonKind.QUIET, EditorTexts.SHAPES,
+            { onAction(EditorAction.OpenShapePalette) }, Modifier.size(Tokens.ToolButton),
+        )
         Spacer(Modifier.weight(1f))
         DecklyButton(
             null, DecklyIcons.Undo, if (state.canUndo) ButtonKind.QUIET else ButtonKind.OFF, EditorTexts.UNDO_STROKE,
             { onAction(EditorAction.Undo) }, Modifier.size(Tokens.ToolButton),
         )
+    }
+}
+
+// Панель выделенной фигуры (`.shape-edit-tools`): крест, образец вида с контуром этой фигуры (открывает палитру) и
+// галочка, прижатая вправо. Шапка и вкладки сторон над листом остаются и работают.
+@Composable
+private fun ShapeEditTools(
+    selected: SelectedShape,
+    onAction: (EditorAction) -> Unit,
+    shapeGlyph: @Composable (ShapeKind, Int, Modifier) -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().height(Tokens.ToolsHeight).semantics { contentDescription = EditorTexts.TOOLS },
+        horizontalArrangement = Arrangement.spacedBy(Tokens.ToolsGap),
+    ) {
+        DecklyButton(
+            null, DecklyIcons.Cross, ButtonKind.QUIET, EditorTexts.CANCEL_SHAPE,
+            { onAction(EditorAction.CancelShape) }, Modifier.size(Tokens.ToolButton),
+        )
+        ShapeSampleButton(selected, onAction, shapeGlyph)
+        Spacer(Modifier.weight(1f))
+        DecklyButton(
+            null, DecklyIcons.Check, ButtonKind.PRIMARY, EditorTexts.APPLY_SHAPE,
+            { onAction(EditorAction.ApplyShape) }, Modifier.size(Tokens.ToolButton),
+        )
+    }
+}
+
+// Тихая кнопка 112 × 112 с образцом вида 40 × 40 и толщиной контура выделенной фигуры.
+@Composable
+private fun ShapeSampleButton(
+    selected: SelectedShape,
+    onAction: (EditorAction) -> Unit,
+    shapeGlyph: @Composable (ShapeKind, Int, Modifier) -> Unit,
+) {
+    val shape = RoundedCornerShape(Tokens.RadiusSmall)
+    Box(
+        Modifier
+            .size(Tokens.ToolButton)
+            .clickSilently(true, Role.Button) { onAction(EditorAction.OpenShapePalette) }
+            .semantics { contentDescription = EditorTexts.SHAPE_AND_OUTLINE }
+            .background(Tokens.White, shape)
+            .border(Tokens.BorderMedium, Color.Transparent, shape),
+        contentAlignment = Alignment.Center,
+    ) {
+        shapeGlyph(selected.kind, selected.outlineWidth, Modifier.size(Tokens.ShapeEditSample))
     }
 }
 

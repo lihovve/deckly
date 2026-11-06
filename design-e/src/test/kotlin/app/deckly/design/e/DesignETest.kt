@@ -76,7 +76,7 @@ class DesignETest {
     @Test
     fun editorScreenIsEditor() {
         val state = EditorScreenState(true, CardSideShown.FRONT, Thickness.MEDIUM, canUndo = false, dialog = null)
-        showFrame { design.EditorScreen(state, {}) { Box(it.testTag("slot")) } }
+        showFrame { design.EditorScreen(state, {}, { Box(it.testTag("slot")) }, { _, _, modifier -> Box(modifier) }) }
 
         composeRule.onNodeWithText("New card").assertExists()
         // Холст приложения встал в слот листа редактора.

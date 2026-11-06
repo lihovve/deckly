@@ -215,6 +215,98 @@ class TokensTest {
     }
 
     @Test
+    fun shapePaletteMatchesStyles() {
+        assertDp(findCssNumber(".shape-palette", "left"), Tokens.ShapePaletteLeft)
+        assertDp(findCssNumber(".shape-palette", "bottom"), Tokens.ShapePaletteBottom)
+        assertDp(findCssNumber(".shape-palette", "width"), Tokens.ShapePaletteWidth)
+        assertDp(findCssNumber(".shape-palette", "padding", index = 0), Tokens.ShapePalettePaddingTop)
+        assertDp(findCssNumber(".shape-palette", "padding", index = 1), Tokens.ShapePalettePaddingHorizontal)
+        assertDp(findCssNumber(".shape-palette", "padding", index = 2), Tokens.ShapePalettePaddingBottom)
+        assertDp(findCssNumber(".shape-palette", "border"), Tokens.BorderMedium)
+        assertDp(findCssNumber(".shape-palette", "border-radius"), Tokens.RadiusLarge)
+        assertDp(findCssNumber(".shape-palette", "gap"), Tokens.ShapePaletteGap)
+        assertSp(findCssNumber(".shape-palette h2", "font-size"), Tokens.ShapePaletteTitleText)
+        assertSp(findCssNumber(".shape-palette h2", "letter-spacing"), Tokens.ShapePaletteTitleSpacing)
+    }
+
+    @Test
+    fun shapeGridAndChoicesMatchStyles() {
+        assertEquals("repeat(5,1fr)", findCssValue(".shape-grid", "grid-template-columns"))
+        assertEquals(5, Tokens.ShapeGridColumns)
+        assertDp(findCssNumber(".shape-grid", "gap"), Tokens.ShapeGridGap)
+        assertDp(findCssNumber(".shape-choice", "height"), Tokens.ShapeChoiceHeight)
+        assertDp(findCssNumber(".shape-choice", "border"), Tokens.BorderMedium)
+        assertEquals("2px solid transparent", findCssValue(".shape-choice", "border"))
+        assertDp(findCssNumber(".shape-choice", "border-radius"), Tokens.RadiusSmall)
+        assertDp(findCssNumber(".shape-choice .shape-graphic", "width"), Tokens.ShapeChoiceGlyph)
+        assertDp(findCssNumber(".shape-choice .shape-graphic", "height"), Tokens.ShapeChoiceGlyph)
+        // Выбранный вид в рамке, но в палитре выбранного нет (проверяют тесты палитры).
+        assertEquals("#000", findCssValue(".shape-choice[aria-current=\"true\"]", "border-color"))
+    }
+
+    @Test
+    fun outlineWidthSectionAndSliderMatchStyles() {
+        assertEquals("1px solid #000", findCssValue(".shape-width", "border-top"))
+        assertDp(findCssNumber(".shape-width", "border-top"), Tokens.BorderThin)
+        assertDp(findCssNumber(".shape-width", "padding-top"), Tokens.ShapeWidthPaddingTop)
+        assertEquals("1fr auto 80px", findCssValue(".shape-width", "grid-template-columns"))
+        assertDp(findCssNumber(".shape-width", "grid-template-columns", index = 1), Tokens.ShapeWidthPreview)
+        assertDp(findCssNumber(".shape-width", "column-gap"), Tokens.ShapeWidthColumnGap)
+        assertSp(findCssNumber(".shape-width", "font-size"), Tokens.ShapeWidthText)
+        assertDp(findCssNumber(".stroke-preview", "width"), Tokens.ShapeWidthPreview)
+        assertDp(findCssNumber(".stroke-preview", "height"), Tokens.ShapeWidthPreviewHeight)
+        assertDp(findCssNumber(".shape-width input", "height"), Tokens.ShapeSliderHeight)
+        assertDp(findCssNumber(".shape-width input", "margin", index = 0), Tokens.ShapeSliderMarginTop)
+        assertDp(findCssNumber(".shape-width input::-webkit-slider-runnable-track", "height"), Tokens.ShapeSliderTrack)
+        assertDp(findCssNumber(".shape-width input::-webkit-slider-thumb", "width"), Tokens.ShapeSliderThumb)
+        assertDp(findCssNumber(".shape-width input::-webkit-slider-thumb", "height"), Tokens.ShapeSliderThumb)
+        assertEquals("3px solid #000", findCssValue(".shape-width input::-webkit-slider-thumb", "border"))
+        assertDp(findCssNumber(".shape-width input::-webkit-slider-thumb", "border"), Tokens.ShapeSliderThumbBorder)
+        assertEquals("#fff", findCssValue(".shape-width input::-webkit-slider-thumb", "background"))
+        assertTrue(buildScript.contains("type=\"range\" min=\"${Tokens.OutlineWidthMin}\" max=\"${Tokens.OutlineWidthMax}\" step=\"1\""))
+    }
+
+    @Test
+    fun shapeHandlesAndFrameMatchStyles() {
+        assertDp(findCssNumber(".shape-handle", "width"), Tokens.ShapeHandleTarget)
+        assertDp(findCssNumber(".shape-handle", "height"), Tokens.ShapeHandleTarget)
+        assertDp(findCssNumber(".shape-handle::after", "width"), Tokens.ShapeHandleMark)
+        assertDp(findCssNumber(".shape-handle::after", "height"), Tokens.ShapeHandleMark)
+        assertEquals("2px solid #000", findCssValue(".shape-handle::after", "border"))
+        assertDp(findCssNumber(".shape-handle::after", "border"), Tokens.ShapeHandleMarkBorder)
+        // Знак стоит в середине цели: (64 − 16) / 2 с каждой стороны.
+        assertDp(findCssNumber(".shape-handle::after", "left"), (Tokens.ShapeHandleTarget - Tokens.ShapeHandleMark) / 2)
+        assertDp(findCssNumber(".shape-handle::after", "top"), (Tokens.ShapeHandleTarget - Tokens.ShapeHandleMark) / 2)
+        // Цель выступает за угол рамки наполовину.
+        val sides = mapOf("nw" to listOf("top", "left"), "ne" to listOf("top", "right"), "sw" to listOf("bottom", "left"), "se" to listOf("bottom", "right"))
+        for ((corner, properties) in sides) {
+            for (property in properties) assertDp(findCssNumber(".shape-handle.$corner", property), -Tokens.ShapeHandleOffset)
+        }
+        assertEquals("1px dashed #000", findCssValue(".shape-object.is-selected", "outline"))
+        assertDp(findCssNumber(".shape-object.is-selected", "outline"), Tokens.ShapeFrameDash)
+        assertEquals(findCssNumber(".shape-handle.start", "left"), Tokens.ShapeStartShare * 100f, 0.01f)
+        assertEquals(findCssNumber(".shape-handle.end", "left"), Tokens.ShapeEndShare * 100f, 0.01f)
+        assertEquals("50%", findCssValue(".shape-handle.start", "top").substringAfter("calc(").substringBefore(" "))
+        assertEquals("border-radius", "50%", findCssValue(".shape-handle.start::after,.shape-handle.end::after", "border-radius"))
+    }
+
+    @Test
+    fun rotateHandleAndEditToolsMatchStyles() {
+        assertDp(findCssNumber(".shape-rotate", "width"), Tokens.ShapeHandleTarget)
+        assertDp(findCssNumber(".shape-rotate", "height"), Tokens.ShapeHandleTarget)
+        assertDp(findCssNumber(".shape-rotate", "top"), -Tokens.ShapeRotateTop)
+        assertEquals("calc(50% - 32px)", findCssValue(".shape-rotate", "left"))
+        assertDp(findCssNumber(".shape-rotate .icon", "width"), Tokens.ShapeRotateIcon)
+        assertDp(findCssNumber(".shape-rotate .icon", "height"), Tokens.ShapeRotateIcon)
+        assertDp(findCssNumber(".shape-rotate::before", "top"), Tokens.ShapeHandleTarget)
+        assertDp(findCssNumber(".shape-rotate::before", "left"), Tokens.ShapeHandleTarget / 2 - Tokens.ShapeRotateLineWidth)
+        assertDp(findCssNumber(".shape-rotate::before", "width"), Tokens.ShapeRotateLineWidth)
+        assertDp(findCssNumber(".shape-rotate::before", "height"), Tokens.ShapeRotateLineHeight)
+        assertDp(findCssNumber(".shape-edit-tools .shape-graphic", "width"), Tokens.ShapeEditSample)
+        assertDp(findCssNumber(".shape-edit-tools .shape-graphic", "height"), Tokens.ShapeEditSample)
+    }
+
+    @Test
     fun controlsAndTextMeetDeviceMinimums() {
         // ТЗ: цель касания не меньше 64 dp, текст не меньше 18 sp.
         assertTrue(Tokens.ControlMin >= 64.dp)

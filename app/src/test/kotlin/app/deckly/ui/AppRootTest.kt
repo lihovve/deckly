@@ -70,6 +70,7 @@ import app.deckly.ui.contract.Design
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.CardSideShown
 import app.deckly.ui.contract.EditorScreenState
+import app.deckly.ui.contract.ShapeKind
 import app.deckly.ui.contract.StartupAction
 import app.deckly.ui.contract.StartupState
 import java.io.File
@@ -808,6 +809,11 @@ class AppRootTest {
             }
             Box(modifier)
         }
+
+        @Composable
+        override fun ShapeGlyph(kind: ShapeKind, outlineDesignUnits: Int, modifier: Modifier) {
+            Box(modifier)
+        }
     }
 
     // Дизайн, который ничего не рисует, а запоминает, что видит дерево над экраном.
@@ -835,7 +841,12 @@ class AppRootTest {
         override fun DeckScreen(state: DeckScreenState, onAction: (DeckAction) -> Unit, sheet: @Composable (Modifier) -> Unit) = Unit
 
         @Composable
-        override fun EditorScreen(state: EditorScreenState, onAction: (EditorAction) -> Unit, sheet: @Composable (Modifier) -> Unit) {
+        override fun EditorScreen(
+            state: EditorScreenState,
+            onAction: (EditorAction) -> Unit,
+            sheet: @Composable (Modifier) -> Unit,
+            shapeGlyph: @Composable (ShapeKind, Int, Modifier) -> Unit,
+        ) {
             SideEffect { editorStates += state }
         }
 

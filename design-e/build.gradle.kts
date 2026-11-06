@@ -25,7 +25,11 @@ android {
                 it.jvmArgs("--enable-native-access=ALL-UNNAMED")
                 // Тесты сверяют тексты, значки и токены с макетом (`MockupSources` читает `../design`). Файлы вне модуля Gradle
                 // сам входами не считает: без этого правка макета оставляла бы тесты UP-TO-DATE, и «зелёный» ничего не значил.
-                it.inputs.files(rootProject.file("design/build.py"), rootProject.file("design/styles.css"))
+                it.inputs.files(
+                    rootProject.file("design/build.py"),
+                    rootProject.file("design/styles.css"),
+                    rootProject.file("design/editor-shapes.js"),
+                )
                     .withPropertyName("mockupSources")
                     .withPathSensitivity(PathSensitivity.RELATIVE)
             }

@@ -10,8 +10,8 @@
 - APK: `./gradlew :app:assembleDebug`.
 - Все проверки: `./gradlew build` (тесты всех модулей и `verifyModuleGraph`).
 - Один модуль: `./gradlew :domain:test`, `./gradlew :data:testDebugUnitTest` (так же `ink`, `design-e`, `app`).
-- Тесты `design-e` читают `design/build.py` и `design/styles.css`; они объявлены входами задач, поэтому правка макета
-  перезапускает их сама. Если зелёному результату нельзя верить: `./gradlew :design-e:testDebugUnitTest --rerun`.
+- Тесты `design-e` читают `design/build.py`, `design/styles.css` и `design/editor-shapes.js`; они объявлены входами задач,
+  поэтому правка макета перезапускает их сама. Если зелёному результату нельзя верить: `./gradlew :design-e:testDebugUnitTest --rerun`.
 - Макет пересобирает `python3 design/build.py`; собранные файлы в `design/` руками не правятся.
 - Тесты скриптов установки: `bash tools/test/install-apk-test.sh`.
 

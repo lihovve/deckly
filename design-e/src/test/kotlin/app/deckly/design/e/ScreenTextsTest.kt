@@ -1,6 +1,8 @@
 package app.deckly.design.e
 
 import app.deckly.design.e.MockupSources.buildScript
+import app.deckly.design.e.MockupSources.shapesScript
+import app.deckly.ui.contract.ShapeHandleKind
 import java.io.File
 import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
@@ -34,6 +36,32 @@ class ScreenTextsTest {
         assertTrue(buildScript.contains("aria-label=\"{name} line\""))
         assertEquals(listOf("01", "02", "09", "10", "12"), listOf(1, 2, 9, 10, 12).map { DeckListTexts.formatDeckNumber(it) })
         assertTrue(buildScript.contains("{number:02}"))
+    }
+
+    @Test
+    fun shapeHandleLabelsFollowTheMockupScript() {
+        // Подписи ручек собирает сценарий редактора фигур: углы, концы линии и ручка поворота.
+        assertTrue(shapesScript.contains("{nw: 'top left', ne: 'top right', sw: 'bottom left', se: 'bottom right'}"))
+        assertTrue(shapesScript.contains("'Resize: ' + label + ' corner'"))
+        assertTrue(shapesScript.contains("{start: 'start point', end: 'end point'}"))
+        assertTrue(shapesScript.contains("'Move ' + label"))
+        assertTrue(shapesScript.contains("setAttribute('aria-label', 'Rotate shape')"))
+        assertEquals("Resize: top left corner", EditorTexts.describeCorner(ShapeHandleKind.TOP_LEFT))
+        assertEquals("Resize: top right corner", EditorTexts.describeCorner(ShapeHandleKind.TOP_RIGHT))
+        assertEquals("Resize: bottom left corner", EditorTexts.describeCorner(ShapeHandleKind.BOTTOM_LEFT))
+        assertEquals("Resize: bottom right corner", EditorTexts.describeCorner(ShapeHandleKind.BOTTOM_RIGHT))
+        assertEquals("Move start point", EditorTexts.describeEndpoint(ShapeHandleKind.START))
+        assertEquals("Move end point", EditorTexts.describeEndpoint(ShapeHandleKind.END))
+        assertEquals("Rotate shape", EditorTexts.ROTATE_SHAPE)
+    }
+
+    @Test
+    fun shapeNamesAreMockupLabelsOfTheFifteenShapes() {
+        val labels = MockupSources.listShapeLabels()
+
+        assertEquals(15, labels.size)
+        assertEquals(labels, app.deckly.ui.contract.ShapeKind.entries.map { EditorTexts.describeShape(it) })
+        for (label in labels) assertTrue("«$label» нет в build.py", buildScript.contains("('$label', '"))
     }
 
     @Test

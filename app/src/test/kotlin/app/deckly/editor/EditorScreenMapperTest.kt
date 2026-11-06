@@ -9,11 +9,13 @@ import app.deckly.domain.editor.startNewCard
 import app.deckly.domain.editor.switchSide
 import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Side
 import app.deckly.fixtures.buildStroke
 import app.deckly.ui.contract.CardSideShown
 import app.deckly.ui.contract.EditorDialog
 import app.deckly.ui.contract.EditorScreenState
+import app.deckly.ui.contract.ShapeKind
 import app.deckly.ui.contract.Thickness
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -73,5 +75,12 @@ class EditorScreenMapperTest {
         assertEquals(3f, Thickness.THIN.toPenWidthPx(), 0f)
         assertEquals(10f, Thickness.MEDIUM.toPenWidthPx(), 0f)
         assertEquals(25f, Thickness.THICK.toPenWidthPx(), 0f)
+    }
+
+    @Test
+    fun shapeKindsMapBothWaysInThePaletteOrder() {
+        assertEquals(Shape.Kind.entries, ShapeKind.entries.map { it.toDomainKind() })
+        assertEquals(ShapeKind.entries, Shape.Kind.entries.map { it.toContractKind() })
+        assertEquals(15, ShapeKind.entries.size)
     }
 }

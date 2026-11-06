@@ -13,24 +13,37 @@ object MockupSources {
     val css: String by lazy { read("styles.css").replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), "") }
     val buildScript: String by lazy { read("build.py") }
 
+    // Сценарий редактора фигур: подписи ручек собираются в нём, а не в build.py.
+    val shapesScript: String by lazy { read("editor-shapes.js") }
+
     private fun read(name: String): String {
         val file = File(designDir, name)
         check(file.isFile) { "Нет файла макетов ${file.absolutePath}" }
         return file.readText()
     }
 
-    /** Значение свойства [property] в правиле с точным селектором [selector]; без правила — ошибка. */
+    /**
+     * Значение свойства [property] в правилах с точным селектором [selector]: как у каскада, побеждает последнее правило,
+     * где свойство есть (селектор в `styles.css` может встречаться несколько раз). Без правила или свойства — ошибка.
+     */
     fun findCssValue(selector: String, property: String): String {
-        val body = css.split('}')
+        val bodies = css.split('}')
             .map { it.substringBefore('{').trim() to it.substringAfter('{', "") }
-            .firstOrNull { (name, _) -> name == selector }
-            ?.second
-            ?: error("В styles.css нет правила $selector")
-        val declaration = body.split(';')
-            .map { it.trim() }
-            .firstOrNull { it.substringBefore(':').trim() == property }
+            .filter { (name, _) -> name == selector }
+            .map { it.second }
+        check(bodies.isNotEmpty()) { "В styles.css нет правила $selector" }
+        val declaration = bodies.asReversed()
+            .firstNotNullOfOrNull { body ->
+                body.split(';').map { it.trim() }.firstOrNull { it.substringBefore(':').trim() == property }
+            }
             ?: error("В правиле $selector нет свойства $property")
         return declaration.substringAfter(':').trim()
+    }
+
+    /** Подписи видов фигур в порядке словаря `SHAPES` в `build.py`. */
+    fun listShapeLabels(): List<String> {
+        val block = buildScript.substringAfter("SHAPES = {").substringBefore("\n}\n")
+        return Regex("'[\\w-]+': \\('([^']+)', '").findAll(block).map { it.groupValues[1] }.toList()
     }
 
     /** Число пикселей из значения вида `64px`, `-.6px` или `1.8`. */

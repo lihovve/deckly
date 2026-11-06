@@ -179,6 +179,11 @@ class EditorViewModel(
             EditorAction.Delete -> if (current.draft.cardId != null) openDialog(EditorDialog.DELETE_CARD)
             EditorAction.Back -> openDialog(EditorDialog.SAVE_ON_BACK)
             EditorAction.ConfirmDialog, EditorAction.DismissDialog -> Unit
+            // Палитра, выделение и жесты фигур: дизайн их уже присылает, модель получит их в задаче 6 плана 4.3.
+            EditorAction.OpenShapePalette, EditorAction.CloseShapePalette, is EditorAction.ChooseShape,
+            is EditorAction.SetOutlineWidth, is EditorAction.StartShapeGesture, is EditorAction.MoveShapeGesture,
+            EditorAction.EndShapeGesture, EditorAction.CancelShapeGesture, EditorAction.ApplyShape, EditorAction.CancelShape,
+            -> Unit
         }
     }
 

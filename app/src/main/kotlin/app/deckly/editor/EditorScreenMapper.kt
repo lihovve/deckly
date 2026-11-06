@@ -3,10 +3,12 @@ package app.deckly.editor
 import app.deckly.deck.toShown
 import app.deckly.domain.editor.EditorSession
 import app.deckly.domain.model.Side
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Stroke
 import app.deckly.ui.contract.CardSideShown
 import app.deckly.ui.contract.EditorDialog
 import app.deckly.ui.contract.EditorScreenState
+import app.deckly.ui.contract.ShapeKind
 import app.deckly.ui.contract.Thickness
 
 /** Состояние редактора для дизайна. Отмена доступна, пока есть что отменять. */
@@ -37,3 +39,8 @@ fun CardSideShown.toSide(): Side = when (this) {
     CardSideShown.FRONT -> Side.FRONT
     CardSideShown.BACK -> Side.BACK
 }
+
+/** Вид фигуры контракта в вид модели: имена совпадают, порядок тот же (палитра макета). */
+fun ShapeKind.toDomainKind(): Shape.Kind = Shape.Kind.valueOf(name)
+
+fun Shape.Kind.toContractKind(): ShapeKind = ShapeKind.valueOf(name)
