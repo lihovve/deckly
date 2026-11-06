@@ -1,7 +1,7 @@
 package app.deckly.data.strokes
 
 import app.deckly.data.timing.DecklyTiming
-import app.deckly.domain.model.Stroke
+import app.deckly.domain.model.CardSide
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -45,14 +45,14 @@ open class StrokeFiles(
 ) {
 
     // Запись открыта для переопределения ради тестов: сбой записи при настоящем удалении.
-    open fun writeCardFile(cardId: Long, front: List<Stroke>, back: List<Stroke>): String =
+    open fun writeCardFile(cardId: Long, front: CardSide, back: CardSide): String =
         writeNewFile("$CARD_PREFIX$cardId-", front, back)
 
-    open fun writeDraftFile(front: List<Stroke>, back: List<Stroke>): String =
+    open fun writeDraftFile(front: CardSide, back: CardSide): String =
         writeNewFile(DRAFT_PREFIX, front, back)
 
     /** Читает файл; пропавший, повреждённый или с недопустимым именем — [StrokeFileException]. */
-    fun readFile(name: String): Pair<List<Stroke>, List<Stroke>> {
+    fun readFile(name: String): Pair<CardSide, CardSide> {
         val file = findOwnFile(name) ?: throw StrokeFileException("Недопустимое имя файла штрихов: $name")
         try {
             return file.inputStream().buffered().use { readStrokeFile(it) }
@@ -133,7 +133,7 @@ open class StrokeFiles(
         return referenced.isFile && file.lastModified() < referenced.lastModified()
     }
 
-    private fun writeNewFile(prefix: String, front: List<Stroke>, back: List<Stroke>): String {
+    private fun writeNewFile(prefix: String, front: CardSide, back: CardSide): String {
         val name = generateFreeName(prefix)
         val temporary = File(strokesDir, name + TEMPORARY_SUFFIX)
         try {

@@ -19,7 +19,6 @@ import app.deckly.domain.model.CardContent
 import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
-import app.deckly.domain.model.Stroke
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -47,10 +46,10 @@ fun openTestDatabase(storage: DecklyStorage): DecklyDatabase =
  * удаление настоящие: так видно, не стёрли ли что-то раньше времени.
  */
 class FailingWriteStrokeFiles(strokesDir: File) : StrokeFiles(strokesDir) {
-    override fun writeCardFile(cardId: Long, front: List<Stroke>, back: List<Stroke>): String =
+    override fun writeCardFile(cardId: Long, front: CardSide, back: CardSide): String =
         throw IOException("Диск полон")
 
-    override fun writeDraftFile(front: List<Stroke>, back: List<Stroke>): String =
+    override fun writeDraftFile(front: CardSide, back: CardSide): String =
         throw IOException("Диск полон")
 }
 
@@ -58,7 +57,7 @@ class FailingWriteStrokeFiles(strokesDir: File) : StrokeFiles(strokesDir) {
 class FailingAfterStrokeFiles(strokesDir: File, private val allowedWrites: Int) : StrokeFiles(strokesDir) {
     private var writes = 0
 
-    override fun writeCardFile(cardId: Long, front: List<Stroke>, back: List<Stroke>): String {
+    override fun writeCardFile(cardId: Long, front: CardSide, back: CardSide): String {
         if (writes >= allowedWrites) throw IOException("Диск полон")
         writes++
         return super.writeCardFile(cardId, front, back)
@@ -112,7 +111,7 @@ fun buildSeedContentFile(cardId: Long): String = "card-$cardId-seed.dks"
 /** Пишет файл штрихов под заданным именем в обход `StrokeFiles`: так создаются «чужие» и «старые» файлы. */
 fun writeSeedFile(storage: DecklyStorage, name: String, content: CardContent) {
     storage.ensureDirectories()
-    FileOutputStream(File(storage.strokesDir, name)).use { writeStrokeFile(it, content.front.strokes, content.back.strokes) }
+    FileOutputStream(File(storage.strokesDir, name)).use { writeStrokeFile(it, content.front, content.back) }
 }
 
 /**

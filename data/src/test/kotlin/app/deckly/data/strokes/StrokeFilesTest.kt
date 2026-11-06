@@ -2,7 +2,8 @@ package app.deckly.data.strokes
 
 import app.deckly.data.buildTestStroke
 import app.deckly.data.createTestStorage
-import app.deckly.domain.model.Stroke
+import app.deckly.domain.model.CardSide
+import app.deckly.domain.model.Shape
 import java.io.File
 import java.io.IOException
 import org.junit.Assert.assertEquals
@@ -17,7 +18,7 @@ class StrokeFilesTest {
 
     private val storage = createTestStorage().also { it.ensureDirectories() }
     private val files = StrokeFiles(storage.strokesDir)
-    private val strokes = listOf(buildTestStroke(1))
+    private val strokes = CardSide(listOf(buildTestStroke(1)))
 
     private fun listNames(): Set<String> = storage.strokesDir.list().orEmpty().toSet()
 
@@ -31,9 +32,22 @@ class StrokeFilesTest {
     ) = StrokeReferences(cards, draft, nextCardId)
 
     @Test
+    fun shapesAreWrittenAndReadWithTheCardAndDraftFiles() {
+        val shape = Shape(Shape.Kind.HEART, 10f, 20f, 300f, 400f, 15f, 4f)
+        val content = CardSide(listOf(buildTestStroke(1)), listOf(shape))
+        val back = CardSide(emptyList(), listOf(shape.copy(angle = -90f)))
+
+        val cardFile = files.writeCardFile(7, content, back)
+        val draftFile = files.writeDraftFile(back, content)
+
+        assertEquals(content to back, files.readFile(cardFile))
+        assertEquals(back to content, files.readFile(draftFile))
+    }
+
+    @Test
     fun cardFileNameHasCardIdAndRandomSuffix() {
-        val first = files.writeCardFile(42, strokes, emptyList())
-        val second = files.writeCardFile(42, strokes, emptyList())
+        val first = files.writeCardFile(42, strokes, CardSide())
+        val second = files.writeCardFile(42, strokes, CardSide())
 
         val pattern = Regex("card-42-[0-9a-f]{16}\\.dks")
         assertTrue(first, pattern.matches(first))
@@ -43,16 +57,16 @@ class StrokeFilesTest {
 
     @Test
     fun draftFileNameHasRandomSuffix() {
-        val name = files.writeDraftFile(strokes, emptyList())
+        val name = files.writeDraftFile(strokes, CardSide())
 
         assertTrue(name, Regex("draft-[0-9a-f]{16}\\.dks").matches(name))
     }
 
     @Test
     fun writtenFileReadsBackAndLeavesNoTemporaryFile() {
-        val name = files.writeCardFile(7, strokes, listOf(buildTestStroke(2)))
+        val name = files.writeCardFile(7, strokes, CardSide(listOf(buildTestStroke(2))))
 
-        assertEquals(strokes to listOf(buildTestStroke(2)), files.readFile(name))
+        assertEquals(strokes to CardSide(listOf(buildTestStroke(2))), files.readFile(name))
         assertEquals(setOf(name), listNames())
     }
 
@@ -65,7 +79,7 @@ class StrokeFilesTest {
 
     @Test
     fun deleteRemovesFileAndIgnoresMissingOne() {
-        val name = files.writeCardFile(7, strokes, emptyList())
+        val name = files.writeCardFile(7, strokes, CardSide())
 
         files.deleteContentFile(name)
         files.deleteContentFile(name)
@@ -91,10 +105,10 @@ class StrokeFilesTest {
         val notes = File(storage.rootDir, "notes.txt").apply { writeText("заметки") }
         val readme = writeRaw("README", "не трогать")
         val foreignPng = writeRaw("card-1-x.png", "png")
-        val referencedCard = files.writeCardFile(1, strokes, emptyList())
-        val referencedDraft = files.writeDraftFile(strokes, emptyList())
-        val deletedCard = files.writeCardFile(2, strokes, emptyList())
-        val orphanDraft = files.writeDraftFile(strokes, emptyList())
+        val referencedCard = files.writeCardFile(1, strokes, CardSide())
+        val referencedDraft = files.writeDraftFile(strokes, CardSide())
+        val deletedCard = files.writeCardFile(2, strokes, CardSide())
+        val orphanDraft = files.writeDraftFile(strokes, CardSide())
         touch(orphanDraft, 1_000)
         touch(referencedDraft, 5_000)
         val temporary = writeRaw("card-3-0123456789abcdef.dks.tmp", "недописан")
@@ -127,7 +141,7 @@ class StrokeFilesTest {
 
     @Test
     fun deletedCardFileIsRemoved() {
-        val deleted = files.writeCardFile(5, strokes, emptyList())
+        val deleted = files.writeCardFile(5, strokes, CardSide())
 
         files.cleanUpStrokeFiles(buildReferences(nextCardId = 100))
 
@@ -137,8 +151,8 @@ class StrokeFilesTest {
 
     @Test
     fun filesOfCardsNewerThanDatabaseAreKept() {
-        val newer = files.writeCardFile(500, strokes, emptyList())
-        val justAllocated = files.writeCardFile(100, strokes, emptyList())
+        val newer = files.writeCardFile(500, strokes, CardSide())
+        val justAllocated = files.writeCardFile(100, strokes, CardSide())
 
         files.cleanUpStrokeFiles(buildReferences(nextCardId = 100))
 
@@ -147,8 +161,8 @@ class StrokeFilesTest {
 
     @Test
     fun olderSupersededFileIsRemoved() {
-        val current = files.writeCardFile(7, strokes, emptyList())
-        val stale = files.writeCardFile(7, listOf(buildTestStroke(9)), emptyList())
+        val current = files.writeCardFile(7, strokes, CardSide())
+        val stale = files.writeCardFile(7, CardSide(listOf(buildTestStroke(9))), CardSide())
         touch(stale, 1_000)
         touch(current, 5_000)
 
@@ -161,8 +175,8 @@ class StrokeFilesTest {
     @Test
     fun newerSupersededFileIsKept() {
         // База старше strokes/: файл по ссылке старше другого, другой может оказаться последней правкой.
-        val current = files.writeCardFile(7, strokes, emptyList())
-        val newer = files.writeCardFile(7, listOf(buildTestStroke(9)), emptyList())
+        val current = files.writeCardFile(7, strokes, CardSide())
+        val newer = files.writeCardFile(7, CardSide(listOf(buildTestStroke(9))), CardSide())
         touch(current, 1_000)
         touch(newer, 5_000)
 
@@ -173,8 +187,8 @@ class StrokeFilesTest {
 
     @Test
     fun equalTimesKeepBoth() {
-        val current = files.writeCardFile(7, strokes, emptyList())
-        val other = files.writeCardFile(7, listOf(buildTestStroke(9)), emptyList())
+        val current = files.writeCardFile(7, strokes, CardSide())
+        val other = files.writeCardFile(7, CardSide(listOf(buildTestStroke(9))), CardSide())
         touch(current, 3_000)
         touch(other, 3_000)
 
@@ -185,8 +199,8 @@ class StrokeFilesTest {
 
     @Test
     fun olderSupersededDraftFileIsRemoved() {
-        val current = files.writeDraftFile(strokes, emptyList())
-        val stale = files.writeDraftFile(listOf(buildTestStroke(9)), emptyList())
+        val current = files.writeDraftFile(strokes, CardSide())
+        val stale = files.writeDraftFile(CardSide(listOf(buildTestStroke(9))), CardSide())
         touch(stale, 1_000)
         touch(current, 5_000)
 
@@ -197,8 +211,8 @@ class StrokeFilesTest {
 
     @Test
     fun newerSupersededDraftFileIsKept() {
-        val current = files.writeDraftFile(strokes, emptyList())
-        val newer = files.writeDraftFile(listOf(buildTestStroke(9)), emptyList())
+        val current = files.writeDraftFile(strokes, CardSide())
+        val newer = files.writeDraftFile(CardSide(listOf(buildTestStroke(9))), CardSide())
         touch(current, 1_000)
         touch(newer, 5_000)
 
@@ -209,8 +223,8 @@ class StrokeFilesTest {
 
     @Test
     fun equalTimesKeepBothDraftFiles() {
-        val current = files.writeDraftFile(strokes, emptyList())
-        val other = files.writeDraftFile(listOf(buildTestStroke(9)), emptyList())
+        val current = files.writeDraftFile(strokes, CardSide())
+        val other = files.writeDraftFile(CardSide(listOf(buildTestStroke(9))), CardSide())
         touch(current, 3_000)
         touch(other, 3_000)
 
@@ -221,7 +235,7 @@ class StrokeFilesTest {
 
     @Test
     fun fileOfCardIsKeptWhenReferencedFileIsMissing() {
-        val onlyCopy = files.writeCardFile(7, strokes, emptyList())
+        val onlyCopy = files.writeCardFile(7, strokes, CardSide())
 
         files.cleanUpStrokeFiles(buildReferences(cards = mapOf(7L to "card-7-ffffffffffffffff.dks")))
 
@@ -241,7 +255,7 @@ class StrokeFilesTest {
 
     @Test
     fun committedTemporaryFileIsRecovered() {
-        val name = files.writeCardFile(7, strokes, listOf(buildTestStroke(2)))
+        val name = files.writeCardFile(7, strokes, CardSide(listOf(buildTestStroke(2))))
         // После сбоя питания переименование .tmp не дошло до диска: на диске только .tmp.
         File(storage.strokesDir, name).renameTo(File(storage.strokesDir, "$name.tmp"))
         val reported = mutableListOf<File>()
@@ -250,24 +264,24 @@ class StrokeFilesTest {
         reporting.cleanUpStrokeFiles(buildReferences(cards = mapOf(7L to name)))
 
         assertEquals(setOf(name), listNames())
-        assertEquals(strokes to listOf(buildTestStroke(2)), files.readFile(name))
+        assertEquals(strokes to CardSide(listOf(buildTestStroke(2))), files.readFile(name))
         assertEquals(listOf(File(storage.strokesDir, name)), reported)
     }
 
     @Test
     fun committedTemporaryFileOfDraftIsRecovered() {
-        val name = files.writeDraftFile(strokes, emptyList())
+        val name = files.writeDraftFile(strokes, CardSide())
         File(storage.strokesDir, name).renameTo(File(storage.strokesDir, "$name.tmp"))
 
         files.cleanUpStrokeFiles(buildReferences(draft = name))
 
         assertEquals(setOf(name), listNames())
-        assertEquals(strokes to emptyList<Stroke>(), files.readFile(name))
+        assertEquals(strokes to CardSide(), files.readFile(name))
     }
 
     @Test
     fun orphanTemporaryFilesAreDeleted() {
-        val referenced = files.writeCardFile(7, strokes, emptyList())
+        val referenced = files.writeCardFile(7, strokes, CardSide())
         // .tmp, на который никто не ссылается; .tmp, у которого настоящий файл уже есть; чужое имя.
         writeRaw("card-8-0123456789abcdef.dks.tmp")
         writeRaw("$referenced.tmp")
@@ -276,12 +290,12 @@ class StrokeFilesTest {
         files.cleanUpStrokeFiles(buildReferences(cards = mapOf(7L to referenced)))
 
         assertEquals(setOf(referenced), listNames())
-        assertEquals(strokes to emptyList<Stroke>(), files.readFile(referenced))
+        assertEquals(strokes to CardSide(), files.readFile(referenced))
     }
 
     @Test
     fun draftFileWithoutRowIsRemoved() {
-        val draft = files.writeDraftFile(strokes, emptyList())
+        val draft = files.writeDraftFile(strokes, CardSide())
 
         files.cleanUpStrokeFiles(buildReferences(draft = null))
 
@@ -290,15 +304,15 @@ class StrokeFilesTest {
 
     @Test
     fun staleDraftFileIsRemovedOnlyWhenTheReferencedOneExists() {
-        val current = files.writeDraftFile(strokes, emptyList())
-        val stale = files.writeDraftFile(listOf(buildTestStroke(9)), emptyList())
+        val current = files.writeDraftFile(strokes, CardSide())
+        val stale = files.writeDraftFile(CardSide(listOf(buildTestStroke(9))), CardSide())
         touch(stale, 1_000)
         touch(current, 5_000)
 
         files.cleanUpStrokeFiles(buildReferences(draft = current))
         assertEquals(setOf(current), listNames())
 
-        val onlyCopy = files.writeDraftFile(strokes, emptyList())
+        val onlyCopy = files.writeDraftFile(strokes, CardSide())
         files.cleanUpStrokeFiles(buildReferences(draft = "draft-ffffffffffffffff.dks"))
         assertEquals(setOf(current, onlyCopy), listNames())
         assertFalse(stale in listNames())
@@ -308,8 +322,8 @@ class StrokeFilesTest {
     fun cleanUpReportsDeletedFilesOnly() {
         val reported = mutableListOf<File>()
         val reporting = StrokeFiles(storage.strokesDir, { reported += it })
-        val kept = files.writeCardFile(1, strokes, emptyList())
-        val deleted = files.writeCardFile(2, strokes, emptyList())
+        val kept = files.writeCardFile(1, strokes, CardSide())
+        val deleted = files.writeCardFile(2, strokes, CardSide())
         val temporary = writeRaw("y.tmp")
         writeRaw("README", "не трогать")
 
@@ -324,8 +338,8 @@ class StrokeFilesTest {
         val reported = mutableListOf<File>()
         val reporting = StrokeFiles(storage.strokesDir, { reported += it })
 
-        val cardFile = reporting.writeCardFile(7, strokes, emptyList())
-        val draftFile = reporting.writeDraftFile(strokes, emptyList())
+        val cardFile = reporting.writeCardFile(7, strokes, CardSide())
+        val draftFile = reporting.writeDraftFile(strokes, CardSide())
         reporting.deleteContentFile(cardFile)
 
         assertEquals(
@@ -359,8 +373,8 @@ class StrokeFilesTest {
             synced += dir to (names.isNotEmpty() && names.none { it.endsWith(".tmp") })
         })
 
-        val cardFile = syncing.writeCardFile(1, strokes, emptyList())
-        syncing.writeDraftFile(strokes, emptyList())
+        val cardFile = syncing.writeCardFile(1, strokes, CardSide())
+        syncing.writeDraftFile(strokes, CardSide())
 
         assertEquals(listOf(storage.strokesDir to true, storage.strokesDir to true), synced)
         assertTrue(cardFile in listNames())
@@ -368,7 +382,7 @@ class StrokeFilesTest {
 
     @Test
     fun directoryIsSyncedAfterRecoveringTemporaryFile() {
-        val name = files.writeCardFile(7, strokes, emptyList())
+        val name = files.writeCardFile(7, strokes, CardSide())
         File(storage.strokesDir, name).renameTo(File(storage.strokesDir, "$name.tmp"))
         val synced = mutableListOf<File>()
         val syncing = StrokeFiles(storage.strokesDir, syncDirectory = { synced += it })
@@ -382,15 +396,15 @@ class StrokeFilesTest {
     fun failingDirectorySyncDoesNotFailTheWrite() {
         val failing = StrokeFiles(storage.strokesDir, syncDirectory = { throw IOException("fsync папки не поддержан") })
 
-        val name = failing.writeCardFile(1, strokes, emptyList())
+        val name = failing.writeCardFile(1, strokes, CardSide())
 
         assertEquals(setOf(name), listNames())
-        assertEquals(strokes to emptyList<Stroke>(), failing.readFile(name))
+        assertEquals(strokes to CardSide(), failing.readFile(name))
     }
 
     @Test
     fun defaultDirectorySyncWorksOnRealFolder() {
-        val name = files.writeCardFile(1, strokes, emptyList())
+        val name = files.writeCardFile(1, strokes, CardSide())
 
         // Настоящий fsync папки через FileChannel не должен падать ни на JVM, ни на Android.
         forceDirectoryToDisk(storage.strokesDir)
@@ -406,12 +420,12 @@ class StrokeFilesTest {
 
     @Test
     fun newestFileIsChosenByModificationTime() {
-        val older = files.writeCardFile(1, strokes, emptyList()).also { touch(it, 1_000) }
-        val newer = files.writeCardFile(1, strokes, emptyList()).also { touch(it, 5_000) }
+        val older = files.writeCardFile(1, strokes, CardSide()).also { touch(it, 1_000) }
+        val newer = files.writeCardFile(1, strokes, CardSide()).also { touch(it, 5_000) }
         // Файл другой карточки с тем же началом id новее всех, но не подходит.
-        files.writeCardFile(12, strokes, emptyList()).also { touch(it, 9_000) }
-        val draftOlder = files.writeDraftFile(strokes, emptyList()).also { touch(it, 2_000) }
-        val draftNewer = files.writeDraftFile(strokes, emptyList()).also { touch(it, 6_000) }
+        files.writeCardFile(12, strokes, CardSide()).also { touch(it, 9_000) }
+        val draftOlder = files.writeDraftFile(strokes, CardSide()).also { touch(it, 2_000) }
+        val draftNewer = files.writeDraftFile(strokes, CardSide()).also { touch(it, 6_000) }
 
         assertEquals(newer, files.findNewestCardFile(1))
         assertNull(files.findNewestCardFile(2))
@@ -421,9 +435,9 @@ class StrokeFilesTest {
 
     @Test
     fun cardFilesAreCountedByNameShape() {
-        files.writeCardFile(1, strokes, emptyList())
-        files.writeCardFile(2, strokes, emptyList())
-        files.writeDraftFile(strokes, emptyList())
+        files.writeCardFile(1, strokes, CardSide())
+        files.writeCardFile(2, strokes, CardSide())
+        files.writeDraftFile(strokes, CardSide())
         writeRaw("card-3-0123456789abcdef.dks.tmp")
         writeRaw("README")
 

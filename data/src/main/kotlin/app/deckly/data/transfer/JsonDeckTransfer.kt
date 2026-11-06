@@ -11,7 +11,6 @@ import app.deckly.data.repository.RoomDraftRepository
 import app.deckly.data.repository.deleteFilesUnlessCommitted
 import app.deckly.data.strokes.StrokeFiles
 import app.deckly.domain.model.CardContent
-import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.port.DeckTransfer
@@ -24,7 +23,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.encodeToStream
 
 /**
- * Экспорт и импорт колоды одним JSON-файлом (формат `deckly-deck`, версия 1). Импорт делает всё в
+ * Экспорт и импорт колоды одним JSON-файлом (формат `deckly-deck`: пишется версия 2, читаются версии 1 и 2). Импорт делает всё в
  * том же порядке, что и запись карточки: файл проверяется целиком, потом пишутся файлы штрихов,
  * потом одна транзакция базы. Любой сбой после первого записанного файла удаляет записанное.
  */
@@ -47,7 +46,7 @@ class JsonDeckTransfer(
         val file = withContext(Dispatchers.IO) {
             val contents = cardEntities.map { entity ->
                 val (front, back) = files.readFile(entity.contentFile)
-                CardContent(entity.id, CardSide(front), CardSide(back))
+                CardContent(entity.id, front, back)
             }
             buildDeckFile(mapDeck(deckEntity), cardEntities.map(::mapCard), contents)
         }

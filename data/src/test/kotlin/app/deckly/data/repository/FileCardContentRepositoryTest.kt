@@ -54,10 +54,10 @@ class FileCardContentRepositoryTest {
     fun loadContentFallsBackToNewestFileOfTheCard() = runTest {
         seedDeck(repos, state)
         File(repos.storage.strokesDir, buildSeedContentFile(1)).delete()
-        val older = repos.files.writeCardFile(1, listOf(buildTestStroke(30)), emptyList())
-        val newer = repos.files.writeCardFile(1, listOf(buildTestStroke(31)), emptyList())
+        val older = repos.files.writeCardFile(1, CardSide(listOf(buildTestStroke(30))), CardSide())
+        val newer = repos.files.writeCardFile(1, CardSide(listOf(buildTestStroke(31))), CardSide())
         // Файл другой карточки (id 12, начало то же) самый новый, но чужой.
-        val foreign = repos.files.writeCardFile(12, listOf(buildTestStroke(32)), emptyList())
+        val foreign = repos.files.writeCardFile(12, CardSide(listOf(buildTestStroke(32))), CardSide())
         File(repos.storage.strokesDir, older).setLastModified(1_000)
         File(repos.storage.strokesDir, newer).setLastModified(5_000)
         File(repos.storage.strokesDir, foreign).setLastModified(9_000)
@@ -72,7 +72,7 @@ class FileCardContentRepositoryTest {
         seedDeck(repos, state)
         val damaged = File(repos.storage.strokesDir, buildSeedContentFile(1))
         damaged.writeBytes(damaged.readBytes().copyOf(10))
-        repos.files.writeCardFile(1, listOf(buildTestStroke(30)), emptyList())
+        repos.files.writeCardFile(1, CardSide(listOf(buildTestStroke(30))), CardSide())
 
         assertSuspendThrows<StrokeFileException> { repos.contents.loadContent(1) }
     }

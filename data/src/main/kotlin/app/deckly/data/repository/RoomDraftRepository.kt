@@ -11,7 +11,6 @@ import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
-import app.deckly.domain.model.Stroke
 import app.deckly.domain.port.DraftRepository
 import app.deckly.domain.port.StoredDraft
 import kotlinx.coroutines.Dispatchers
@@ -54,17 +53,17 @@ class RoomDraftRepository(
             discardDraftInQueue()
             return null
         }
-        val strokes = withContext(Dispatchers.IO) { readDraftStrokesOrNull(row.contentFile) }
-        if (strokes == null) {
+        val sides = withContext(Dispatchers.IO) { readDraftSidesOrNull(row.contentFile) }
+        if (sides == null) {
             discardDraftInQueue()
             return null
         }
-        val (front, back) = strokes
-        val draft = Draft(editedCardId, CardSide(front), CardSide(back), Side.valueOf(row.visibleSide), Section.valueOf(row.returnSection))
+        val (front, back) = sides
+        val draft = Draft(editedCardId, front, back, Side.valueOf(row.visibleSide), Section.valueOf(row.returnSection))
         return StoredDraft(row.deckId, draft)
     }
 
-    private fun readDraftStrokesOrNull(referencedFile: String): Pair<List<Stroke>, List<Stroke>>? {
+    private fun readDraftSidesOrNull(referencedFile: String): Pair<CardSide, CardSide>? {
         val name = if (files.hasFile(referencedFile)) referencedFile else files.findNewestDraftFile()
         if (name == null) return null
         return try {
@@ -79,7 +78,7 @@ class RoomDraftRepository(
         var newFile: String? = null
         val previousFile = try {
             // Имя запоминается внутри блока: отмена может прийти, когда файл уже записан, а блок ещё не вернулся.
-            withContext(Dispatchers.IO) { newFile = files.writeDraftFile(draft.front.strokes, draft.back.strokes) }
+            withContext(Dispatchers.IO) { newFile = files.writeDraftFile(draft.front, draft.back) }
             val file = checkNotNull(newFile)
             database.withWriteTransaction<String?> {
                 val previous = database.draftDao().findDraft()?.contentFile
@@ -135,7 +134,7 @@ class RoomDraftRepository(
         val cardId = content.cardId
         var newFile: String? = null
         val obsoleteFiles = try {
-            withContext(Dispatchers.IO) { newFile = files.writeCardFile(cardId, content.front.strokes, content.back.strokes) }
+            withContext(Dispatchers.IO) { newFile = files.writeCardFile(cardId, content.front, content.back) }
             val file = checkNotNull(newFile)
             database.withWriteTransaction<List<String>> {
                 val previousFile = database.cardDao().findCard(cardId)?.contentFile

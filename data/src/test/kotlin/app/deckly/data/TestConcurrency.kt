@@ -2,7 +2,7 @@ package app.deckly.data
 
 import android.database.sqlite.SQLiteDatabase
 import app.deckly.data.strokes.StrokeFiles
-import app.deckly.domain.model.Stroke
+import app.deckly.domain.model.CardSide
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -21,7 +21,7 @@ class GatedDraftFiles(dir: File) : StrokeFiles(dir) {
     val release = CountDownLatch(1)
     private val calls = AtomicInteger()
 
-    override fun writeDraftFile(front: List<Stroke>, back: List<Stroke>): String {
+    override fun writeDraftFile(front: CardSide, back: CardSide): String {
         val name = super.writeDraftFile(front, back)
         if (calls.getAndIncrement() == 0) {
             firstWritten.countDown()
@@ -77,9 +77,9 @@ class CancelAfterWriteStrokeFiles(dir: File) : StrokeFiles(dir) {
     @Volatile
     var job: Job? = null
 
-    override fun writeCardFile(cardId: Long, front: List<Stroke>, back: List<Stroke>): String =
+    override fun writeCardFile(cardId: Long, front: CardSide, back: CardSide): String =
         super.writeCardFile(cardId, front, back).also { job?.cancel() }
 
-    override fun writeDraftFile(front: List<Stroke>, back: List<Stroke>): String =
+    override fun writeDraftFile(front: CardSide, back: CardSide): String =
         super.writeDraftFile(front, back).also { job?.cancel() }
 }

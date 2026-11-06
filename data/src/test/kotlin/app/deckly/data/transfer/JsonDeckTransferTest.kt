@@ -12,6 +12,7 @@ import app.deckly.data.buildFlaggedCard
 import app.deckly.data.buildFullDeck
 import app.deckly.data.buildInterruptedPassScenario
 import app.deckly.data.buildPlainCard
+import app.deckly.data.buildTestStroke
 import app.deckly.data.buildWaitingEpochScenario
 import app.deckly.data.createTestStorage
 import app.deckly.data.listStrokeFileNames
@@ -24,6 +25,7 @@ import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Side
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
@@ -250,7 +252,7 @@ class JsonDeckTransferTest {
 
         val text = exportToText(deck.id)
 
-        assertTrue(text, text.startsWith("""{"format":"deckly-deck","version":1,"deck":{"""))
+        assertTrue(text, text.startsWith("""{"format":"deckly-deck","version":2,"deck":{"""))
     }
 
     @Test
@@ -308,8 +310,76 @@ class JsonDeckTransferTest {
     }
 
     @Test
+    fun versionOneDeckImportsFromFixedJsonWithoutShapes() = runTest {
+        // Файл колоды версии 1 лежит на устройстве владельца: он читается как раньше, фигур у карточек нет.
+        val imported = repos.transfer.importDeck(asStream(VALID_FILE))
+
+        val state = repos.decks.loadDeckState(imported.id)
+        assertEquals(2, state.cards.size)
+        val epochTwoCard = state.cards.single { it.section == Section.EPOCH_2 }
+        val newCard = state.cards.single { it.section == Section.NEW }
+        val withStroke = repos.contents.loadContent(epochTwoCard.id)
+        assertEquals(
+            CardSide(listOf(Stroke(6f, listOf(StrokePoint(1f, 2f, 0.5f), StrokePoint(3f, 4f, 1f))))),
+            withStroke.front,
+        )
+        assertEquals(CardSide(), withStroke.back)
+        assertEquals(CardSide() to CardSide(), repos.contents.loadContent(newCard.id).let { it.front to it.back })
+        assertEquals("Тест", imported.name)
+        assertEquals(listOf(epochTwoCard.id), imported.tail.epoch1)
+    }
+
+    @Test
+    fun versionTwoDeckImportsFromFixedJsonWithShapesOnBothSides() = runTest {
+        val imported = repos.transfer.importDeck(asStream(VALID_FILE_V2))
+
+        val state = repos.decks.loadDeckState(imported.id)
+        val epochTwoCard = state.cards.single { it.section == Section.EPOCH_2 }
+        val newCard = state.cards.single { it.section == Section.NEW }
+        val content = repos.contents.loadContent(epochTwoCard.id)
+        assertEquals(listOf(Shape(Shape.Kind.STAR, 100f, 200.5f, 400f, 500.25f, 30f, 6.5f)), content.front.shapes)
+        assertEquals(listOf(Shape(Shape.Kind.LINE, 10f, 20f, 300f, 100f, -179.5f, 1f)), content.back.shapes)
+        assertEquals(1, content.front.strokes.size)
+        assertEquals(CardSide(), repos.contents.loadContent(newCard.id).front)
+    }
+
+    @Test
+    fun shapesSurviveExportAndImportWithTheirOrderAndAngles() = runTest {
+        val shapes = Shape.Kind.entries.mapIndexed { index, kind ->
+            Shape(kind, 10f + index, 20f, 400f + index, 300f + index, index * 25f - 180f, 1f + index)
+        }
+        val deck = createDeck(1, "Фигуры")
+        val before = DeckState(deck, emptyList())
+        seedDeck(repos, before)
+        val draft = Draft(null, CardSide(listOf(buildTestStroke(1)), shapes), CardSide(emptyList(), shapes.reversed()), Side.FRONT, Section.NEW)
+        val cardId = repos.drafts.allocateCardId()
+        val (after, content) = saveDraft(before, draft, cardId, SCENARIO_DAY, now = 1_000L)
+        repos.drafts.commitDraft(collectDeckChanges(before, after), content)
+
+        val text = exportToText(1)
+        val imported = repos.transfer.importDeck(asStream(text))
+
+        assertTrue(text, text.startsWith("""{"format":"deckly-deck","version":2,"""))
+        assertTrue(text, text.contains(""""frontShapes":[{"kind":"line","left":10.0,"top":20.0,"right":400.0,"bottom":300.0,"angle":-180.0,"width":1.0}"""))
+        val importedCard = repos.decks.loadDeckState(imported.id).cards.single()
+        val loaded = repos.contents.loadContent(importedCard.id)
+        assertEquals(CardSide(listOf(buildTestStroke(1)), shapes), loaded.front)
+        assertEquals(CardSide(emptyList(), shapes.reversed()), loaded.back)
+    }
+
+    @Test
+    fun exportOfCardWithoutShapesWritesEmptyShapeLists() = runTest {
+        val deck = createDeck(1, "Без фигур")
+        seedDeck(repos, DeckState(deck, listOf(buildPlainCard(5, 0))))
+
+        val text = exportToText(1)
+
+        assertTrue(text, text.contains(""""frontShapes":[],"backShapes":[]"""))
+    }
+
+    @Test
     fun newerVersionIsUnsupported() = runTest {
-        val newer = VALID_FILE.replaceOnce(""""version":1""", """"version":2""")
+        val newer = VALID_FILE_V2.replaceOnce(""""version":2""", """"version":3""")
         val newerWithOtherShape = """{"format":"deckly-deck","version":7,"decks":[{"title":"x"}]}"""
 
         assertEquals("UNSUPPORTED_VERSION", importOutcome(newer))
@@ -355,6 +425,22 @@ class JsonDeckTransferTest {
             damage("number instead of name", """"name":"Тест"""", """"name":5"""),
             damage("missing version", """"version":1,""", ""),
             damage("version zero", """"version":1""", """"version":0"""),
+            damage("shapes in a version 1 file", """"front":[{"width":6.0,"points":[[1.0,2.0,0.5],[3.0,4.0,1.0]]}],"back":[]""",
+                """"front":[{"width":6.0,"points":[[1.0,2.0,0.5],[3.0,4.0,1.0]]}],"back":[],"frontShapes":[$STAR_JSON]"""),
+        ) + listOf(
+            damageShape("unknown shape kind", """"kind":"star"""", """"kind":"pentagon""""),
+            damageShape("kind of another case", """"kind":"star"""", """"kind":"Star""""),
+            damageShape("kind is a number", """"kind":"star"""", """"kind":9"""),
+            damageShape("left equals right", """"left":100.0,"top":200.5,"right":400.0""", """"left":400.0,"top":200.5,"right":400.0"""),
+            damageShape("top below bottom", """"top":200.5,"right":400.0,"bottom":500.25""", """"top":600.0,"right":400.0,"bottom":500.25"""),
+            damageShape("infinite width", """"width":6.5""", """"width":1e999"""),
+            damageShape("zero width", """"width":6.5""", """"width":0.0"""),
+            damageShape("infinite angle", """"angle":30.0""", """"angle":1e999"""),
+            damageShape("textual angle", """"angle":30.0""", """"angle":"turned""""),
+            damageShape("missing field", """"angle":30.0,""", ""),
+            damageShape("unknown shape key", """"kind":"star",""", """"kind":"star","fill":true,"""),
+            damageShape("shapes are not a list", """"frontShapes":[$STAR_JSON]""", """"frontShapes":$STAR_JSON"""),
+            damageShape("missing back shapes", ""","backShapes":[$LINE_JSON]""", ""),
         )
         val decksBefore = repos.decks.listDecks()
         val filesBefore = listStrokeFileNames(repos.storage)
@@ -482,6 +568,9 @@ class JsonDeckTransferTest {
     private fun damage(name: String, old: String, new: String): Pair<String, String> =
         name to VALID_FILE.replaceOnce(old, new)
 
+    private fun damageShape(name: String, old: String, new: String): Pair<String, String> =
+        "version 2: $name" to VALID_FILE_V2.replaceOnce(old, new)
+
     private fun String.replaceOnce(old: String, new: String): String {
         require(split(old).size == 2) { "«$old» должно встречаться в тексте ровно один раз" }
         return replace(old, new)
@@ -505,5 +594,16 @@ class JsonDeckTransferTest {
         /** Корректный файл колоды: две карточки, у первой штрих, `tail` ссылается на неё. */
         const val VALID_FILE = """{"format":"deckly-deck","version":1,""" + DECK +
             ""","cards":[""" + CARD_WITH_STROKE + "," + CARD_WITHOUT_STROKES + "]}"
+
+        const val STAR_JSON = """{"kind":"star","left":100.0,"top":200.5,"right":400.0,"bottom":500.25,""" +
+            """"angle":30.0,"width":6.5}"""
+
+        const val LINE_JSON = """{"kind":"line","left":10.0,"top":20.0,"right":300.0,"bottom":100.0,""" +
+            """"angle":-179.5,"width":1.0}"""
+
+        /** Файл версии 2: у первой карточки штрих и по фигуре на каждой стороне, у второй фигур нет. */
+        val VALID_FILE_V2 = """{"format":"deckly-deck","version":2,""" + DECK + ""","cards":[""" +
+            CARD_WITH_STROKE.removeSuffix("}") + ""","frontShapes":[""" + STAR_JSON + """],"backShapes":[""" + LINE_JSON +
+            """]},""" + CARD_WITHOUT_STROKES.removeSuffix("}") + ""","frontShapes":[],"backShapes":[]}]}"""
     }
 }

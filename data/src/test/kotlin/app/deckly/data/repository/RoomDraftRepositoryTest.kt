@@ -21,6 +21,7 @@ import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Side
 import app.deckly.domain.model.collectDeckChanges
 import app.deckly.domain.model.createDeck
@@ -123,6 +124,41 @@ class RoomDraftRepositoryTest {
         repos.reopen()
 
         assertEquals(stored, repos.drafts.loadDraft())
+    }
+
+    @Test
+    fun draftWithShapesSurvivesReopening() = runTest {
+        seedDeck(repos, baseState)
+        val shapes = listOf(
+            Shape(Shape.Kind.STAR, 100f, 200f, 300f, 400f, 30f, 3f),
+            Shape(Shape.Kind.ARROW, 10f, 20f, 500f, 100f, -45f, 12f),
+        )
+        val draft = buildNewCardDraft(side = Side.BACK).copy(
+            front = CardSide(listOf(buildTestStroke(7)), shapes),
+            back = CardSide(emptyList(), shapes.reversed()),
+        )
+        val stored = StoredDraft(1, draft)
+
+        repos.drafts.storeDraft(stored)
+        repos.reopen()
+
+        assertEquals(stored, repos.drafts.loadDraft())
+    }
+
+    @Test
+    fun cardWithShapesIsWrittenAtCommitAndLoadedBack() = runTest {
+        seedDeck(repos, baseState)
+        val shape = Shape(Shape.Kind.CLOUD, 100f, 200f, 300f, 400f, 12.5f, 6f)
+        val draft = buildNewCardDraft().copy(front = CardSide(listOf(buildTestStroke(7)), listOf(shape)))
+        repos.drafts.storeDraft(StoredDraft(1, draft))
+        val cardId = repos.drafts.allocateCardId()
+        val (after, content) = saveDraft(baseState, draft, cardId, SCENARIO_DAY, now = 1_000L)
+
+        repos.drafts.commitDraft(collectDeckChanges(baseState, after), content)
+        repos.reopen()
+
+        assertEquals(listOf(shape), repos.contents.loadContent(cardId).front.shapes)
+        assertEquals(content, repos.contents.loadContent(cardId))
     }
 
     @Test
@@ -476,7 +512,7 @@ class RoomDraftRepositoryTest {
     fun killBeforeEditTransactionKeepsNewerFileAndRemovesTemporary() = runTest {
         seedDeck(repos, baseState)
         // Шаг 1 выполнен: файл правки записан. Транзакции и удаления не было. Плюс недописанный .tmp.
-        val orphan = repos.files.writeCardFile(101, listOf(buildTestStroke(50)), emptyList())
+        val orphan = repos.files.writeCardFile(101, CardSide(listOf(buildTestStroke(50))), CardSide())
         val referencedTime = File(repos.storage.strokesDir, buildSeedContentFile(101)).lastModified()
         File(repos.storage.strokesDir, orphan).setLastModified(referencedTime + 5_000)
         val temporary = File(repos.storage.strokesDir, "card-101-0123456789abcdef.dks.tmp").apply { writeText("x") }
@@ -495,7 +531,7 @@ class RoomDraftRepositoryTest {
     @Test
     fun orphanOfInterruptedEditIsRemovedAfterTheNextEdit() = runTest {
         seedDeck(repos, baseState)
-        val orphan = repos.files.writeCardFile(101, listOf(buildTestStroke(50)), emptyList())
+        val orphan = repos.files.writeCardFile(101, CardSide(listOf(buildTestStroke(50))), CardSide())
         File(repos.storage.strokesDir, orphan).setLastModified(10_000)
         val draft = buildEditDraft(101)
         val (after, content) = saveDraft(baseState, draft, newCardId = 0, today = SCENARIO_DAY, now = 1_000L)
@@ -536,7 +572,7 @@ class RoomDraftRepositoryTest {
         seedDeck(repos, baseState)
         // Выдан id новой карточки и записан её файл, до транзакции убили.
         val cardId = repos.drafts.allocateCardId()
-        val orphan = repos.files.writeCardFile(cardId, listOf(buildTestStroke(50)), emptyList())
+        val orphan = repos.files.writeCardFile(cardId, CardSide(listOf(buildTestStroke(50))), CardSide())
 
         repos.reopen()
         removeUnreferencedStrokeFiles(repos.database, repos.files)
@@ -571,8 +607,8 @@ class RoomDraftRepositoryTest {
         repos.drafts.storeDraft(StoredDraft(1, buildNewCardDraft(seed = 1)))
         val referenced = repos.database.draftDao().findDraft()!!.contentFile
         File(repos.storage.strokesDir, referenced).delete()
-        val older = repos.files.writeDraftFile(listOf(buildTestStroke(40)), emptyList())
-        val newer = repos.files.writeDraftFile(listOf(buildTestStroke(41)), emptyList())
+        val older = repos.files.writeDraftFile(CardSide(listOf(buildTestStroke(40))), CardSide())
+        val newer = repos.files.writeDraftFile(CardSide(listOf(buildTestStroke(41))), CardSide())
         File(repos.storage.strokesDir, older).setLastModified(1_000)
         File(repos.storage.strokesDir, newer).setLastModified(5_000)
 

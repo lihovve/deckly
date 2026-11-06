@@ -2,9 +2,11 @@ package app.deckly.data.transfer
 
 import app.deckly.domain.model.Card
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Side
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
@@ -14,7 +16,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 internal const val DECK_FILE_FORMAT = "deckly-deck"
-internal const val DECK_FILE_VERSION = 1
+/** Версия, которую пишет экспорт. Импорт читает версии 1 (без фигур) и 2: у файла версии 1 фигур быть не может. */
+internal const val DECK_FILE_VERSION = 2
+private const val FIRST_DECK_FILE_VERSION = 1
 
 private const val EPOCH_COUNT = 4
 private const val POINT_VALUES = 3
@@ -63,18 +67,33 @@ internal class CardDto(
     val excludedFromPass: Boolean,
     val front: List<StrokeDto>,
     val back: List<StrokeDto>,
+    // Версия 2: оба списка обязательны; версия 1: их нет. Различает проверка файла, а не значение по умолчанию.
+    val frontShapes: List<ShapeDto>? = null,
+    val backShapes: List<ShapeDto>? = null,
 )
 
 /** Штрих: толщина и точки `[x, y, нажим]`. */
 @Serializable
 internal class StrokeDto(val width: Float, val points: List<List<Float>>)
 
+/** Фигура: вид (`Shape.Kind.key`), рамка, угол в градусах и толщина контура в единицах карточки. */
+@Serializable
+internal class ShapeDto(
+    val kind: String,
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+    val angle: Float,
+    val width: Float,
+)
+
 /** Только то, что нужно, чтобы опознать файл и версию, не разбирая остальное. */
 @Serializable
 internal class DeckFileHeader(val format: String? = null, val version: Int? = null)
 
 /** Карточка файла с прежним id и её штрихи. */
-internal class ParsedCard(val card: Card, val front: List<Stroke>, val back: List<Stroke>)
+internal class ParsedCard(val card: Card, val front: CardSide, val back: CardSide)
 
 /** Проверенная колода из файла: id колоды 0, id карточек и `tail` ещё файловые. */
 internal class ParsedDeck(val deck: Deck, val cards: List<ParsedCard>)
@@ -101,7 +120,7 @@ internal fun parseDeckFile(bytes: ByteArray): ParsedDeck {
     if (header.format != DECK_FILE_FORMAT) throw ImportException(ImportError.NOT_A_DECK_FILE)
     val version = header.version ?: throw buildDamaged("В файле нет версии формата")
     if (version > DECK_FILE_VERSION) throw ImportException(ImportError.UNSUPPORTED_VERSION)
-    requireValid(version == DECK_FILE_VERSION) { "Версия формата $version не существует" }
+    requireValid(version >= FIRST_DECK_FILE_VERSION) { "Версия формата $version не существует" }
     val file = try {
         STRICT_JSON.decodeFromString<DeckFile>(text)
     } catch (damaged: IllegalArgumentException) {
@@ -136,7 +155,7 @@ private fun validateDeckFile(file: DeckFile): ParsedDeck {
     val unknownTailId = dto.tail.flatten().firstOrNull { it !in cardIds }
     requireValid(unknownTailId == null) { "В tail есть id $unknownTailId, которого нет среди карточек" }
 
-    val cards = file.cards.map { parseCard(it) }
+    val cards = file.cards.map { parseCard(it, file.version) }
     val deck = Deck(
         id = 0,
         name = dto.name,
@@ -157,8 +176,13 @@ private fun validateDeckFile(file: DeckFile): ParsedDeck {
     return ParsedDeck(deck, cards)
 }
 
-private fun parseCard(dto: CardDto): ParsedCard {
+private fun parseCard(dto: CardDto, version: Int): ParsedCard {
     requireValid(dto.position >= 0) { "Карточка ${dto.id}: position отрицательный" }
+    val hasShapeLists = dto.frontShapes != null && dto.backShapes != null
+    requireValid(version < DECK_FILE_VERSION || hasShapeLists) { "Карточка ${dto.id}: в версии $version нужны frontShapes и backShapes" }
+    requireValid(version >= DECK_FILE_VERSION || (dto.frontShapes == null && dto.backShapes == null)) {
+        "Карточка ${dto.id}: в файле версии $version не бывает фигур"
+    }
     requireValid(dto.successes >= 0) { "Карточка ${dto.id}: successes отрицательный" }
     val card = Card(
         id = dto.id,
@@ -174,7 +198,11 @@ private fun parseCard(dto: CardDto): ParsedCard {
         checking = dto.checking,
         excludedFromPass = dto.excludedFromPass,
     )
-    return ParsedCard(card, dto.front.map { parseStroke(it, dto.id) }, dto.back.map { parseStroke(it, dto.id) })
+    return ParsedCard(
+        card,
+        CardSide(dto.front.map { parseStroke(it, dto.id) }, dto.frontShapes.orEmpty().map { parseShape(it, dto.id) }),
+        CardSide(dto.back.map { parseStroke(it, dto.id) }, dto.backShapes.orEmpty().map { parseShape(it, dto.id) }),
+    )
 }
 
 /** Допустимость значений (толщина, конечные координаты, нажим 0..1) решает модель: она не создаёт плохой штрих. */
@@ -190,6 +218,16 @@ private fun parseStroke(dto: StrokeDto, cardId: Long): Stroke =
     } catch (invalid: IllegalArgumentException) {
         throw ImportException(ImportError.DAMAGED, IllegalArgumentException("Карточка $cardId: ${invalid.message}", invalid))
     }
+
+/** Вид по ключу и допустимость рамки и толщины решает модель: она не создаёт плохую фигуру. */
+private fun parseShape(dto: ShapeDto, cardId: Long): Shape {
+    val kind = Shape.Kind.findByKey(dto.kind) ?: throw buildDamaged("Карточка $cardId: неизвестный вид фигуры ${dto.kind}")
+    return try {
+        Shape(kind, dto.left, dto.top, dto.right, dto.bottom, dto.angle, dto.width)
+    } catch (invalid: IllegalArgumentException) {
+        throw ImportException(ImportError.DAMAGED, IllegalArgumentException("Карточка $cardId: ${invalid.message}", invalid))
+    }
+}
 
 private inline fun <reified T : Enum<T>> parseEnum(name: String, what: String): T =
     enumValues<T>().firstOrNull { it.name == name } ?: throw buildDamaged("Неизвестное значение $what: $name")
@@ -246,7 +284,12 @@ private fun buildCardDto(card: Card, content: CardContent): CardDto = CardDto(
     excludedFromPass = card.excludedFromPass,
     front = content.front.strokes.map(::buildStrokeDto),
     back = content.back.strokes.map(::buildStrokeDto),
+    frontShapes = content.front.shapes.map(::buildShapeDto),
+    backShapes = content.back.shapes.map(::buildShapeDto),
 )
 
 private fun buildStrokeDto(stroke: Stroke): StrokeDto =
     StrokeDto(stroke.width, stroke.points.map { listOf(it.x, it.y, it.pressure) })
+
+private fun buildShapeDto(shape: Shape): ShapeDto =
+    ShapeDto(shape.kind.key, shape.left, shape.top, shape.right, shape.bottom, shape.angle, shape.width)

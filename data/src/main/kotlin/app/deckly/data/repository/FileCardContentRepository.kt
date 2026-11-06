@@ -4,7 +4,6 @@ import app.deckly.data.db.DecklyDatabase
 import app.deckly.data.strokes.StrokeFileException
 import app.deckly.data.strokes.StrokeFiles
 import app.deckly.domain.model.CardContent
-import app.deckly.domain.model.CardSide
 import app.deckly.domain.port.CardContentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,7 +30,6 @@ class FileCardContentRepository(
                 files.readFile(newest)
             }
         }
-        // Файлы пока хранят только штрихи; фигуры добавляются в файл версии 2.
-        return CardContent(cardId, CardSide(front), CardSide(back))
+        return CardContent(cardId, front, back)
     }
 }
