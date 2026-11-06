@@ -10,6 +10,7 @@ import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -391,8 +392,8 @@ class ShapeEditorTest {
         assertTrue(actions.none { it == EditorAction.EndShapeGesture })
     }
 
-    // Подъём приходит без движения: быстрое перо отдаёт последнее движение и сразу подъём уже далеко от него. Положение
-    // подъёма должно дойти до модели последним движением, иначе фигура остановится там, где было последнее движение.
+    // Подъём приходит без движения и может оказаться не там, где последнее движение. Положение подъёма должно дойти до
+    // модели последним движением, иначе фигура остановится там, где было последнее движение.
 
     @Test
     fun liftPointFarFromTheLastMoveIsReportedAsTheLastMove() {
@@ -553,6 +554,103 @@ class ShapeEditorTest {
         )
     }
 
+    // --- нажим, отсчёты и сбор линии при касании мимо ------------------------------------------------
+
+    @Test
+    fun startAndMovesCarryThePressureOfThePen() {
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+
+        dispatchPen(listOf(x to y, (x + 30f) to y, (x + 60f) to y), pressures = listOf(0.4f, 0.7f, 0.2f))
+
+        assertEquals(0.4f, (actions[0] as EditorAction.StartShapeGesture).pressure, 0.001f)
+        assertEquals(listOf(0.7f, 0.2f), actions.filterIsInstance<EditorAction.MoveShapeGesture>().map { it.pressure })
+    }
+
+    @Test
+    fun liftMoveCarriesTheLastPressureAndNotTheZeroOfTheLift() {
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+
+        dispatchPen(listOf(x to y, (x + 30f) to y), liftAt = (x + 90f) to y, pressures = listOf(0.4f, 0.7f))
+
+        assertEquals(listOf(0.7f, 0.7f), actions.filterIsInstance<EditorAction.MoveShapeGesture>().map { it.pressure })
+    }
+
+    @Test
+    fun startReportsHowManyPixelsOfTheSheetAreInOneCardUnit() {
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+
+        dispatchPen(listOf(x to y, (x + 30f) to y))
+
+        assertEquals(scale, (actions[0] as EditorAction.StartShapeGesture).scale, 0.0001f)
+    }
+
+    @Test
+    fun everySampleOfABatchGoesToTheModelWithItsOwnPressure() {
+        // Система отдаёт отсчёты пера пачкой за кадр (`historical`); линии нужны все, иначе быстрая выйдет ломаной хордами.
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+        val downTime = 1_000L
+
+        composeRule.runOnUiThread {
+            dispatchPointer(composeRule.activity, MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.ACTION_DOWN, x, y, downTime, pressure = 0.5f)
+            dispatchPointer(
+                composeRule.activity, MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.ACTION_MOVE, x + 30f, y + 3f, downTime, pressure = 0.8f,
+                history = listOf(PenSample(x + 10f, y + 1f, 0.6f), PenSample(x + 20f, y + 2f, 0.7f)),
+            )
+            dispatchPointer(composeRule.activity, MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.ACTION_UP, x + 30f, y + 3f, downTime, pressure = 0f)
+        }
+        composeRule.waitForIdle()
+
+        val moves = actions.filterIsInstance<EditorAction.MoveShapeGesture>()
+        val start = actions.first() as EditorAction.StartShapeGesture
+        assertEquals(listOf(0.6f, 0.7f, 0.8f), moves.map { it.pressure })
+        for ((step, move) in moves.withIndex()) {
+            assertEquals(10f * (step + 1), (move.x - start.x) * scale, 0.01f)
+            assertEquals(1f * (step + 1), (move.y - start.y) * scale, 0.01f)
+        }
+        assertEquals(EditorAction.EndShapeGesture, actions.last())
+        assertEquals(5, actions.size)
+    }
+
+    @Test
+    fun stageStaysWhileAStrokeIsCollectedAndShowsNoFrameOrHandles() {
+        host.show(buildEditorState(selectedShape = null, isCapturingStroke = true))
+        val origin = findFrameOrigin()
+
+        dispatchPen(listOf((origin.x + 300f) to (origin.y + 600f), (origin.x + 340f) to (origin.y + 640f)))
+
+        assertEquals(listOf("Start", "Move", "End"), actions.map { it::class.simpleName!!.removeSuffix("ShapeGesture") })
+        assertEquals(0, composeRule.onAllNodesWithContentDescription("Resize: top left corner").fetchSemanticsNodes().size)
+        assertEquals(0, composeRule.onAllNodesWithContentDescription("Rotate shape").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun gestureSurvivesTheSelectionGoingAwayWhenTheTouchBecomesALine() {
+        // Как делает модель при касании мимо: на `StartShapeGesture` она снимает выделение и начинает собирать линию.
+        host.show(buildEditorState(selectedShape = rectangle))
+        val origin = findFrameOrigin()
+        val x = origin.x + 700f
+        val y = origin.y + 700f
+        val downTime = 1_000L
+        fun send(action: Int, dx: Float, pressure: Float = 0.6f) {
+            composeRule.runOnUiThread { dispatchPointer(composeRule.activity, MotionEvent.TOOL_TYPE_STYLUS, action, x + dx, y, downTime, pressure = pressure) }
+            composeRule.waitForIdle()
+        }
+
+        send(MotionEvent.ACTION_DOWN, 0f)
+        host.show(buildEditorState(selectedShape = null, isCapturingStroke = true))
+        send(MotionEvent.ACTION_MOVE, 20f)
+        send(MotionEvent.ACTION_MOVE, 40f)
+        send(MotionEvent.ACTION_UP, 40f, pressure = 0f)
+        host.show(buildEditorState(selectedShape = null, isCapturingStroke = false))
+
+        assertEquals(listOf("Start", "Move", "Move", "End"), actions.map { it::class.simpleName!!.removeSuffix("ShapeGesture") })
+        assertEquals(listOf(0.6f, 0.6f), actions.filterIsInstance<EditorAction.MoveShapeGesture>().map { it.pressure })
+    }
+
     @Test
     fun noGestureWithoutSelectedShape() {
         host.show(buildEditorState())
@@ -565,8 +663,12 @@ class ShapeEditorTest {
 
     // --- вспомогательное -----------------------------------------------------------------------
 
-    private fun dispatchPen(points: List<Pair<Float, Float>>, isCancelled: Boolean = false, liftAt: Pair<Float, Float>? = null) =
-        dispatchGesture(composeRule.activity, composeRule, MotionEvent.TOOL_TYPE_STYLUS, points, isCancelled = isCancelled, liftAt = liftAt)
+    private fun dispatchPen(
+        points: List<Pair<Float, Float>>,
+        isCancelled: Boolean = false,
+        liftAt: Pair<Float, Float>? = null,
+        pressures: List<Float>? = null,
+    ) = dispatchGesture(composeRule.activity, composeRule, MotionEvent.TOOL_TYPE_STYLUS, points, isCancelled = isCancelled, liftAt = liftAt, pressures = pressures)
 
     // Центр ручки в координатах окна: туда и ставится перо, чтобы жест начался с этой ручки.
     private fun findCornerCenter(description: String): Pair<Float, Float> {

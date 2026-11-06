@@ -19,6 +19,7 @@ import app.deckly.fixtures.buildCard
 import app.deckly.fixtures.buildDeck
 import app.deckly.fixtures.buildDeckState
 import app.deckly.fixtures.buildStroke
+import app.deckly.ink.CardGeometry
 import app.deckly.navigation.AppScreen
 import app.deckly.navigation.EditorStart
 import app.deckly.ui.contract.CardSideShown
@@ -393,7 +394,6 @@ class EditorViewModelShapesTest {
         runUntilIdle()
 
         assertNull(shown.selectedShape)
-        assertTrue("penReturnsAfterTouchAway", viewModel.canvas.value.isPenEnabled)
         assertEquals(listOf(Shape.Kind.OVAL), drafts.storedCalls.single().draft.front.shapes.map { it.kind })
         assertTrue(shown.canUndo)
     }
@@ -433,19 +433,218 @@ class EditorViewModelShapesTest {
     }
 
     @Test
-    fun moveAfterTouchAwayDoesNotMoveAnything() {
-        // Касание мимо убирает `ShapeStage` вместе с корутиной жеста: `EndShapeGesture` не приходит, а `Move` может.
+    fun moveAfterTheLiftChangesNothing() {
+        // Подъём закончил линию: поздний `Move` без жеста (например, от оборванного слоя жестов) ничего не меняет.
         startWithShapes(rectangle)
         selectPlaced(0)
-        viewModel.onAction(EditorAction.StartShapeGesture(null, emptySpot.first, emptySpot.second))
+        touchAway()
+        viewModel.onAction(EditorAction.EndShapeGesture)
         runUntilIdle()
         val applied = viewModel.canvas.value.side
+        val before = shown
 
         viewModel.onAction(EditorAction.MoveShapeGesture(onRectangle.first + 50f, onRectangle.second + 50f))
         runUntilIdle()
 
         assertEquals(applied, viewModel.canvas.value.side)
+        assertEquals(before, shown)
+    }
+
+    // --- касание мимо: линия с первой точки ----------------------------------------------------------
+
+    @Test
+    fun touchAwayAppliesTheShapeAndStartsTheLineFromTheFirstPoint() {
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+
+        touchAway(pressure = 0.6f)
+
         assertNull(shown.selectedShape)
+        assertTrue(shown.isCapturingStroke)
+        val side = viewModel.canvas.value.side
+        assertEquals(listOf(Shape.Kind.OVAL), side.shapes.map { it.kind })
+        assertEquals(listOf(StrokePoint(emptySpot.first, emptySpot.second, 0.6f)), side.strokes.single().points)
+        assertFalse("перо выключено, пока линия собирается", viewModel.canvas.value.isPenEnabled)
+        val written = drafts.storedCalls.single().draft.front
+        assertEquals(listOf(Shape.Kind.OVAL), written.shapes.map { it.kind })
+        assertTrue("линия на диск ещё не идёт", written.strokes.isEmpty())
+    }
+
+    @Test
+    fun movesAfterTouchAwayExtendTheLineByPiecesOfTwoPointsWithTheirOwnPressure() {
+        // Линия на листе идёт отрезками из двух точек: растущий штрих менялся бы целиком (`Replaced`, область всего штриха),
+        // а так лист каждый раз только дорисовывает новый кусок (`Appended`). Нажим у каждой точки свой, толщина одна.
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+        touchAway(pressure = 0.6f)
+        val first = StrokePoint(emptySpot.first, emptySpot.second, 0.6f)
+        val second = StrokePoint(emptySpot.first + 10f, emptySpot.second + 5f, 0.8f)
+        val third = StrokePoint(emptySpot.first + 20f, emptySpot.second + 15f, 0.3f)
+
+        viewModel.onAction(EditorAction.MoveShapeGesture(second.x, second.y, second.pressure))
+        runUntilIdle()
+        val afterFirstMove = viewModel.canvas.value.side.strokes
+        viewModel.onAction(EditorAction.MoveShapeGesture(third.x, third.y, third.pressure))
+        runUntilIdle()
+        val afterSecondMove = viewModel.canvas.value.side.strokes
+
+        assertEquals(listOf(listOf(first, second)), afterFirstMove.map { it.points })
+        assertEquals(listOf(listOf(first, second), listOf(second, third)), afterSecondMove.map { it.points })
+        assertEquals("прежние куски остаются как были", afterFirstMove, afterSecondMove.take(afterFirstMove.size))
+        assertEquals(1, afterSecondMove.map { it.width }.distinct().size)
+        assertEquals("пишется только применение фигуры", 1, drafts.storedCalls.size)
+        assertTrue(shown.isCapturingStroke)
+    }
+
+    @Test
+    fun liftWritesTheWholeLineAsOneStrokeAndReturnsThePen() {
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+        touchAway(pressure = 0.6f)
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 10f, emptySpot.second + 5f, 0.8f))
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 20f, emptySpot.second + 15f, 0.3f))
+
+        viewModel.onAction(EditorAction.EndShapeGesture)
+        runUntilIdle()
+
+        assertEquals(2, drafts.storedCalls.size)
+        val written = drafts.storedCalls.last().draft.front
+        val stroke = written.strokes.single()
+        assertEquals(listOf(0.6f, 0.8f, 0.3f), stroke.points.map { it.pressure })
+        assertEquals(listOf(emptySpot.first, emptySpot.first + 10f, emptySpot.first + 20f), stroke.points.map { it.x })
+        assertEquals(listOf(Shape.Kind.OVAL), written.shapes.map { it.kind })
+        assertFalse(shown.isCapturingStroke)
+        assertTrue(viewModel.canvas.value.isPenEnabled)
+        assertEquals(listOf(stroke), viewModel.canvas.value.side.strokes)
+    }
+
+    @Test
+    fun theLineAndTheAppliedShapeAreSeparateUndoSteps() {
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+        touchAway()
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 30f, emptySpot.second))
+        viewModel.onAction(EditorAction.EndShapeGesture)
+        runUntilIdle()
+
+        viewModel.onAction(EditorAction.Undo)
+        runUntilIdle()
+        assertTrue("первая отмена снимает линию", viewModel.canvas.value.side.strokes.isEmpty())
+        assertEquals(listOf(Shape.Kind.OVAL), viewModel.canvas.value.side.shapes.map { it.kind })
+
+        viewModel.onAction(EditorAction.Undo)
+        runUntilIdle()
+        assertTrue("вторая отмена снимает фигуру", viewModel.canvas.value.side.shapes.isEmpty())
+    }
+
+    @Test
+    fun lineWidthIsThePenWidthOfTheThicknessInCardUnitsOfTheSheetScale() {
+        for (thickness in Thickness.entries) {
+            startNewCard()
+            viewModel.onAction(EditorAction.SelectThickness(thickness))
+            chooseShape(ShapeKind.OVAL)
+
+            touchAway(scale = 2f)
+
+            // Ту же ширину в единицах карточки даёт лист обычному штриху: `buildStroke` переводит `penWidthPx` через `CardGeometry`.
+            assertEquals("$thickness", CardGeometry.toCardUnits(thickness.toPenWidthPx(), 2f), viewModel.canvas.value.side.strokes.single().width, 0.0001f)
+        }
+    }
+
+    @Test
+    fun cancelledTouchAwayDropsTheLineAndKeepsTheAppliedShape() {
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+        touchAway()
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 30f, emptySpot.second))
+
+        viewModel.onAction(EditorAction.CancelShapeGesture)
+        runUntilIdle()
+
+        assertTrue(viewModel.canvas.value.side.strokes.isEmpty())
+        assertEquals(listOf(Shape.Kind.OVAL), viewModel.canvas.value.side.shapes.map { it.kind })
+        assertEquals("записана только фигура", 1, drafts.storedCalls.size)
+        assertFalse(shown.isCapturingStroke)
+        assertTrue(viewModel.canvas.value.isPenEnabled)
+        viewModel.onAction(EditorAction.Undo)
+        runUntilIdle()
+        assertTrue("шаг один: фигура", viewModel.canvas.value.side.shapes.isEmpty())
+    }
+
+    @Test
+    fun touchAwayWithoutMovementIsADotOfOnePoint() {
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+        touchAway(pressure = 0.5f)
+
+        viewModel.onAction(EditorAction.EndShapeGesture)
+        runUntilIdle()
+
+        val stroke = drafts.storedCalls.last().draft.front.strokes.single()
+        assertEquals(listOf(StrokePoint(emptySpot.first, emptySpot.second, 0.5f)), stroke.points)
+    }
+
+    @Test
+    fun everythingButTheGestureIsIgnoredWhileTheLineIsCollected() {
+        // Палец или ладонь на кнопках во время письма пером: ни «Back», ни «Save», ни «Undo» линию не обрывают.
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+        touchAway()
+        val before = viewModel.canvas.value.side
+
+        for (action in listOf(
+            EditorAction.Undo,
+            EditorAction.SelectThickness(Thickness.THICK),
+            EditorAction.SelectSide(CardSideShown.BACK),
+            EditorAction.OpenShapePalette,
+            EditorAction.Save,
+            EditorAction.Back,
+            EditorAction.Cancel,
+            EditorAction.ApplyShape,
+            EditorAction.CancelShape,
+        )) {
+            viewModel.onAction(action)
+        }
+        runUntilIdle()
+
+        assertEquals(before, viewModel.canvas.value.side)
+        assertTrue(shown.isCapturingStroke)
+        assertFalse(shown.isShapePaletteOpen)
+        assertNull(shown.dialog)
+        assertEquals(Thickness.MEDIUM, shown.thickness)
+        assertEquals(CardSideShown.FRONT, shown.side)
+        assertEquals(1, drafts.storedCalls.size)
+        assertTrue(navigated.isEmpty())
+    }
+
+    @Test
+    fun tapOnAPlacedShapeWhileTheLineIsCollectedIsIgnored() {
+        startWithShapes(rectangle)
+        selectPlaced(0)
+        touchAway()
+
+        viewModel.onShapeTap(0)
+        runUntilIdle()
+
+        assertNull(shown.selectedShape)
+        assertTrue(shown.isCapturingStroke)
+    }
+
+    @Test
+    fun revisionGrowsOnceWhenTheLineStartsAndNotWhileItGrows() {
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+        val revision = viewModel.canvas.value.uiRevision
+
+        touchAway()
+        val atStart = viewModel.canvas.value.uiRevision
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 10f, emptySpot.second))
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 20f, emptySpot.second))
+        viewModel.onAction(EditorAction.EndShapeGesture)
+        runUntilIdle()
+
+        assertEquals("панель фигуры сменилась обычной", revision + 1, atStart)
+        assertEquals(atStart, viewModel.canvas.value.uiRevision)
     }
 
     @Test
@@ -1097,6 +1296,12 @@ class EditorViewModelShapesTest {
         viewModel.onAction(EditorAction.ChooseShape(kind))
         runUntilIdle()
         assertEquals("выбран вид $kind", kind, checkNotNull(shown.selectedShape) { "фигура не в руках" }.kind)
+    }
+
+    // Касание пером мимо всех фигур при фигуре в руках: фигура применяется, линия начинается с этой точки.
+    private fun touchAway(pressure: Float = 0.6f, scale: Float = 1.74f) {
+        viewModel.onAction(EditorAction.StartShapeGesture(null, emptySpot.first, emptySpot.second, pressure, scale))
+        runUntilIdle()
     }
 
     // То же для выбора размещённой фигуры касанием: после него она в руках.

@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -39,19 +40,23 @@ import app.deckly.ui.contract.ShapeHandleKind
 import kotlin.math.roundToInt
 
 /**
- * Рамка и ручки выделенной фигуры над листом (`.shape-object.is-selected` с ручками в макете). Сама фигура на листе: её
- * контур рисует `ink`, здесь только то, что видно при выделении, и жесты. Рамка повёрнута вокруг центра на угол фигуры.
- * У обычного вида: пунктир в 1 dp, четыре квадрата в углах и ручка поворота над рамкой со значком и чертой. У линии и
- * стрелок: без пунктира, два круга на концах оси.
+ * Слой жестов пера над листом и, пока фигура выделена, её рамка и ручки (`.shape-object.is-selected` с ручками в макете).
+ * Сама фигура на листе: её контур рисует `ink`, здесь только то, что видно при выделении, и жесты. Рамка повёрнута вокруг
+ * центра на угол фигуры. У обычного вида: пунктир в 1 dp, четыре квадрата в углах и ручка поворота над рамкой со значком
+ * и чертой. У линии и стрелок: без пунктира, два круга на концах оси. [selected] == `null`: рамки нет, слой остаётся ради
+ * жеста, который начался при выделении и стал линией (касание мимо): он не должен оборваться, пока перо не оторвано.
  *
  * Жесты только пером (`PointerType.Stylus`) и без нажатой кнопки: палец и ладонь ничего не двигают и не ставят, перо с
  * кнопкой стирает. Касание в цели ручки даёт [EditorAction.StartShapeGesture] с этой ручкой, в любом другом месте листа
- * с `null`, остальное решает модель. Дальше движение, конец или отмена жеста; перед концом положение подъёма уходит ещё
- * одним движением, если оно не совпало с последним. Координаты — в единицах карточки.
+ * с `null`, остальное решает модель. Начало и каждое движение несут нажим, начало ещё и масштаб листа. Дальше движение,
+ * конец или отмена жеста. Система отдаёт отсчёты пера пачкой за кадр: в модель идут все, по одному движению на отсчёт
+ * (линии нужны все, иначе быстрая выйдет ломаной хордами), нажим исторических отсчётов берётся из исходного события.
+ * Перед концом положение подъёма уходит ещё одним движением, если оно не совпало с последним. Координаты — в единицах
+ * карточки.
  */
 @Composable
-internal fun ShapeStage(selected: SelectedShape, onAction: (EditorAction) -> Unit, modifier: Modifier = Modifier) {
-    val currentFrame by rememberUpdatedState(selected.frame)
+internal fun ShapeStage(selected: SelectedShape?, onAction: (EditorAction) -> Unit, modifier: Modifier = Modifier) {
+    val currentFrame by rememberUpdatedState(selected?.frame)
     val currentOnAction by rememberUpdatedState(onAction)
     BoxWithConstraints(
         modifier.pointerInput(Unit) {
@@ -60,31 +65,50 @@ internal fun ShapeStage(selected: SelectedShape, onAction: (EditorAction) -> Uni
                 // Жест начинает только перо без нажатой кнопки; остальные касания не трогаем, их разбирает лист.
                 if (down.type != PointerType.Stylus || isStylusButtonPressed(currentEvent.motionEvent)) return@awaitEachGesture
                 val scale = size.width / CARD_WIDTH
-                val handle = findHandleAt(currentFrame, down.position.x, down.position.y, scale, density)
+                val handle = currentFrame?.let { findHandleAt(it, down.position.x, down.position.y, scale, density) }
                 down.consume()
-                currentOnAction.invoke(EditorAction.StartShapeGesture(handle, down.position.x / scale, down.position.y / scale))
-                var lastPosition = down.position
+                val pressure = down.pressure.coerceIn(0f, 1f)
+                currentOnAction.invoke(EditorAction.StartShapeGesture(handle, down.position.x / scale, down.position.y / scale, pressure, scale))
+                var last = PenPoint(down.position, pressure)
                 val isFinished = drag(down.id) { change ->
-                    lastPosition = change.position
-                    currentOnAction.invoke(buildMove(change.position, scale))
+                    for (point in collectPenPoints(change, currentEvent.motionEvent)) {
+                        last = point
+                        currentOnAction.invoke(buildMove(point, scale))
+                    }
                     change.consume()
                 }
-                // Подъём приходит без движения (`drag` не зовёт на него обработчик), а быстрое перо отдаёт его далеко от
-                // последнего движения: без этого шага фигура останавливалась бы там, где было последнее движение.
+                // Подъём приходит без движения (`drag` не зовёт на него обработчик) и может оказаться не там, где последнее
+                // движение: без этого шага фигура останавливалась бы там, где было последнее движение. Нажим при подъёме
+                // нулевой, поэтому у точки подъёма нажим последнего движения.
                 val lift = currentEvent.changes.firstOrNull { it.id == down.id }?.position
-                if (isFinished && lift != null && lift != lastPosition) currentOnAction.invoke(buildMove(lift, scale))
+                if (isFinished && lift != null && lift != last.position) currentOnAction.invoke(buildMove(PenPoint(lift, last.pressure), scale))
                 currentOnAction.invoke(if (isFinished) EditorAction.EndShapeGesture else EditorAction.CancelShapeGesture)
             }
         },
     ) {
-        ShapeFrameMarks(selected, constraints.maxWidth / CARD_WIDTH)
+        if (selected != null) ShapeFrameMarks(selected, constraints.maxWidth / CARD_WIDTH)
     }
 }
 
 private const val CARD_WIDTH = 1000f
 
-// Положение пера на листе в пикселях — движение жеста в единицах карточки.
-private fun buildMove(position: Offset, scale: Float) = EditorAction.MoveShapeGesture(position.x / scale, position.y / scale)
+// Отсчёт пера: положение на листе в пикселях и нажим от 0 до 1.
+private data class PenPoint(val position: Offset, val pressure: Float)
+
+// Движение жеста в единицах карточки: нажим держим в пределах 0..1, как требует действие.
+private fun buildMove(point: PenPoint, scale: Float) =
+    EditorAction.MoveShapeGesture(point.position.x / scale, point.position.y / scale, point.pressure.coerceIn(0f, 1f))
+
+// Все отсчёты пера из одного события по порядку: накопленные за кадр (`historical`) и текущий. Compose нажим исторических
+// отсчётов не несёт, он лежит в истории исходного `MotionEvent`; если её нет или она другой длины, нажим берётся у текущего.
+private fun collectPenPoints(change: PointerInputChange, event: MotionEvent?): List<PenPoint> {
+    val index = event?.findPointerIndex(change.id.value.toInt()) ?: -1
+    val history = event?.takeIf { index >= 0 && it.historySize == change.historical.size }
+    val past = change.historical.mapIndexed { step, sample ->
+        PenPoint(sample.position, history?.getHistoricalPressure(index, step) ?: change.pressure)
+    }
+    return past + PenPoint(change.position, change.pressure)
+}
 
 // Боковая кнопка стилуса стирает: так решает и лист (`CanvasDrawingView`), поэтому с ней перо фигуру не двигает. Смотрим на
 // исходное событие: в `PointerButtons` Compose кончик пера (BUTTON_PRIMARY) и боковая кнопка (BUTTON_STYLUS_PRIMARY) оба

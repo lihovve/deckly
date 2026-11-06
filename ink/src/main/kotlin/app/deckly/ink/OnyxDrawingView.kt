@@ -33,6 +33,9 @@ import com.onyx.android.sdk.pen.data.TouchPointList
  *   интерфейс на экране, не пропадают ли штрихи и фигуры;
  * - след касания у контура: исчезает ли серый след прошивки после цикла пера, `drawSurface` и частичного обновления
  *   вокруг касания, и не остаётся ли он после того, как хозяин выключил перо выбором фигуры;
+ * - линия при касании мимо фигуры: перо выключено, куски линии дописываются на поверхность (`Appended`) и показываются
+ *   частичным обновлением (`commitAppended`); ширина окна после подъёма, пока перо снова не включилось, измеряется на
+ *   планшете;
  * - перетаскивание фигуры: каждое движение перерисовывает и обновляет только изменившуюся область
  *   ([commitReplacement]); совпадение с перерисовкой всего листа проверено на JVM по пикселям (`PartialRedrawTest`), скорость
  *   и отсутствие хвостов на экране проверяет владелец;
@@ -125,7 +128,7 @@ internal class OnyxDrawingView(context: Context) :
         if (isUiChanged || change is SideChange.Replaced) gate.requestCycle()
         when (change) {
             SideChange.None -> Unit
-            is SideChange.Appended -> drawSurface(computeBoundsOf(change.added))
+            is SideChange.Appended -> commitAppended(change)
             is SideChange.Replaced -> commitReplacement(change)
         }
     }
@@ -300,6 +303,16 @@ internal class OnyxDrawingView(context: Context) :
         val bounds = computeChangedBounds(change.before, change.after, scale) ?: return
         drawSurface(bounds)
         ScreenRefresh.refreshRegion(this, clipToSheet(bounds))
+    }
+
+    // Дописанные хостом штрихи (куски линии, которая собирается при касании мимо фигуры) рисуются только в своей области.
+    // Пока перо включено, экран замораживает прошивка: обновление ничего не даст, а штрих пера она уже показала. При
+    // выключенном пере экран обновляет только приложение, поэтому область обновляется. Штрихи без точек области не имеют:
+    // `null` у `drawSurface` значил бы весь лист, поэтому ранний выход до вызова.
+    private fun commitAppended(change: SideChange.Appended) {
+        val bounds = computeBoundsOf(change.added) ?: return
+        drawSurface(bounds)
+        if (!gate.isOn) ScreenRefresh.refreshRegion(this, clipToSheet(bounds))
     }
 
     private fun computeBoundsOf(strokes: List<Stroke>): PixelBounds? {

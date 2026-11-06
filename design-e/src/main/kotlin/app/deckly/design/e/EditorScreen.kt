@@ -58,8 +58,9 @@ fun EditorScreen(
         SideTabs(state.side) { onAction(EditorAction.SelectSide(it)) }
         Sheet(Modifier.weight(1f).fillMaxWidth()) {
             sheet(Modifier.fillMaxSize().semantics { contentDescription = EditorTexts.CANVAS })
-            // Рамка и ручки лежат над листом только пока фигура выделена.
-            state.selectedShape?.let { ShapeStage(it, onAction, Modifier.fillMaxSize()) }
+            // Слой жестов лежит над листом, пока фигура выделена или касание мимо собирается в линию (иначе жест оборвался
+            // бы, пока перо не оторвано); рамка и ручки только при выделении.
+            if (state.selectedShape != null || state.isCapturingStroke) ShapeStage(state.selectedShape, onAction, Modifier.fillMaxSize())
         }
         val selected = state.selectedShape
         if (selected != null) ShapeEditTools(selected, onAction, shapeGlyph) else EditorTools(state, onAction)

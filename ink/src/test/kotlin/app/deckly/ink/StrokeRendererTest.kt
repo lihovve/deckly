@@ -132,6 +132,20 @@ class StrokeRendererTest {
         assertEquals(before, stroke)
     }
 
+    @Test
+    fun strokeLooksTheSameAsItsPiecesOfTwoPointsDrawnOneByOne() {
+        // Линия при касании мимо фигуры показывается кусками из двух точек, на подъёме куски заменяет один штрих: картинка
+        // не должна измениться. Штрих рисуется цепочкой независимых отрезков, поэтому совпадают все пиксели.
+        val points = listOf(
+            point(30f, 40f, 0.2f), point(90f, 60f, 0.9f), point(150f, 50f, 0.5f), point(210f, 120f, 1f), point(260f, 250f, 0.1f),
+        )
+        val whole = drawOnWhite(1.74f, Stroke(14f, points))
+
+        val pieces = drawOnWhite(1.74f, *points.zipWithNext { from, to -> Stroke(14f, listOf(from, to)) }.toTypedArray())
+
+        assertTrue(whole.sameAs(pieces))
+    }
+
     private fun drawOnWhite(scale: Float, vararg strokes: Stroke): Bitmap {
         val bitmap = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)

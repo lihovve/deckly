@@ -25,7 +25,8 @@ data class SelectedShape(val kind: ShapeKind, val frame: ShapeFrame, val outline
  * Состояние редактора. [isNewCard] определяет левое действие шапки: «Отменить» у новой карточки,
  * «Удалить» у правки. [selectedShape] — фигура в руках: пока она есть, вместо обычной панели панель фигуры, а над листом
  * рамка и ручки. [isShapePaletteOpen] — открыта палитра видов и толщины контура, [paletteOutlineWidth] — толщина,
- * которую получит новая фигура.
+ * которую получит новая фигура. [isCapturingStroke] — касание мимо фигуры собирается в штрих: выделения уже нет, панель
+ * обычная, но слой жестов над листом остаётся, пока перо не оторвано, чтобы линия шла с первой точки.
  */
 data class EditorScreenState(
     val isNewCard: Boolean,
@@ -36,6 +37,7 @@ data class EditorScreenState(
     val selectedShape: SelectedShape? = null,
     val isShapePaletteOpen: Boolean = false,
     val paletteOutlineWidth: Int = 3,
+    val isCapturingStroke: Boolean = false,
 )
 
 sealed interface EditorAction {
@@ -74,11 +76,29 @@ sealed interface EditorAction {
 
     /**
      * Перо коснулось листа при выделенной фигуре. [handle] — ручка, за которую взялись, `null` — любое другое место
-     * листа (перенос за контур или касание мимо, это решает модель). [x], [y] в единицах карточки.
+     * листа (перенос за контур или касание мимо, это решает модель). [x], [y] в единицах карточки, [pressure] — нажим
+     * от 0 до 1: касание мимо становится штрихом, и первая точка штриха несёт нажим. [scale] — пикселей листа в одной
+     * единице карточки: по нему модель переводит толщину пера из пикселей в единицы карточки.
      */
-    data class StartShapeGesture(val handle: ShapeHandleKind?, val x: Float, val y: Float) : EditorAction
+    data class StartShapeGesture(
+        val handle: ShapeHandleKind?,
+        val x: Float,
+        val y: Float,
+        val pressure: Float = 1f,
+        val scale: Float = 1f,
+    ) : EditorAction {
+        init {
+            require(pressure in 0f..1f) { "Нажим должен быть от 0 до 1: $pressure" }
+            require(scale.isFinite() && scale > 0f) { "Масштаб листа должен быть конечным и больше нуля: $scale" }
+        }
+    }
 
-    data class MoveShapeGesture(val x: Float, val y: Float) : EditorAction
+    /** Движение пера в жесте: [x], [y] в единицах карточки, [pressure] от 0 до 1 (у штриха при касании мимо). */
+    data class MoveShapeGesture(val x: Float, val y: Float, val pressure: Float = 1f) : EditorAction {
+        init {
+            require(pressure in 0f..1f) { "Нажим должен быть от 0 до 1: $pressure" }
+        }
+    }
 
     data object EndShapeGesture : EditorAction
 

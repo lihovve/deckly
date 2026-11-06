@@ -25,6 +25,7 @@ fun buildEditorScreenState(
     held: HeldShape? = null,
     isShapePaletteOpen: Boolean = false,
     paletteOutlineWidth: Int = DEFAULT_OUTLINE_WIDTH,
+    isCapturingStroke: Boolean = false,
 ): EditorScreenState = EditorScreenState(
     isNewCard = session.draft.cardId == null,
     side = session.draft.visibleSide.toShown(),
@@ -34,6 +35,7 @@ fun buildEditorScreenState(
     selectedShape = held?.shape?.toSelectedShape(),
     isShapePaletteOpen = isShapePaletteOpen,
     paletteOutlineWidth = paletteOutlineWidth,
+    isCapturingStroke = isCapturingStroke,
 )
 
 /** Толщина пера в пикселях листа (решение владельца 5 ноября: 3, 10 и 25). В единицы карточки её переводит `ink`. */

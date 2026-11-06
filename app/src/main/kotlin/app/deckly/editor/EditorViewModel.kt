@@ -31,6 +31,7 @@ import app.deckly.domain.port.DraftRepository
 import app.deckly.domain.port.StoredDraft
 import app.deckly.domain.review.ReviewAction
 import app.deckly.domain.review.ReviewEngine
+import app.deckly.ink.CardGeometry
 import app.deckly.navigation.AppScreen
 import app.deckly.navigation.EditorStart
 import app.deckly.ui.contract.EditorAction
@@ -99,6 +100,9 @@ class EditorViewModel(
     // Фигура в руках и жест над ней; палитра и запомненная толщина контура новых фигур (в единицах макета).
     private var held: HeldShape? = null
     private var gesture: ActiveShapeGesture? = null
+
+    // Касание мимо фигуры в руках: фигура уже применена, а само касание собирается в линию, пока перо не оторвано.
+    private var capture: CapturedLine? = null
     private var isPaletteOpen = false
     private var outlineWidth = outlineWidths.readWidth().coerceIn(MIN_OUTLINE_WIDTH, MAX_OUTLINE_WIDTH)
 
@@ -197,6 +201,7 @@ class EditorViewModel(
                 else -> Unit
             }
             isPaletteOpen -> handlePaletteAction(action)
+            capture != null -> handleLineAction(action)
             inHand != null -> handleSelectionAction(action, inHand)
             else -> handleOrdinaryAction(action)
         }
@@ -237,6 +242,32 @@ class EditorViewModel(
             }
             else -> Unit
         }
+    }
+
+    // Пока линия собирается, значение имеет только жест пера. Палец или ладонь на кнопках (отмена, толщина, сторона, «Back»,
+    // «Save») её не обрывают: пишет перо, и обрывает только система (`CancelShapeGesture`), тогда линия выбрасывается, а
+    // применённая фигура остаётся.
+    private suspend fun handleLineAction(action: EditorAction) {
+        when (action) {
+            is EditorAction.MoveShapeGesture -> capture?.let { line ->
+                line.add(StrokePoint(action.x, action.y, action.pressure))
+                publish()
+            }
+            EditorAction.EndShapeGesture -> finishLine()
+            EditorAction.CancelShapeGesture -> {
+                capture = null
+                publish()
+            }
+            else -> Unit
+        }
+    }
+
+    // Подъём пера: линия становится настоящим штрихом, отдельным шагом отмены после применения фигуры. Пока идёт запись,
+    // на экране остаётся линия из кусков: состояние публикуется после записи.
+    private suspend fun finishLine() {
+        val line = capture ?: return
+        capture = null
+        applyChange(current.addStroke(line.toStroke()), startsDraft = true)
     }
 
     private suspend fun handleSelectionAction(action: EditorAction, inHand: HeldShape) {
@@ -298,7 +329,7 @@ class EditorViewModel(
 
     // Фигура, выбранная касанием у контура: в руках, запомнена как была. Устаревший номер (фигуру успели снять) молча теряется.
     private fun selectPlacedShape(index: Int) {
-        if (dialog != null || isPaletteOpen || held != null) return
+        if (dialog != null || isPaletteOpen || held != null || capture != null) return
         val shape = current.listVisibleContent(null).shapes.getOrNull(index) ?: return
         held = HeldShape(shape, index, shape)
         publish()
@@ -307,7 +338,8 @@ class EditorViewModel(
     /**
      * Касание листа при выделенной фигуре. С ручкой: жест ручки. Без неё решает, чья лента выбора задета (верхней из
      * задетых): своя фигура двигается за контур; другая применяет текущую, выделяется и тем же касанием двигается, как
-     * в демо; мимо всех применяет фигуру и возвращает перо, а касание дальше станет штрихом.
+     * в демо; мимо всех применяет фигуру и начинает линию с этой точки: перо остаётся выключенным, а линия собирается до
+     * подъёма и тогда становится штрихом.
      */
     private suspend fun startShapeGesture(action: EditorAction.StartShapeGesture, inHand: HeldShape) {
         val handle = action.handle
@@ -320,7 +352,12 @@ class EditorViewModel(
         when (val hit = findShapeAt(shapes, action.x, action.y)) {
             inHandIndex -> gesture = ActiveShapeGesture(null, action.x, action.y, inHand.shape)
             null -> {
+                // Фигура применяется, а касание начинает линию с этой же точки: выделение и сбор уходят одним состоянием.
                 applyHeldShape()
+                capture = CapturedLine(
+                    CardGeometry.toCardUnits(thickness.toPenWidthPx(), action.scale),
+                    StrokePoint(action.x, action.y, action.pressure),
+                )
                 publish()
             }
             else -> {
@@ -446,12 +483,34 @@ class EditorViewModel(
     )
 
     private fun buildState(): EditorScreenState? =
-        session?.let { buildEditorScreenState(it, thickness, dialog, held, isPaletteOpen, outlineWidth) }
+        session?.let { buildEditorScreenState(it, thickness, dialog, held, isPaletteOpen, outlineWidth, isCapturingStroke = capture != null) }
 
     private fun buildCanvas() = CanvasState(
-        side = session?.listVisibleContent(held) ?: CardSide(),
+        side = session?.listVisibleContent(held)?.let { visible -> capture?.let { visible.copy(strokes = visible.strokes + it.listPieces()) } ?: visible } ?: CardSide(),
         penWidthPx = thickness.toPenWidthPx(),
-        isPenEnabled = session != null && dialog == null && !isLeaving && !isPaletteOpen && held == null,
+        isPenEnabled = session != null && dialog == null && !isLeaving && !isPaletteOpen && held == null && capture == null,
         uiRevision = uiRevision,
     )
+}
+
+/**
+ * Линия, которая собирается из касания мимо фигуры: точки с нажимом для настоящего штриха ([toStroke]) и для показа куски
+ * из двух точек ([listPieces]). Лист рисует штрих цепочкой отрезков (толщина отрезка по двум его точкам), поэтому куски
+ * дают ту же картинку, что и целый штрих, а новый кусок лист только дорисовывает: растущий штрих менялся бы целиком, и
+ * рисовалась бы область всего штриха. Единственная точка (касание без движения) показывается точкой.
+ */
+private class CapturedLine(private val width: Float, first: StrokePoint) {
+    private val points = mutableListOf(first)
+    private val pieces = mutableListOf(Stroke(width, listOf(first)))
+
+    fun add(point: StrokePoint) {
+        val previous = points.last()
+        points += point
+        if (points.size == 2) pieces.clear()
+        pieces += Stroke(width, listOf(previous, point))
+    }
+
+    fun listPieces(): List<Stroke> = pieces.toList()
+
+    fun toStroke() = Stroke(width, points.toList())
 }
