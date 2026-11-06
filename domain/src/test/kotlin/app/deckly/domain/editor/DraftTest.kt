@@ -7,7 +7,9 @@ import app.deckly.domain.buildStroke
 import app.deckly.domain.findCard
 import app.deckly.domain.model.Card
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Side
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -15,8 +17,12 @@ import org.junit.jupiter.api.assertThrows
 
 class DraftTest {
 
-    private val front = listOf(buildStroke(0f to 0f, 10f to 0f))
-    private val back = listOf(buildStroke(0f to 5f, 10f to 5f), buildStroke(1f to 1f))
+    // Фигуры идут в содержимое карточки вместе со штрихами: сохранение ничего на стороне не отбирает.
+    private val front = CardSide(
+        listOf(buildStroke(0f to 0f, 10f to 0f)),
+        listOf(Shape(Shape.Kind.STAR, 100f, 100f, 300f, 300f, 30f, 4f)),
+    )
+    private val back = CardSide(listOf(buildStroke(0f to 5f, 10f to 5f), buildStroke(1f to 1f)))
 
     @Test
     fun savingNewDraftAppendsCardToPool() {
@@ -75,12 +81,12 @@ class DraftTest {
     @Test
     fun emptySidesAreAllowed() {
         val state = buildDeckState(buildDeck(), buildCard(1, Section.NEW))
-        val draft = Draft(null, emptyList(), emptyList(), Side.FRONT, Section.NEW)
+        val draft = Draft(null, CardSide(), CardSide(), Side.FRONT, Section.NEW)
 
         val (saved, content) = saveDraft(state, draft, newCardId = 77, today = 9, now = 1234L)
 
         assertEquals(2, saved.cards.size)
-        assertEquals(CardContent(77, emptyList(), emptyList()), content)
+        assertEquals(CardContent(77, CardSide(), CardSide()), content)
     }
 
     @Test

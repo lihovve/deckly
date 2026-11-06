@@ -2,6 +2,7 @@ package app.deckly.data
 
 import app.deckly.domain.model.Card
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
@@ -87,8 +88,8 @@ fun buildTestStroke(seed: Int): Stroke = Stroke(
  */
 fun buildSeedContent(cardId: Long): CardContent = CardContent(
     cardId,
-    listOf(buildTestStroke(cardId.toInt())),
-    if (cardId % 2 == 0L) listOf(buildTestStroke(cardId.toInt() + 1000)) else emptyList(),
+    CardSide(listOf(buildTestStroke(cardId.toInt()))),
+    if (cardId % 2 == 0L) CardSide(listOf(buildTestStroke(cardId.toInt() + 1000))) else CardSide(),
 )
 
 /** День, на который рассчитаны сценарии ниже. */

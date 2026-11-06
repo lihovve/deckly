@@ -150,14 +150,14 @@ class DeckViewModelTest {
     fun shownCardCarriesStrokesOfVisibleSide() {
         startWith(buildLearningState())
         runUntilIdle()
-        assertEquals(FakeCardContentRepository.buildContent(1).front, viewModel.shownCard.value?.strokes)
+        assertEquals(FakeCardContentRepository.buildContent(1).front.strokes, viewModel.shownCard.value?.strokes)
 
         viewModel.onAction(DeckAction.Flip)
         runUntilIdle()
 
         val shown = checkNotNull(viewModel.shownCard.value)
         assertEquals(Side.BACK, shown.side)
-        assertEquals(FakeCardContentRepository.buildContent(1).back, shown.strokes)
+        assertEquals(FakeCardContentRepository.buildContent(1).back.strokes, shown.strokes)
         assertFalse(shown.isDamaged)
     }
 

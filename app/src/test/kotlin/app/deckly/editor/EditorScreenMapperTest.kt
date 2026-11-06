@@ -7,6 +7,7 @@ import app.deckly.domain.editor.addStroke
 import app.deckly.domain.editor.resumeDraft
 import app.deckly.domain.editor.startNewCard
 import app.deckly.domain.editor.switchSide
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
 import app.deckly.fixtures.buildStroke
@@ -33,7 +34,7 @@ class EditorScreenMapperTest {
 
     @Test
     fun editedCardIsNotNew() {
-        val session = resumeDraft(Draft(7, emptyList(), emptyList(), Side.FRONT, Section.NEW))
+        val session = resumeDraft(Draft(7, CardSide(), CardSide(), Side.FRONT, Section.NEW))
 
         assertEquals(false, buildEditorScreenState(session, Thickness.MEDIUM, null).isNewCard)
     }
@@ -61,7 +62,7 @@ class EditorScreenMapperTest {
 
     @Test
     fun visibleStrokesAreOfVisibleSide() {
-        val session = EditorSession(Draft(null, listOf(front), listOf(back), Side.FRONT, Section.NEW), emptyList())
+        val session = EditorSession(Draft(null, CardSide(listOf(front)), CardSide(listOf(back)), Side.FRONT, Section.NEW), emptyList())
 
         assertEquals(listOf(front), listVisibleStrokes(session))
         assertEquals(listOf(back), listVisibleStrokes(session.switchSide(Side.BACK)))

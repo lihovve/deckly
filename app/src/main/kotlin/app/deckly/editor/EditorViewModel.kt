@@ -14,6 +14,7 @@ import app.deckly.domain.editor.startNewCard
 import app.deckly.domain.editor.switchSide
 import app.deckly.domain.editor.undoLastStep
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Side
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
@@ -144,7 +145,7 @@ class EditorViewModel(
         try {
             contents.loadContent(cardId)
         } catch (failure: IOException) {
-            CardContent(cardId, emptyList(), emptyList())
+            CardContent(cardId, CardSide(), CardSide())
         }
 
     private suspend fun handle(input: Input) {

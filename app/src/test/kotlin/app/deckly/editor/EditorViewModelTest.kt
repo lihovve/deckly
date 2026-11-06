@@ -4,6 +4,7 @@ import app.deckly.DayClock
 import app.deckly.SerialWriter
 import app.deckly.domain.day.computeDayNumber
 import app.deckly.domain.editor.Draft
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
@@ -75,7 +76,7 @@ class EditorViewModelTest {
 
     @Test
     fun resumedDraftHasNoStateUntilItIsLoaded() {
-        drafts.stored = StoredDraft(DECK_ID, Draft(null, listOf(first), emptyList(), Side.BACK, Section.EPOCH_2))
+        drafts.stored = StoredDraft(DECK_ID, Draft(null, CardSide(listOf(first)), CardSide(), Side.BACK, Section.EPOCH_2))
         startResume()
 
         assertNull("пока черновик читается, показывать нечего", viewModel.state.value)
@@ -107,7 +108,7 @@ class EditorViewModelTest {
 
     @Test
     fun nothingButTheLoadedStateIsEverPublishedForResumedDraft() {
-        drafts.stored = StoredDraft(DECK_ID, Draft(null, listOf(first), emptyList(), Side.BACK, Section.EPOCH_2))
+        drafts.stored = StoredDraft(DECK_ID, Draft(null, CardSide(listOf(first)), CardSide(), Side.BACK, Section.EPOCH_2))
         startResume()
         val published = mutableListOf<EditorScreenState?>()
         val job = CoroutineScope(Dispatchers.Unconfined).launch { viewModel.state.collect { published += it } }
@@ -137,15 +138,15 @@ class EditorViewModelTest {
 
         viewModel.onStroke(first)
         runUntilIdle()
-        assertEquals(listOf(listOf(first)), drafts.storedCalls.map { it.draft.front })
+        assertEquals(listOf(listOf(first)), drafts.storedCalls.map { it.draft.front.strokes })
 
         viewModel.onErase(touchingFirst, 2f)
         runUntilIdle()
-        assertEquals(emptyList<Stroke>(), drafts.storedCalls.last().draft.front)
+        assertEquals(emptyList<Stroke>(), drafts.storedCalls.last().draft.front.strokes)
 
         viewModel.onAction(EditorAction.Undo)
         runUntilIdle()
-        assertEquals(listOf(first), drafts.storedCalls.last().draft.front)
+        assertEquals(listOf(first), drafts.storedCalls.last().draft.front.strokes)
 
         viewModel.onAction(EditorAction.SelectSide(CardSideShown.BACK))
         runUntilIdle()
@@ -178,7 +179,7 @@ class EditorViewModelTest {
         viewModel.onStroke(first)
         runUntilIdle()
 
-        assertEquals(listOf(1, 2, 3), drafts.storedCalls.map { it.draft.front.size })
+        assertEquals(listOf(1, 2, 3), drafts.storedCalls.map { it.draft.front.strokes.size })
         assertEquals(listOf(first, second, first), viewModel.canvas.value.strokes)
     }
 
@@ -218,7 +219,7 @@ class EditorViewModelTest {
 
     @Test
     fun resumedDraftOpensOnSavedSide() {
-        val saved = Draft(null, listOf(first), listOf(second), Side.BACK, Section.EPOCH_2)
+        val saved = Draft(null, CardSide(listOf(first)), CardSide(listOf(second)), Side.BACK, Section.EPOCH_2)
         drafts.stored = StoredDraft(DECK_ID, saved)
         startResume()
 
@@ -235,7 +236,7 @@ class EditorViewModelTest {
 
     @Test
     fun resumedDraftKeepsStoringAndReturnsToItsSection() {
-        drafts.stored = StoredDraft(DECK_ID, Draft(null, listOf(first), emptyList(), Side.FRONT, Section.EPOCH_2))
+        drafts.stored = StoredDraft(DECK_ID, Draft(null, CardSide(listOf(first)), CardSide(), Side.FRONT, Section.EPOCH_2))
         startResume()
         runUntilIdle()
 
@@ -252,7 +253,7 @@ class EditorViewModelTest {
 
     @Test
     fun resumedEditOfExistingCardIsNotNew() {
-        drafts.stored = StoredDraft(DECK_ID, Draft(2, listOf(first), emptyList(), Side.FRONT, Section.NEW))
+        drafts.stored = StoredDraft(DECK_ID, Draft(2, CardSide(listOf(first)), CardSide(), Side.FRONT, Section.NEW))
         startResume()
 
         runUntilIdle()
@@ -283,8 +284,8 @@ class EditorViewModelTest {
         assertEquals(today, added.sectionDay)
         assertEquals(NOW_MILLIS, added.createdAt)
         assertEquals(100L, content.cardId)
-        assertEquals(listOf(first), content.front)
-        assertEquals(listOf(second), content.back)
+        assertEquals(listOf(first), content.front.strokes)
+        assertEquals(listOf(second), content.back.strokes)
         assertTrue(changes.deletedCardIds.isEmpty())
         assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, NEW_CARD_ID)), navigated)
         assertEquals(0, drafts.discardCount)
@@ -379,7 +380,7 @@ class EditorViewModelTest {
 
         assertTrue(drafts.storedCalls.isEmpty())
         val (_, content) = drafts.commits.single()
-        assertTrue(content.front.isEmpty() && content.back.isEmpty())
+        assertTrue(content.front.strokes.isEmpty() && content.back.strokes.isEmpty())
         assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, NEW_CARD_ID)), navigated)
     }
 
@@ -388,7 +389,7 @@ class EditorViewModelTest {
         startEditing(cardId = 2)
         runUntilIdle()
         assertFalse(shown.isNewCard)
-        assertEquals(FakeCardContentRepository.buildContent(2).front, viewModel.canvas.value.strokes)
+        assertEquals(FakeCardContentRepository.buildContent(2).front.strokes, viewModel.canvas.value.strokes)
 
         viewModel.onStroke(second)
         runUntilIdle()
@@ -400,7 +401,7 @@ class EditorViewModelTest {
         assertTrue(changes.upsertedCards.isEmpty())
         assertTrue(changes.deletedCardIds.isEmpty())
         assertEquals(2L, content.cardId)
-        assertEquals(FakeCardContentRepository.buildContent(2).front + second, content.front)
+        assertEquals(FakeCardContentRepository.buildContent(2).front.strokes + second, content.front.strokes)
         assertEquals(FakeCardContentRepository.buildContent(2).back, content.back)
         assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, focusCardId = 2)), navigated)
     }
@@ -420,7 +421,7 @@ class EditorViewModelTest {
         val stored = drafts.storedCalls.single()
         assertEquals(2L, stored.draft.cardId)
         assertEquals(Side.BACK, stored.draft.visibleSide)
-        assertEquals(FakeCardContentRepository.buildContent(2).back + second, stored.draft.back)
+        assertEquals(FakeCardContentRepository.buildContent(2).back.strokes + second, stored.draft.back.strokes)
     }
 
     @Test
@@ -512,7 +513,7 @@ class EditorViewModelTest {
         viewModel.onAction(EditorAction.ConfirmDialog)
         runUntilIdle()
 
-        assertEquals(listOf(first), drafts.commits.single().second.front)
+        assertEquals(listOf(first), drafts.commits.single().second.front.strokes)
         assertEquals(listOf<AppScreen>(AppScreen.Deck(DECK_ID, Section.NEW, NEW_CARD_ID)), navigated)
     }
 

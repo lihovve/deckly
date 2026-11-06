@@ -19,4 +19,11 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-tasks.test { useJUnitPlatform() }
+tasks.test {
+    useJUnitPlatform()
+    // Тесты фигур сверяют виды и числа с макетом (`DesignSources` читает `../design`). Файлы вне модуля Gradle сам входами
+    // не считает: без этого правка макета оставляла бы тесты UP-TO-DATE.
+    inputs.files(rootProject.file("design/build.py"), rootProject.file("design/editor-shapes.js"))
+        .withPropertyName("designSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}

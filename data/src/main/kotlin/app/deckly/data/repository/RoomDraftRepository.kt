@@ -7,6 +7,7 @@ import app.deckly.data.strokes.StrokeFileException
 import app.deckly.data.strokes.StrokeFiles
 import app.deckly.domain.editor.Draft
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
@@ -59,7 +60,7 @@ class RoomDraftRepository(
             return null
         }
         val (front, back) = strokes
-        val draft = Draft(editedCardId, front, back, Side.valueOf(row.visibleSide), Section.valueOf(row.returnSection))
+        val draft = Draft(editedCardId, CardSide(front), CardSide(back), Side.valueOf(row.visibleSide), Section.valueOf(row.returnSection))
         return StoredDraft(row.deckId, draft)
     }
 
@@ -78,7 +79,7 @@ class RoomDraftRepository(
         var newFile: String? = null
         val previousFile = try {
             // Имя запоминается внутри блока: отмена может прийти, когда файл уже записан, а блок ещё не вернулся.
-            withContext(Dispatchers.IO) { newFile = files.writeDraftFile(draft.front, draft.back) }
+            withContext(Dispatchers.IO) { newFile = files.writeDraftFile(draft.front.strokes, draft.back.strokes) }
             val file = checkNotNull(newFile)
             database.withWriteTransaction<String?> {
                 val previous = database.draftDao().findDraft()?.contentFile
@@ -134,7 +135,7 @@ class RoomDraftRepository(
         val cardId = content.cardId
         var newFile: String? = null
         val obsoleteFiles = try {
-            withContext(Dispatchers.IO) { newFile = files.writeCardFile(cardId, content.front, content.back) }
+            withContext(Dispatchers.IO) { newFile = files.writeCardFile(cardId, content.front.strokes, content.back.strokes) }
             val file = checkNotNull(newFile)
             database.withWriteTransaction<List<String>> {
                 val previousFile = database.cardDao().findCard(cardId)?.contentFile

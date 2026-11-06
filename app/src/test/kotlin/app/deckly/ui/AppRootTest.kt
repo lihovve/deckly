@@ -35,6 +35,7 @@ import app.deckly.AppContainer
 import app.deckly.data.DecklyData
 import app.deckly.data.db.DatabaseDamagedException
 import app.deckly.domain.editor.Draft
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
 import app.deckly.domain.model.Stroke
@@ -319,7 +320,7 @@ class AppRootTest {
         val probe = ProbeDesign()
         val app = startApp(buildData(drafts = drafts, appState = FakeAppStateRepository(DECK_ID)), design = probe)
         assertEquals(1, fullRefreshes)
-        drafts.stored = StoredDraft(DECK_ID, Draft(null, emptyList(), emptyList(), Side.BACK, Section.NEW))
+        drafts.stored = StoredDraft(DECK_ID, Draft(null, CardSide(), CardSide(), Side.BACK, Section.NEW))
         drafts.loadGate = CompletableDeferred()
         // Вход в редактор должен стать 30-й сменой после первого обновления: тогда обновление при входе видно в счётчике.
         navigateAround(app, REFRESH_PERIOD - 1)
@@ -396,7 +397,7 @@ class AppRootTest {
         val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"), card)))
         startApp(buildData(decks = catalog, appState = FakeAppStateRepository(DECK_ID)))
 
-        assertEquals(FakeCardContentRepository.buildContent(7).front, sheets.deckStrokes.last())
+        assertEquals(FakeCardContentRepository.buildContent(7).front.strokes, sheets.deckStrokes.last())
         // Описание листа ставит дизайн, слот его не затирает.
         composeRule.onNodeWithContentDescription("Handwritten card").assertExists()
     }
@@ -404,7 +405,7 @@ class AppRootTest {
     @Test
     fun editorSlotGetsCanvasOfEditorAndKeepsDescription() {
         val stroke = Stroke(6f, listOf(StrokePoint(1f, 1f, 1f)))
-        val draft = Draft(null, listOf(stroke), emptyList(), Side.FRONT, Section.NEW)
+        val draft = Draft(null, CardSide(listOf(stroke)), CardSide(), Side.FRONT, Section.NEW)
         startApp(buildData(drafts = FakeDraftRepository(StoredDraft(DECK_ID, draft))))
 
         assertEquals(listOf(stroke), sheets.canvases.last().strokes)
@@ -421,7 +422,7 @@ class AppRootTest {
         composeRule.waitForIdle()
 
         assertEquals(listOf(stroke), sheets.canvases.last().strokes)
-        assertEquals("штрих записан в черновик", listOf(stroke), drafts.stored?.draft?.front)
+        assertEquals("штрих записан в черновик", listOf(stroke), drafts.stored?.draft?.front?.strokes)
         composeRule.onNodeWithContentDescription("Undo stroke").assertIsEnabled()
 
         composeRule.runOnUiThread { sheets.onErase(listOf(StrokePoint(150f, 150f, 1f)), 50f) }
@@ -644,7 +645,7 @@ class AppRootTest {
         app.navigate(AppScreen.Deck(DECK_ID, openSection = Section.EPOCH_2, focusCardId = 8))
         composeRule.waitForIdle()
 
-        assertEquals(FakeCardContentRepository.buildContent(8).front, sheets.deckStrokes.last())
+        assertEquals(FakeCardContentRepository.buildContent(8).front.strokes, sheets.deckStrokes.last())
         composeRule.onNode(hasContentDescription("II, 2 cards")).assertIsSelected()
     }
 

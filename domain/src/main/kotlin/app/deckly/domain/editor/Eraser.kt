@@ -10,11 +10,16 @@ import kotlin.math.hypot
  * точками иначе проскакивал бы мимо ластика. Штрих и траектория из одной точки — вырожденные
  * отрезки, пустые — ничего не задевают.
  */
-fun isStrokeTouched(stroke: Stroke, path: List<StrokePoint>, radius: Float): Boolean {
-    val strokeSegments = listSegments(stroke.points)
+fun isStrokeTouched(stroke: Stroke, path: List<StrokePoint>, radius: Float): Boolean =
+    isPolylineTouched(listOf(stroke.points), path, radius)
+
+/** То же для набора ломаных (контур фигуры): задета, если задета хоть одна из них. */
+internal fun isPolylineTouched(polylines: List<List<StrokePoint>>, path: List<StrokePoint>, radius: Float): Boolean {
     val pathSegments = listSegments(path)
-    return strokeSegments.any { strokeSegment ->
-        pathSegments.any { pathSegment -> computeSegmentDistance(strokeSegment, pathSegment) <= radius }
+    return polylines.any { polyline ->
+        listSegments(polyline).any { segment ->
+            pathSegments.any { pathSegment -> computeSegmentDistance(segment, pathSegment) <= radius }
+        }
     }
 }
 

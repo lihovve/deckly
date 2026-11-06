@@ -19,6 +19,3 @@ data class Stroke(val width: Float, val points: List<StrokePoint>) {
 }
 
 enum class Side { FRONT, BACK }
-
-/** Содержимое карточки: штрихи двух сторон. Хранится отдельно от [Card]. */
-data class CardContent(val cardId: Long, val front: List<Stroke>, val back: List<Stroke>)

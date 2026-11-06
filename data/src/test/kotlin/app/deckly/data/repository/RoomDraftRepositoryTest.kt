@@ -17,6 +17,7 @@ import app.deckly.data.listStrokeFileNames
 import app.deckly.data.seedDeck
 import app.deckly.domain.editor.Draft
 import app.deckly.domain.editor.saveDraft
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
@@ -60,10 +61,10 @@ class RoomDraftRepositoryTest {
     }
 
     private fun buildNewCardDraft(seed: Int = 7, side: Side = Side.BACK): Draft =
-        Draft(null, listOf(buildTestStroke(seed)), listOf(buildTestStroke(seed + 1)), side, Section.NEW)
+        Draft(null, CardSide(listOf(buildTestStroke(seed))), CardSide(listOf(buildTestStroke(seed + 1))), side, Section.NEW)
 
     private fun buildEditDraft(cardId: Long, seed: Int = 20): Draft =
-        Draft(cardId, listOf(buildTestStroke(seed)), emptyList(), Side.FRONT, Section.NEW)
+        Draft(cardId, CardSide(listOf(buildTestStroke(seed))), CardSide(), Side.FRONT, Section.NEW)
 
     private fun listDraftFiles(): List<String> =
         listStrokeFileNames(repos.storage).filter { it.startsWith("draft-") }
@@ -284,7 +285,7 @@ class RoomDraftRepositoryTest {
         val gated = GatedDraftFiles(repos.storage.strokesDir)
         val drafts = RoomDraftRepository(repos.database, gated)
         val older = buildNewCardDraft(seed = 1)
-        val newer = older.copy(front = older.front + buildTestStroke(2))
+        val newer = older.copy(front = older.front.copy(strokes = older.front.strokes + buildTestStroke(2)))
 
         val first = async(Dispatchers.Default) { drafts.storeDraft(StoredDraft(1, older)) }
         assertTrue(gated.firstWritten.await(5, TimeUnit.SECONDS))
@@ -577,7 +578,7 @@ class RoomDraftRepositoryTest {
 
         val loaded = repos.drafts.loadDraft()!!
 
-        assertEquals(listOf(buildTestStroke(41)), loaded.draft.front)
+        assertEquals(listOf(buildTestStroke(41)), loaded.draft.front.strokes)
         assertNotNull(repos.database.draftDao().findDraft())
     }
 

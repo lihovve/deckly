@@ -4,6 +4,7 @@ import app.deckly.domain.buildCard
 import app.deckly.domain.buildPath
 import app.deckly.domain.buildStroke
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
 import app.deckly.domain.model.Stroke
@@ -19,18 +20,18 @@ class EditorSessionTest {
     fun newCardStartsEmptyOnFrontSide() {
         val session = startNewCard(Section.EPOCH_2)
 
-        assertEquals(Draft(null, emptyList(), emptyList(), Side.FRONT, Section.EPOCH_2), session.draft)
+        assertEquals(Draft(null, CardSide(), CardSide(), Side.FRONT, Section.EPOCH_2), session.draft)
         assertEquals(emptyList<EditorStep>(), session.history)
     }
 
     @Test
     fun strokeAddedAndUndone() {
         val session = startNewCard(Section.NEW).addStroke(firstStroke)
-        assertEquals(listOf(firstStroke), session.draft.front)
+        assertEquals(listOf(firstStroke), session.draft.front.strokes)
 
         val undone = session.undoLastStep()
 
-        assertEquals(emptyList<Stroke>(), undone.draft.front)
+        assertEquals(emptyList<Stroke>(), undone.draft.front.strokes)
         assertEquals(emptyList<EditorStep>(), undone.history)
     }
 
@@ -38,8 +39,8 @@ class EditorSessionTest {
     fun strokesGoToTheVisibleSide() {
         val session = startNewCard(Section.NEW).switchSide(Side.BACK).addStroke(firstStroke)
 
-        assertEquals(emptyList<Stroke>(), session.draft.front)
-        assertEquals(listOf(firstStroke), session.draft.back)
+        assertEquals(emptyList<Stroke>(), session.draft.front.strokes)
+        assertEquals(listOf(firstStroke), session.draft.back.strokes)
     }
 
     @Test
@@ -51,11 +52,11 @@ class EditorSessionTest {
 
         val erased = session.eraseAlong(buildPath(5f to -3f, 5f to 43f), radius = 2f)
 
-        assertEquals(listOf(far), erased.draft.front)
+        assertEquals(listOf(far), erased.draft.front.strokes)
 
         // Одна отмена возвращает оба штриха на прежние места.
         val undone = erased.undoLastStep()
-        assertEquals(listOf(top, far, bottom), undone.draft.front)
+        assertEquals(listOf(top, far, bottom), undone.draft.front.strokes)
         assertEquals(3, undone.history.size)
     }
 
@@ -77,8 +78,8 @@ class EditorSessionTest {
 
         val erased = session.eraseAlong(buildPath(5f to 0f), radius = 2f)
 
-        assertEquals(listOf(firstStroke), erased.draft.front)
-        assertEquals(emptyList<Stroke>(), erased.draft.back)
+        assertEquals(listOf(firstStroke), erased.draft.front.strokes)
+        assertEquals(emptyList<Stroke>(), erased.draft.back.strokes)
     }
 
     @Test
@@ -95,7 +96,7 @@ class EditorSessionTest {
         }
         assertEquals(25, mixed.history.size)
         repeat(25) { mixed = mixed.undoLastStep() }
-        assertEquals(emptyList<Stroke>(), mixed.draft.front)
+        assertEquals(emptyList<Stroke>(), mixed.draft.front.strokes)
         assertEquals(emptyList<EditorStep>(), mixed.history)
 
         // После 101 действия снимаются 100, 101-я отмена ничего не меняет.
@@ -103,7 +104,7 @@ class EditorSessionTest {
         repeat(101) { long = long.addStroke(buildStroke(0f to it * 10f, 5f to it * 10f)) }
         assertEquals(UNDO_DEPTH, long.history.size)
         repeat(UNDO_DEPTH) { long = long.undoLastStep() }
-        assertEquals(1, long.draft.front.size)
+        assertEquals(1, long.draft.front.strokes.size)
         assertEquals(long, long.undoLastStep())
     }
 
@@ -113,7 +114,7 @@ class EditorSessionTest {
 
         val undone = session.undoLastStep()
 
-        assertEquals(emptyList<Stroke>(), undone.draft.front)
+        assertEquals(emptyList<Stroke>(), undone.draft.front.strokes)
         assertEquals(Side.FRONT, undone.draft.visibleSide)
     }
 
@@ -135,7 +136,7 @@ class EditorSessionTest {
 
     @Test
     fun resumedDraftKeepsSideAndStartsWithoutHistory() {
-        val draft = Draft(7, listOf(firstStroke), emptyList(), Side.BACK, Section.EPOCH_3)
+        val draft = Draft(7, CardSide(listOf(firstStroke)), CardSide(), Side.BACK, Section.EPOCH_3)
 
         val session = resumeDraft(draft)
 
@@ -146,17 +147,17 @@ class EditorSessionTest {
     @Test
     fun editingStartsFromCardContentAndKeepsReturnSection() {
         val card = buildCard(5, Section.NEW)
-        val content = CardContent(5, listOf(firstStroke), emptyList())
+        val content = CardContent(5, CardSide(listOf(firstStroke)), CardSide())
 
         val session = startEditing(card, content, Section.EPOCH_2)
 
-        assertEquals(Draft(5, listOf(firstStroke), emptyList(), Side.FRONT, Section.EPOCH_2), session.draft)
+        assertEquals(Draft(5, CardSide(listOf(firstStroke)), CardSide(), Side.FRONT, Section.EPOCH_2), session.draft)
         assertEquals(emptyList<EditorStep>(), session.history)
     }
 
     @Test
     fun editingOnlyFromPool() {
-        val content = CardContent(5, emptyList(), emptyList())
+        val content = CardContent(5, CardSide(), CardSide())
 
         assertThrows<IllegalArgumentException> { startEditing(buildCard(5, Section.EPOCH_1), content, Section.NEW) }
         assertThrows<IllegalArgumentException> { startEditing(buildCard(5, Section.LEARNED), content, Section.NEW) }
@@ -164,7 +165,7 @@ class EditorSessionTest {
 
     @Test
     fun editingRejectsContentOfAnotherCard() {
-        val content = CardContent(6, emptyList(), emptyList())
+        val content = CardContent(6, CardSide(), CardSide())
 
         assertThrows<IllegalArgumentException> { startEditing(buildCard(5, Section.NEW), content, Section.NEW) }
     }

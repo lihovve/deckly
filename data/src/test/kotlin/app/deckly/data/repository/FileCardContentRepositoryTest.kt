@@ -10,6 +10,7 @@ import app.deckly.data.createTestStorage
 import app.deckly.data.seedDeck
 import app.deckly.data.strokes.StrokeFileException
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.createDeck
 import java.io.File
@@ -63,7 +64,7 @@ class FileCardContentRepositoryTest {
 
         val content = repos.contents.loadContent(1)
 
-        assertEquals(CardContent(1, listOf(buildTestStroke(31)), emptyList()), content)
+        assertEquals(CardContent(1, CardSide(listOf(buildTestStroke(31))), CardSide()), content)
     }
 
     @Test

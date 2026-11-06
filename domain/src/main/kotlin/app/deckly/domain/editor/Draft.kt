@@ -2,10 +2,10 @@ package app.deckly.domain.editor
 
 import app.deckly.domain.model.Card
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
-import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.listSectionCards
 
 /**
@@ -14,8 +14,8 @@ import app.deckly.domain.model.listSectionCards
  */
 data class Draft(
     val cardId: Long?,
-    val front: List<Stroke>,
-    val back: List<Stroke>,
+    val front: CardSide,
+    val back: CardSide,
     val visibleSide: Side,
     val returnSection: Section,
 )

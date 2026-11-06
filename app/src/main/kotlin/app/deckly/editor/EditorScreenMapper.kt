@@ -24,7 +24,7 @@ fun buildEditorScreenState(
 
 /** Штрихи видимой стороны: их показывает лист. */
 fun listVisibleStrokes(session: EditorSession): List<Stroke> =
-    if (session.draft.visibleSide == Side.FRONT) session.draft.front else session.draft.back
+    (if (session.draft.visibleSide == Side.FRONT) session.draft.front else session.draft.back).strokes
 
 /** Толщина пера в пикселях листа (решение владельца 5 ноября: 3, 10 и 25). В единицы карточки её переводит `ink`. */
 fun Thickness.toPenWidthPx(): Float = when (this) {

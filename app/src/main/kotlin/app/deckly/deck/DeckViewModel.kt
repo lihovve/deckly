@@ -217,7 +217,7 @@ class DeckViewModel(
     private fun buildShownCard(cardId: Long, content: Result<CardContent>): ShownCard {
         val side = deckState.deck.visibleSide
         val loaded = content.getOrNull() ?: return ShownCard(cardId, side, emptyList(), isDamaged = true)
-        return ShownCard(cardId, side, if (side == Side.FRONT) loaded.front else loaded.back, isDamaged = false)
+        return ShownCard(cardId, side, (if (side == Side.FRONT) loaded.front else loaded.back).strokes, isDamaged = false)
     }
 
     private fun prefetchNext() {

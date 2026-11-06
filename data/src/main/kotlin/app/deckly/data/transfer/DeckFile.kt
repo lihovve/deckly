@@ -244,8 +244,8 @@ private fun buildCardDto(card: Card, content: CardContent): CardDto = CardDto(
     failed = card.failed,
     checking = card.checking,
     excludedFromPass = card.excludedFromPass,
-    front = content.front.map(::buildStrokeDto),
-    back = content.back.map(::buildStrokeDto),
+    front = content.front.strokes.map(::buildStrokeDto),
+    back = content.back.strokes.map(::buildStrokeDto),
 )
 
 private fun buildStrokeDto(stroke: Stroke): StrokeDto =

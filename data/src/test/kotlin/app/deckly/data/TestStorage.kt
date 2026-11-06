@@ -16,6 +16,7 @@ import app.deckly.data.strokes.StrokeFiles
 import app.deckly.data.transfer.JsonDeckTransfer
 import app.deckly.data.strokes.writeStrokeFile
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Stroke
@@ -111,7 +112,7 @@ fun buildSeedContentFile(cardId: Long): String = "card-$cardId-seed.dks"
 /** Пишет файл штрихов под заданным именем в обход `StrokeFiles`: так создаются «чужие» и «старые» файлы. */
 fun writeSeedFile(storage: DecklyStorage, name: String, content: CardContent) {
     storage.ensureDirectories()
-    FileOutputStream(File(storage.strokesDir, name)).use { writeStrokeFile(it, content.front, content.back) }
+    FileOutputStream(File(storage.strokesDir, name)).use { writeStrokeFile(it, content.front.strokes, content.back.strokes) }
 }
 
 /**
@@ -133,7 +134,7 @@ suspend fun seedDeck(repos: TestRepositories, state: DeckState) {
 
 /** Кладёт в базу черновик колоды [deckId] с файлом [contentFile] без штрихов. */
 suspend fun seedDraft(repos: TestRepositories, deckId: Long, contentFile: String) {
-    writeSeedFile(repos.storage, contentFile, CardContent(0, emptyList(), emptyList()))
+    writeSeedFile(repos.storage, contentFile, CardContent(0, CardSide(), CardSide()))
     repos.database.draftDao().insertDraft(
         DraftEntity(
             deckId = deckId,

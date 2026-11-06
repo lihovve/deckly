@@ -11,6 +11,7 @@ import app.deckly.data.repository.RoomDraftRepository
 import app.deckly.data.repository.deleteFilesUnlessCommitted
 import app.deckly.data.strokes.StrokeFiles
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.port.DeckTransfer
@@ -46,7 +47,7 @@ class JsonDeckTransfer(
         val file = withContext(Dispatchers.IO) {
             val contents = cardEntities.map { entity ->
                 val (front, back) = files.readFile(entity.contentFile)
-                CardContent(entity.id, front, back)
+                CardContent(entity.id, CardSide(front), CardSide(back))
             }
             buildDeckFile(mapDeck(deckEntity), cardEntities.map(::mapCard), contents)
         }

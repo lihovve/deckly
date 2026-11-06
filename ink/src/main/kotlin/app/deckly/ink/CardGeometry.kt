@@ -1,13 +1,15 @@
 package app.deckly.ink
 
+import app.deckly.domain.model.CardUnits
+
 /**
  * Система координат карточки: ширина 1000 единиц, `x` вправо, `y` вниз. Высота — по пропорции листа
  * макета 928 × 963. Штрихи хранятся и приходят из холста в этих единицах, на экран их переводит масштаб
  * листа ([computeScale]), поэтому рисунок не зависит от размера листа на конкретном экране.
  */
 object CardGeometry {
-    const val WIDTH = 1000f
-    val HEIGHT = 1000f * 963f / 928f
+    const val WIDTH = CardUnits.WIDTH
+    val HEIGHT = CardUnits.HEIGHT
 
     /** Пикселей экрана в одной единице карточки при заданной ширине листа. */
     fun computeScale(sheetWidthPx: Float): Float = sheetWidthPx / WIDTH

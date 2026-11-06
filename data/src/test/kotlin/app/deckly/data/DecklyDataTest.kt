@@ -6,6 +6,7 @@ import app.deckly.data.db.DatabaseDamagedException
 import app.deckly.data.db.DatabaseMissingException
 import app.deckly.domain.editor.Draft
 import app.deckly.domain.editor.saveDraft
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
@@ -39,7 +40,7 @@ class DecklyDataTest {
     }
 
     private fun buildDraft(): Draft =
-        Draft(null, listOf(buildTestStroke(3)), listOf(buildTestStroke(4)), Side.BACK, Section.NEW)
+        Draft(null, CardSide(listOf(buildTestStroke(3))), CardSide(listOf(buildTestStroke(4))), Side.BACK, Section.NEW)
 
     @Test
     fun openingCreatesFoldersAndCleansStrokes() = runTest {

@@ -2,6 +2,7 @@ package app.deckly.fakes
 
 import app.deckly.data.strokes.StrokeFileException
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
 import app.deckly.domain.port.CardContentRepository
@@ -31,10 +32,12 @@ class FakeCardContentRepository(
         /** Содержимое по умолчанию: на лице один штрих, на обороте два, толщина зависит от id карточки. */
         fun buildContent(cardId: Long): CardContent = CardContent(
             cardId,
-            front = listOf(Stroke(cardId.toFloat(), listOf(StrokePoint(1f, 1f, 1f)))),
-            back = listOf(
-                Stroke(cardId.toFloat(), listOf(StrokePoint(2f, 2f, 1f))),
-                Stroke(cardId.toFloat(), listOf(StrokePoint(3f, 3f, 1f))),
+            front = CardSide(listOf(Stroke(cardId.toFloat(), listOf(StrokePoint(1f, 1f, 1f))))),
+            back = CardSide(
+                listOf(
+                    Stroke(cardId.toFloat(), listOf(StrokePoint(2f, 2f, 1f))),
+                    Stroke(cardId.toFloat(), listOf(StrokePoint(3f, 3f, 1f))),
+                ),
             ),
         )
     }

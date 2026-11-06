@@ -6,6 +6,7 @@ import app.deckly.data.storage.DecklyStorage
 import app.deckly.data.storage.MediaStoreNotifier
 import app.deckly.domain.editor.Draft
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.DeckState
@@ -43,7 +44,7 @@ fun buildFakeData(
 )
 
 fun buildEmptyDraft(returnSection: Section = Section.NEW): Draft =
-    Draft(cardId = null, front = emptyList(), back = emptyList(), visibleSide = Side.FRONT, returnSection = returnSection)
+    Draft(cardId = null, front = CardSide(), back = CardSide(), visibleSide = Side.FRONT, returnSection = returnSection)
 
 class FakeAppStateRepository(var currentDeckId: Long? = null) : AppStateRepository {
     override suspend fun loadCurrentDeckId(): Long? = currentDeckId

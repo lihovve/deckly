@@ -20,6 +20,7 @@ import app.deckly.data.seedDeck
 import app.deckly.data.strokes.StrokeFileException
 import app.deckly.domain.editor.Draft
 import app.deckly.domain.editor.saveDraft
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
@@ -205,7 +206,7 @@ class JsonDeckTransferTest {
         val deck = createDeck(1, "Края")
         val before = DeckState(deck, emptyList())
         seedDeck(repos, before)
-        val draft = Draft(null, listOf(edge, wide), listOf(wide), Side.FRONT, Section.NEW)
+        val draft = Draft(null, CardSide(listOf(edge, wide)), CardSide(listOf(wide)), Side.FRONT, Section.NEW)
         val cardId = repos.drafts.allocateCardId()
         val (after, content) = saveDraft(before, draft, cardId, SCENARIO_DAY, now = 1_000L)
         repos.drafts.commitDraft(collectDeckChanges(before, after), content)
@@ -214,7 +215,7 @@ class JsonDeckTransferTest {
 
         assertEquals(loadNormalizedDeck(repos, 1), loadNormalizedDeck(repos, imported.id))
         val importedCard = repos.decks.loadDeckState(imported.id).cards.single()
-        assertEquals(listOf(edge, wide), repos.contents.loadContent(importedCard.id).front)
+        assertEquals(listOf(edge, wide), repos.contents.loadContent(importedCard.id).front.strokes)
     }
 
     @Test
@@ -223,7 +224,7 @@ class JsonDeckTransferTest {
         val deck = createDeck(1, "Большая")
         val before = DeckState(deck, emptyList())
         seedDeck(repos, before)
-        val draft = Draft(null, listOf(Stroke(2f, manyPoints)), emptyList(), Side.FRONT, Section.NEW)
+        val draft = Draft(null, CardSide(listOf(Stroke(2f, manyPoints))), CardSide(), Side.FRONT, Section.NEW)
         val (after, content) = saveDraft(before, draft, repos.drafts.allocateCardId(), SCENARIO_DAY, now = 1_000L)
         repos.drafts.commitDraft(collectDeckChanges(before, after), content)
         val writes = mutableListOf<Int>()
@@ -406,7 +407,7 @@ class JsonDeckTransferTest {
         assertEquals("Тест", imported.name)
         assertEquals(2, state.cards.size)
         assertEquals(listOf(epochTwoCard.id), imported.tail.epoch1)
-        assertEquals(1, repos.contents.loadContent(epochTwoCard.id).front.size)
+        assertEquals(1, repos.contents.loadContent(epochTwoCard.id).front.strokes.size)
     }
 
     @Test
