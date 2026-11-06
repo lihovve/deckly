@@ -1,10 +1,11 @@
 package app.deckly.ink
 
 import app.deckly.domain.model.Stroke
+import app.deckly.domain.model.StrokePoint
 
 /** Что изменил новый список штрихов хоста относительно того, что уже показано на листе. */
 internal sealed interface StrokeChange {
-    /** Показанное не меняется: список прежний или хост лишь догнал штрихи, нарисованные листом сразу. */
+    /** Показанное не меняется: список прежний, хост лишь догнал штрихи листа или заменил штрихи теми же отрезками. */
     data object None : StrokeChange
 
     /** Штрихи дописаны в конец: на листе дорисовать только их, перо включённым оставить. */
@@ -49,12 +50,27 @@ internal class ShownStrokes {
         val before = shown
         shown = new
         val isAppend = new.size > before.size && new.subList(0, before.size) == before
-        return if (isAppend) {
-            StrokeChange.Appended(new.subList(before.size, new.size))
-        } else {
-            StrokeChange.Replaced(before, new)
+        return when {
+            isAppend -> StrokeChange.Appended(new.subList(before.size, new.size))
+            // Те же отрезки: картинка прежняя, а список теперь хостовый, и дальше хост дописывает именно к нему.
+            listSegments(before) == listSegments(new) -> StrokeChange.None
+            else -> StrokeChange.Replaced(before, new)
         }
     }
+
+    // Штрих рисуется цепочкой независимых отрезков ([drawStrokes]), поэтому два списка с одними и теми же отрезками оставляют
+    // на листе одно и то же, как бы они ни были разрезаны на штрихи и в каком бы порядке ни шли. Отрезок — ширина штриха и
+    // пара соседних точек с нажимом (по ним считается толщина отрезка), штрих из одной точки — своя запись, круг. Так цепочка
+    // кусков из двух точек и штрих с теми же точками не меняют картинку. Точки в обратном порядке, другая ширина или другой
+    // нажим — уже другие отрезки, это замена.
+    private fun listSegments(strokes: List<Stroke>): Set<StrokeSegment> =
+        strokes.flatMap { stroke ->
+            if (stroke.points.size == 1) {
+                listOf(StrokeSegment(stroke.width, stroke.points.single(), null))
+            } else {
+                stroke.points.zipWithNext { from, to -> StrokeSegment(stroke.width, from, to) }
+            }
+        }.toSet()
 
     // Список хоста — начало показанного, а недостающий хвост целиком из штрихов, которые хост не видел.
     private fun isLaggingBehindLocalStrokes(new: List<Stroke>): Boolean =
@@ -62,3 +78,6 @@ internal class ShownStrokes {
             shown.subList(0, new.size) == new &&
             shown.subList(new.size, shown.size).all { it in pending }
 }
+
+/** Что штрих оставляет на листе: отрезок между двумя точками ([end] == `null` — штрих из одной точки, круг). */
+private data class StrokeSegment(val width: Float, val start: StrokePoint, val end: StrokePoint?)

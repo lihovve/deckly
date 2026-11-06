@@ -230,5 +230,102 @@ class ShownStrokesTest {
         assertEquals(StrokeChange.Appended(listOf(third)), change)
     }
 
+    // --- замена, после которой на листе та же картинка ------------------------------------------------
+
+    // Штрих рисуется цепочкой независимых отрезков (толщина отрезка по двум его точкам), поэтому цепочка кусков из двух
+    // точек и штрих с теми же точками оставляют на листе одно и то же: замена, которую не нужно ни рисовать, ни показывать
+    // циклом пера. Отрезок — это ширина штриха и пара соседних точек с нажимом, штрих из одной точки — своя запись (круг).
+    private val a = StrokePoint(10f, 10f, 0.4f)
+    private val b = StrokePoint(60f, 30f, 0.8f)
+    private val c = StrokePoint(110f, 20f, 0.2f)
+    private val d = StrokePoint(160f, 90f, 1f)
+    private val pieces = listOf(Stroke(6f, listOf(a, b)), Stroke(6f, listOf(b, c)), Stroke(6f, listOf(c, d)))
+    private val whole = Stroke(6f, listOf(a, b, c, d))
+
+    @Test
+    fun chainOfPiecesReplacedByTheWholeStrokeChangesNothingAndIsRemembered() {
+        val book = ShownStrokes()
+        book.updateFromHost(listOf(first) + pieces)
+
+        val change = book.updateFromHost(listOf(first, whole))
+
+        assertEquals(StrokeChange.None, change)
+        assertEquals(listOf(first, whole), book.shown)
+        assertEquals("дальше хост дописывает к новому списку", StrokeChange.Appended(listOf(second)), book.updateFromHost(listOf(first, whole, second)))
+    }
+
+    @Test
+    fun strokeCutIntoPiecesAndTheOtherWayRoundLeavesTheSameImage() {
+        val book = ShownStrokes()
+        book.updateFromHost(listOf(whole))
+
+        assertEquals(StrokeChange.None, book.updateFromHost(pieces))
+        assertEquals(StrokeChange.None, book.updateFromHost(listOf(whole)))
+    }
+
+    @Test
+    fun theSameStrokesInAnotherOrderLeaveTheSameImage() {
+        val book = ShownStrokes()
+        book.updateFromHost(pieces)
+
+        assertEquals(StrokeChange.None, book.updateFromHost(pieces.reversed()))
+        assertEquals(pieces.reversed(), book.shown)
+    }
+
+    @Test
+    fun theSamePointsWithAnotherWidthAreAReplacement() {
+        val book = ShownStrokes()
+        book.updateFromHost(pieces)
+
+        assertEquals(StrokeChange.Replaced(pieces, listOf(whole.copy(width = 9f))), book.updateFromHost(listOf(whole.copy(width = 9f))))
+    }
+
+    @Test
+    fun theSamePointsInTheOppositeOrderAreAReplacement() {
+        val book = ShownStrokes()
+        book.updateFromHost(pieces)
+        val reversed = Stroke(6f, listOf(d, c, b, a))
+
+        assertEquals(StrokeChange.Replaced(pieces, listOf(reversed)), book.updateFromHost(listOf(reversed)))
+    }
+
+    @Test
+    fun anotherPressureOfAPointIsAReplacement() {
+        val book = ShownStrokes()
+        book.updateFromHost(pieces)
+        val other = Stroke(6f, listOf(a, b.copy(pressure = 0.5f), c, d))
+
+        assertEquals(StrokeChange.Replaced(pieces, listOf(other)), book.updateFromHost(listOf(other)))
+    }
+
+    @Test
+    fun aMissingPieceIsAReplacement() {
+        val book = ShownStrokes()
+        book.updateFromHost(pieces)
+        val shorter = Stroke(6f, listOf(a, b, c))
+
+        assertEquals(StrokeChange.Replaced(pieces, listOf(shorter)), book.updateFromHost(listOf(shorter)))
+    }
+
+    @Test
+    fun aDotIsNotASegmentOfAStroke() {
+        val book = ShownStrokes()
+        book.updateFromHost(listOf(Stroke(6f, listOf(a))))
+        val segment = Stroke(6f, listOf(a, b))
+
+        assertEquals(StrokeChange.Replaced(listOf(Stroke(6f, listOf(a))), listOf(segment)), book.updateFromHost(listOf(segment)))
+        val dots = listOf(Stroke(6f, listOf(a)), Stroke(6f, listOf(b)))
+        assertEquals(StrokeChange.Replaced(listOf(segment), dots), book.updateFromHost(dots))
+    }
+
+    @Test
+    fun aDotOfAnotherWidthIsAReplacement() {
+        val book = ShownStrokes()
+        book.updateFromHost(listOf(Stroke(6f, listOf(a))))
+        val wider = Stroke(9f, listOf(a))
+
+        assertEquals(StrokeChange.Replaced(listOf(Stroke(6f, listOf(a))), listOf(wider)), book.updateFromHost(listOf(wider)))
+    }
+
     private fun stroke(x: Float) = Stroke(6f, listOf(StrokePoint(x, x, 1f)))
 }

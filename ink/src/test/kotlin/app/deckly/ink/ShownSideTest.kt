@@ -34,6 +34,35 @@ class ShownSideTest {
     }
 
     @Test
+    fun piecesReplacedByTheStrokeWithTheSameShapesChangeNothing() {
+        // Линия при касании мимо фигуры показывается кусками, на подъёме их заменяет один штрих: картинка та же, цикл пера
+        // не нужен, и перо остаётся включённым.
+        val a = StrokePoint(10f, 10f, 0.4f)
+        val b = StrokePoint(60f, 30f, 0.8f)
+        val c = StrokePoint(110f, 20f, 0.2f)
+        val book = ShownSide()
+        book.updateFromHost(CardSide(listOf(first, Stroke(6f, listOf(a, b)), Stroke(6f, listOf(b, c))), listOf(star)))
+
+        val change = book.updateFromHost(CardSide(listOf(first, Stroke(6f, listOf(a, b, c))), listOf(star)))
+
+        assertEquals(SideChange.None, change)
+    }
+
+    @Test
+    fun piecesReplacedByTheStrokeTogetherWithOtherShapesAreAReplacement() {
+        val a = StrokePoint(10f, 10f, 0.4f)
+        val b = StrokePoint(60f, 30f, 0.8f)
+        val c = StrokePoint(110f, 20f, 0.2f)
+        val before = CardSide(listOf(Stroke(6f, listOf(a, b)), Stroke(6f, listOf(b, c))), listOf(star))
+        val book = ShownSide()
+        book.updateFromHost(before)
+
+        val change = book.updateFromHost(CardSide(listOf(Stroke(6f, listOf(a, b, c))), listOf(oval)))
+
+        assertEquals(SideChange.Replaced(before, CardSide(listOf(Stroke(6f, listOf(a, b, c))), listOf(oval))), change)
+    }
+
+    @Test
     fun newShapesAreAReplacementOfTheSheet() {
         val book = ShownSide()
         book.updateFromHost(CardSide(listOf(first)))
