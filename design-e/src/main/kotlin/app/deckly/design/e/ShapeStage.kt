@@ -107,8 +107,9 @@ private suspend fun AwaitPointerEventScope.followPen(down: PointerInputChange, s
         }
         if (!isLifted) return false
         // Подъём приходит без движения (`drag` не зовёт на него обработчик) и может оказаться не там, где последнее движение:
-        // без этого шага фигура останавливалась бы там, где было последнее движение. Нажим при подъёме нулевой, поэтому у
-        // точки подъёма нажим последнего движения.
+        // без этого шага фигура останавливалась бы там, где было последнее движение. Нажим у точки подъёма берётся от
+        // последнего движения: у настоящего пера событие подъёма несёт нажим последнего движения (на планшете, например,
+        // 0,36), а у синтетических событий (`input stylus swipe`) он нулевой, и точка подъёма вышла бы с нулевым нажимом.
         val lift = currentEvent.changes.firstOrNull { it.id == pointer }?.position
         if (lift != null && lift != last.position) send(buildMove(PenPoint(lift, last.pressure), scale))
         val rebound = awaitRebound() ?: return true
