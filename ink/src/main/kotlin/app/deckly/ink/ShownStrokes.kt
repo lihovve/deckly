@@ -10,7 +10,7 @@ internal sealed interface StrokeChange {
     /** Штрихи дописаны в конец: на листе дорисовать только их, перо включённым оставить. */
     data class Appended(val added: List<Stroke>) : StrokeChange
 
-    /** Штрих удалён, возвращён, сторона другая: лист перерисовать целиком и показать перерисованное. */
+    /** Штрих удалён, возвращён, сторона другая: перерисовать изменившееся место и показать перерисованное. */
     data class Replaced(val before: List<Stroke>, val after: List<Stroke>) : StrokeChange
 }
 

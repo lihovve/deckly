@@ -12,7 +12,7 @@ internal sealed interface SideChange {
     /** Только штрихи дописаны в конец: дорисовать их, перо включённым оставить. */
     data class Appended(val added: List<Stroke>) : SideChange
 
-    /** Фигуры другие или штрих удалён, возвращён, сторона другая: лист перерисовать целиком. */
+    /** Фигуры другие или штрих удалён, возвращён, сторона другая: перерисовать то, что изменилось ([computeChangedBounds]). */
     data class Replaced(val before: CardSide, val after: CardSide) : SideChange
 }
 
