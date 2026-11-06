@@ -49,6 +49,8 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.DpRect
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.deckly.ui.contract.SectionTab
@@ -253,6 +255,26 @@ class ComponentsTest {
         pressAndCheck("кнопка", composeRule.onNodeWithTag("button"), "button")
         pressAndCheck("вкладка", composeRule.onNodeWithContentDescription("II, 23 cards"), "tabs")
         assertEquals(0, IndicationProbe.createdCount)
+    }
+
+    // --- строки текста ---------------------------------------------------------------------------
+
+    @Test
+    fun singleLineTextKeepsWholeLineHeight() {
+        // CSS не обрезает межстрочный интервал: строка 24 sp с интервалом 1,5 занимает 36 dp, а не высоту шрифта.
+        showOnWhite { BasicText("Keep", Modifier.testTag("line"), style = buildTextStyle(24.sp, lineHeightFactor = 1.5f)) }
+
+        composeRule.onNodeWithTag("line").assertHeightIsEqualTo(36.dp)
+    }
+
+    @Test
+    fun singleLineTextIsCenteredInItsLine() {
+        showOnWhite { BasicText("HEH", Modifier.testTag("line"), style = buildTextStyle(24.sp, lineHeightFactor = 1.5f)) }
+
+        // Как в CSS: лишняя высота строки делится поровну сверху и снизу, заглавные буквы без хвостов стоят по центру.
+        val bitmap = capture("line")
+        val inkRows = (0 until bitmap.height).filter { y -> (0 until bitmap.width).any { x -> bitmap.isInk(x, y) } }
+        assertEquals(bitmap.height / 2f, (inkRows.first() + inkRows.last() + 1) / 2f, 1.5f)
     }
 
     // --- шапка ---------------------------------------------------------------------------------

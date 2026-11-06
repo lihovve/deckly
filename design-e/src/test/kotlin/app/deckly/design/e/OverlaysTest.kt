@@ -35,6 +35,7 @@ import androidx.compose.ui.test.up
 import androidx.compose.ui.test.click
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
+import app.deckly.design.e.MockupSources.findCssNumber
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -228,7 +229,44 @@ class OverlaysTest {
         assertEquals(3f + 40f, button.left.value - dialog.left.value, 0.5f)
     }
 
+    @Test
+    fun dialogHeightIsMadeOfMockupLineHeights() {
+        showFrame { Dialog("Delete card?", "Both sides will be deleted. You can't undo this.", buildTwoActions()) }
+
+        // `.dialog`: рамка и поля, заголовок 36 × 1,15, промежуток, текст 24 × 1,5, промежуток, отступ и нижняя строка.
+        val frame = 2 * findCssNumber(".dialog", "border") + 2 * findCssNumber(".dialog", "padding")
+        val gap = findCssNumber(".dialog", "gap")
+        val title = findCssNumber(".dialog h2", "font-size") * findCssNumber(".dialog h2", "line-height")
+        val text = findCssNumber(".dialog p", "font-size") * findCssNumber(".dialog p", "line-height")
+        val footer = findCssNumber(".dialog .foot", "margin-top") + findCssNumber(".dialog .foot", "height")
+        val height = composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Delete card?")).getUnclippedBoundsInRoot().let { it.bottom.value - it.top.value }
+        assertEquals(frame + title + gap + text + gap + footer, height, 1f)
+    }
+
+    @Test
+    fun dialogWithoutTextHasNoExtraGap() {
+        showFrame { Dialog("All done for today", null, listOf(DialogAction("Open New", isPrimary = true, onClick = {}))) }
+
+        val frame = 2 * findCssNumber(".dialog", "border") + 2 * findCssNumber(".dialog", "padding")
+        val title = findCssNumber(".dialog h2", "font-size") * findCssNumber(".dialog h2", "line-height")
+        val footer = findCssNumber(".dialog .foot", "margin-top") + findCssNumber(".dialog .foot", "height")
+        val height = composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "All done for today")).getUnclippedBoundsInRoot().let { it.bottom.value - it.top.value }
+        assertEquals(frame + title + findCssNumber(".dialog", "gap") + footer, height, 1f)
+    }
+
     // --- меню ----------------------------------------------------------------------------------
+
+    @Test
+    fun popupHeightIsMadeOfMockupLineHeights() {
+        showFrame { Popup("Card actions", buildPopupItems(), onDismiss = {}) }
+
+        // Рамка и поля, заголовок 18 × 1,25 с полями и линией, два пункта по 80.
+        val frame = 2 * findCssNumber(".popup", "border") + 2 * findCssNumber(".popup", "padding", 0)
+        val heading = findCssNumber(".popup h2", "font-size") * findCssNumber("body", "line-height") +
+            findCssNumber(".popup h2", "padding", 0) + findCssNumber(".popup h2", "padding", 2) + findCssNumber(".popup h2", "border-bottom")
+        val items = 2 * findCssNumber(".popup a", "min-height")
+        composeRule.onNodeWithContentDescription("Card actions").assertHeightIsEqualTo((frame + heading + items).dp)
+    }
 
     @Test
     fun popupSitsAtTopRightAndIsAsWideAsInMockup() {

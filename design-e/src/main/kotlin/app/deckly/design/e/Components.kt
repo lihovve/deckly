@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
@@ -52,6 +53,13 @@ import app.deckly.ui.contract.TabState
 
 /** Вид кнопки: основная (рамка 3), обычная (рамка 2), тихая (без рамки, шрифт тоньше), недоступная (серая, не нажимается). */
 enum class ButtonKind { PRIMARY, NORMAL, QUIET, OFF }
+
+/**
+ * Строка занимает всю высоту межстрочного интервала, а лишнее делится поровну сверху и снизу, как в CSS. По
+ * умолчанию Compose обрезает интервал над первой и под последней строкой (`Trim.Both`), и однострочный текст
+ * получается ниже, чем в макете: окно на 7 dp, подпись счётчика и значок перехода сдвигаются на 2–3 dp.
+ */
+private val FullLineHeight = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)
 
 internal fun buildTextStyle(
     size: TextUnit,
@@ -68,6 +76,7 @@ internal fun buildTextStyle(
     lineHeight = (size.value * lineHeightFactor).sp,
     letterSpacing = letterSpacing,
     textAlign = align,
+    lineHeightStyle = FullLineHeight,
 )
 
 /**
