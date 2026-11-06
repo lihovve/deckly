@@ -130,7 +130,7 @@ private class PathBuilder {
             'L' -> lineTo(n[0] + dx, n[1] + dy)
             'H' -> lineTo(n[0] + dx, y)
             'V' -> lineTo(x, n[0] + dy)
-            'C' -> curveTo(x, y, n[0] + dx, n[1] + dy, n[2] + dx, n[3] + dy, n[4] + dx, n[5] + dy)
+            'C' -> curveTo(n[0] + dx, n[1] + dy, n[2] + dx, n[3] + dy, n[4] + dx, n[5] + dy)
             'A' -> arcTo(n[0], n[1], n[2], n[3] != 0.0, n[4] != 0.0, n[5] + dx, n[6] + dy)
         }
     }
@@ -163,8 +163,11 @@ private class PathBuilder {
         y = toY
     }
 
-    private fun curveTo(x0: Double, y0: Double, x1: Double, y1: Double, x2: Double, y2: Double, x3: Double, y3: Double) {
+    // Кривая идёт из текущей точки: она же первая опорная.
+    private fun curveTo(x1: Double, y1: Double, x2: Double, y2: Double, x3: Double, y3: Double) {
         val current = ensureLine()
+        val x0 = x
+        val y0 = y
         val longestLeg = maxOf(hypot(x1 - x0, y1 - y0), hypot(x2 - x1, y2 - y1), hypot(x3 - x2, y3 - y2))
         // Скорость кривой не больше трёх самых длинных звеньев: при таком числе шагов отрезок не длиннее 2 единиц.
         val steps = chooseStepCount(4, ceil(1.5 * longestLeg / (MAX_SEGMENT / 2)).toInt())

@@ -74,7 +74,7 @@ fun EditorSession.addShape(shape: Shape): EditorSession {
 /** Заменяет фигуру на месте [index] видимой стороны. Та же фигура — не шаг. */
 fun EditorSession.changeShape(index: Int, shape: Shape): EditorSession {
     val side = draft.visibleSide
-    val before = draft.getSide(side).shapes[index]
+    val before = draft.selectSide(side).shapes[index]
     if (before == shape) return this
     return copy(
         draft = draft.replaceSide(side) { it.copy(shapes = it.shapes.replaceAt(index, shape)) },
@@ -90,7 +90,7 @@ fun EditorSession.applyHeldShape(held: HeldShape): EditorSession {
 
 /** Что видно на листе: видимая сторона, а фигура в руках стоит поверх (новая) или вместо прежней (выбранная). */
 fun EditorSession.listVisibleContent(held: HeldShape?): CardSide {
-    val side = draft.getSide(draft.visibleSide)
+    val side = draft.selectSide(draft.visibleSide)
     if (held == null) return side
     val index = held.editedIndex
     val shapes = if (index == null) side.shapes + held.shape else side.shapes.replaceAt(index, held.shape)
@@ -103,7 +103,7 @@ fun EditorSession.listVisibleContent(held: HeldShape?): CardSide {
  */
 fun EditorSession.eraseAlong(path: List<StrokePoint>, radius: Float): EditorSession {
     val side = draft.visibleSide
-    val content = draft.getSide(side)
+    val content = draft.selectSide(side)
     val erasedStrokes = content.strokes.withIndex()
         .filter { isStrokeTouched(it.value, path, radius) }
         .map { ErasedStroke(it.index, it.value) }
@@ -151,7 +151,7 @@ private fun <T> List<T>.replaceAt(index: Int, item: T): List<T> = mapIndexed { i
 
 private fun <T> List<T>.insertAt(index: Int, item: T): List<T> = toMutableList().apply { add(index, item) }
 
-private fun Draft.getSide(side: Side): CardSide = if (side == Side.FRONT) front else back
+private fun Draft.selectSide(side: Side): CardSide = if (side == Side.FRONT) front else back
 
 private fun Draft.replaceSide(side: Side, change: (CardSide) -> CardSide): Draft =
     if (side == Side.FRONT) copy(front = change(front)) else copy(back = change(back))
