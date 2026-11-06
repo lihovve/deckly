@@ -189,6 +189,7 @@ class EditorViewModel(
     // Состояния взаимоисключающие, сверху вниз по строгости: окно закрывает всё, палитра закрывает лист, фигура в руках
     // закрывает обычные инструменты.
     private suspend fun handleAction(action: EditorAction) {
+        val inHand = held
         when {
             dialog != null -> when (action) {
                 EditorAction.ConfirmDialog -> confirmDialog()
@@ -196,7 +197,7 @@ class EditorViewModel(
                 else -> Unit
             }
             isPaletteOpen -> handlePaletteAction(action)
-            held != null -> handleSelectionAction(action)
+            inHand != null -> handleSelectionAction(action, inHand)
             else -> handleOrdinaryAction(action)
         }
     }
@@ -238,18 +239,18 @@ class EditorViewModel(
         }
     }
 
-    private suspend fun handleSelectionAction(action: EditorAction) {
+    private suspend fun handleSelectionAction(action: EditorAction, inHand: HeldShape) {
         when (action) {
-            is EditorAction.StartShapeGesture -> startShapeGesture(action)
+            is EditorAction.StartShapeGesture -> startShapeGesture(action, inHand)
             // `Move` и `Cancel` без жеста (его оборвали: касание мимо убирает слой жестов вместе с корутиной) ничего не меняют.
             is EditorAction.MoveShapeGesture -> gesture?.let { active ->
-                held = held?.copy(shape = active.applyTo(action.x, action.y))
+                held = inHand.copy(shape = active.applyTo(action.x, action.y))
                 publish()
             }
             EditorAction.EndShapeGesture -> gesture = null
             EditorAction.CancelShapeGesture -> gesture?.let { active ->
                 gesture = null
-                held = held?.copy(shape = active.startShape)
+                held = inHand.copy(shape = active.startShape)
                 publish()
             }
             EditorAction.ApplyShape -> {
@@ -308,8 +309,7 @@ class EditorViewModel(
      * задетых): своя фигура двигается за контур; другая применяет текущую, выделяется и тем же касанием двигается, как
      * в демо; мимо всех применяет фигуру и возвращает перо, а касание дальше станет штрихом.
      */
-    private suspend fun startShapeGesture(action: EditorAction.StartShapeGesture) {
-        val inHand = held ?: return
+    private suspend fun startShapeGesture(action: EditorAction.StartShapeGesture, inHand: HeldShape) {
         val handle = action.handle
         if (handle != null) {
             gesture = ActiveShapeGesture(handle.toDomainHandle(), action.x, action.y, inHand.shape)
