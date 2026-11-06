@@ -6,6 +6,7 @@ import app.deckly.ui.contract.ShapeHandleKind
 import java.io.File
 import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -53,6 +54,13 @@ class ScreenTextsTest {
         assertEquals("Move start point", EditorTexts.describeEndpoint(ShapeHandleKind.START))
         assertEquals("Move end point", EditorTexts.describeEndpoint(ShapeHandleKind.END))
         assertEquals("Rotate shape", EditorTexts.ROTATE_SHAPE)
+    }
+
+    @Test
+    fun cornerLabelOfAHandleThatIsNotACornerIsAProgramError() {
+        for (handle in listOf(ShapeHandleKind.ROTATE, ShapeHandleKind.START, ShapeHandleKind.END)) {
+            assertThrows(IllegalStateException::class.java) { EditorTexts.describeCorner(handle) }
+        }
     }
 
     @Test

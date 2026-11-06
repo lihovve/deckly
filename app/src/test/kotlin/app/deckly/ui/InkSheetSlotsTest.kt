@@ -25,6 +25,7 @@ import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Stroke
 import app.deckly.editor.CanvasState
+import app.deckly.ui.contract.ShapeKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -160,6 +161,22 @@ class InkSheetSlotsTest {
         // Левая кромка прямоугольника на (71, 100) px чёрная, середина фигуры (125, 100) пустая.
         assertTrue("контур нарисован", image.getPixel(71, 100) and 0xFF < 128)
         assertTrue("внутри пусто", image.getPixel(125, 100) and 0xFF > 200)
+    }
+
+    @Test
+    fun shapeGlyphDrawsTheOutlineOfItsKindWithTheGivenWidth() {
+        composeRule.setContent {
+            Box(Modifier.size(56.dp).background(Color.White).testTag("glyph")) {
+                InkSheetSlots.ShapeGlyph(ShapeKind.RECTANGLE, 3, Modifier.size(56.dp))
+            }
+        }
+        composeRule.waitForIdle()
+
+        val image = composeRule.onNodeWithTag("glyph").captureToImage().asAndroidBitmap()
+
+        // Прямоугольник сетки 100: левая кромка на 14 % ширины, то есть на 8 px, середина высоты на 28 px; внутри пусто.
+        assertTrue("контур нарисован", image.getPixel(8, 28) and 0xFF < 128)
+        assertTrue("внутри пусто", image.getPixel(28, 28) and 0xFF > 200)
     }
 
     // Холст листа внутренний для `ink`, поэтому его ищут по имени класса.
