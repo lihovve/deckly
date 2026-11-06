@@ -107,6 +107,9 @@ fun DecklyButton(
     modifier: Modifier = Modifier,
     textSize: TextUnit = Tokens.ButtonText,
     isSquare: Boolean = false,
+    // Кнопка без подписи по умолчанию с большим значком (`.icon-only .icon`); в макете бывают кнопки без подписи и без
+    // `icon-only`, у них обычный.
+    iconSize: Dp = if (label == null) Tokens.IconLarge else Tokens.IconDefault,
 ) {
     requireButtonContent(label, icon, description)
     val isEnabled = kind != ButtonKind.OFF
@@ -130,7 +133,6 @@ fun DecklyButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            val iconSize = if (label == null) Tokens.IconLarge else Tokens.IconDefault
             Image(icon, contentDescription = null, modifier = Modifier.size(iconSize), colorFilter = ColorFilter.tint(contentColor))
         }
         if (label != null) {

@@ -129,7 +129,11 @@ class ShapeEditorTest {
         host.show(buildEditorState(selectedShape = rectangle))
 
         assertIconInButton("отмена фигуры", composeRule.onNodeWithContentDescription("Cancel shape insertion or changes"), IconId.CROSS)
-        assertIconInButton("применить фигуру", composeRule.onNodeWithContentDescription("Apply shape"), IconId.CHECK)
+        // У кнопки «применить» в макете нет класса icon-only (`<button class="btn primary apply-shape">`), поэтому значок
+        // обычный из `.icon`, 26, а не 32 как у кнопок без подписи (крест и образец).
+        val plainIcon = MockupSources.findCssNumber(".icon", "width")
+        assertEquals(26f, plainIcon, 0f)
+        assertIconInButton("применить фигуру", composeRule.onNodeWithContentDescription("Apply shape"), IconId.CHECK, sizeDp = plainIcon)
         // Главное действие: рамка 3 px, у тихих кнопок рамки нет.
         assertEquals(3, measureLeftBorder(composeRule.onNodeWithContentDescription("Apply shape")))
         assertEquals(0, measureLeftBorder(composeRule.onNodeWithContentDescription("Cancel shape insertion or changes")))

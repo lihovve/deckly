@@ -176,6 +176,8 @@ private fun ShapeEditTools(
         DecklyButton(
             null, DecklyIcons.Check, ButtonKind.PRIMARY, EditorTexts.APPLY_SHAPE,
             { onAction(EditorAction.ApplyShape) }, Modifier.size(Tokens.ToolButton),
+            // В макете у галочки нет `icon-only`: значок обычный, 26.
+            iconSize = Tokens.IconDefault,
         )
     }
 }
