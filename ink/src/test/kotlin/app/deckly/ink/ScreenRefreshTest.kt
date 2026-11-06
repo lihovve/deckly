@@ -1,7 +1,6 @@
 package app.deckly.ink
 
 import android.content.Context
-import android.graphics.Rect
 import android.view.View
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertTrue
@@ -29,10 +28,19 @@ class ScreenRefreshTest {
     }
 
     @Test
-    fun regionRefreshWithoutSdkDoesNotFail() {
+    fun applyingViewUpdatesWithoutSdkDoesNotFail() {
         val view = View(ApplicationProvider.getApplicationContext<Context>())
 
-        ScreenRefresh.refreshRegion(view, Rect(0, 0, 100, 100))
+        ScreenRefresh.applyFastViewUpdates(view)
+
+        assertTrue(ShadowLog.getLogsForTag("ScreenRefresh").isEmpty())
+    }
+
+    @Test
+    fun resettingViewUpdatesWithoutSdkDoesNotFail() {
+        val view = View(ApplicationProvider.getApplicationContext<Context>())
+
+        ScreenRefresh.resetViewUpdates(view)
 
         assertTrue(ShadowLog.getLogsForTag("ScreenRefresh").isEmpty())
     }

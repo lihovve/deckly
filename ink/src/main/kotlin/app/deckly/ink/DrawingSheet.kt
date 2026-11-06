@@ -1,8 +1,11 @@
 package app.deckly.ink
 
+import android.view.View
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.viewinterop.AndroidView
 import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Stroke
@@ -36,6 +39,7 @@ fun DrawingSheet(
 ) {
     // Выбор холста делается один раз: SDK поднимается в Application.onCreate и дальше не меняется.
     val isOnyx = remember { OnyxSdk.isPenAvailable }
+    FastViewUpdatesEffect()
     AndroidView(
         modifier = modifier,
         factory = { context -> if (isOnyx) OnyxDrawingView(context) else CanvasDrawingView(context) },
@@ -53,6 +57,24 @@ fun DrawingSheet(
             )
         },
     )
+}
+
+/**
+ * Пока лист в композиции (то есть открыт редактор), корневой вид Compose обновляет свои области режимом листа
+ * ([ScreenRefresh.applyFastViewUpdates]): панели, рамка и ручки фигуры идут через окно, а не через поверхность листа, и
+ * иначе обновлялись бы режимом по умолчанию с очищающим импульсом. Лист ушёл из композиции (выход из редактора) —
+ * тому же виду возвращается режим по умолчанию ([ScreenRefresh.resetViewUpdates]), так что остальные экраны режима не видят.
+ */
+@Composable
+internal fun FastViewUpdatesEffect(
+    applyUpdates: (View) -> Unit = ScreenRefresh::applyFastViewUpdates,
+    resetUpdates: (View) -> Unit = ScreenRefresh::resetViewUpdates,
+) {
+    val root = LocalView.current
+    DisposableEffect(root) {
+        applyUpdates(root)
+        onDispose { resetUpdates(root) }
+    }
 }
 
 /** Всё, что хозяин задаёт листу; лист сам находит, что изменилось. Координаты в колбэках — в единицах карточки. */
