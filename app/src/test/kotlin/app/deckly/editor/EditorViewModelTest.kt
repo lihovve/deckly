@@ -13,6 +13,7 @@ import app.deckly.domain.port.StoredDraft
 import app.deckly.fakes.FakeCardContentRepository
 import app.deckly.fakes.FakeDeckRepository
 import app.deckly.fakes.FakeDraftRepository
+import app.deckly.fakes.FakeOutlineWidthStore
 import app.deckly.fixtures.buildCard
 import app.deckly.fixtures.buildDeck
 import app.deckly.fixtures.buildDeckState
@@ -53,6 +54,7 @@ class EditorViewModelTest {
     private val navigated = mutableListOf<AppScreen>()
     private val contents = FakeCardContentRepository()
     private val drafts = FakeDraftRepository()
+    private val outlineWidths = FakeOutlineWidthStore()
     private lateinit var repository: FakeDeckRepository
     private lateinit var viewModel: EditorViewModel
 
@@ -166,7 +168,7 @@ class EditorViewModelTest {
         runUntilIdle()
 
         assertEquals(1, drafts.storedCalls.size)
-        assertEquals(listOf(first), viewModel.canvas.value.strokes)
+        assertEquals(listOf(first), viewModel.canvas.value.side.strokes)
     }
 
     @Test
@@ -180,7 +182,7 @@ class EditorViewModelTest {
         runUntilIdle()
 
         assertEquals(listOf(1, 2, 3), drafts.storedCalls.map { it.draft.front.strokes.size })
-        assertEquals(listOf(first, second, first), viewModel.canvas.value.strokes)
+        assertEquals(listOf(first, second, first), viewModel.canvas.value.side.strokes)
     }
 
     @Test
@@ -192,13 +194,13 @@ class EditorViewModelTest {
 
         viewModel.onStroke(first)
         runUntilIdle()
-        assertTrue(viewModel.canvas.value.strokes.isEmpty())
+        assertTrue(viewModel.canvas.value.side.strokes.isEmpty())
         assertFalse(shown.canUndo)
 
         gate.complete(Unit)
         runUntilIdle()
 
-        assertEquals(listOf(first), viewModel.canvas.value.strokes)
+        assertEquals(listOf(first), viewModel.canvas.value.side.strokes)
         assertTrue(shown.canUndo)
     }
 
@@ -226,7 +228,7 @@ class EditorViewModelTest {
         runUntilIdle()
 
         assertEquals(CardSideShown.BACK, shown.side)
-        assertEquals(listOf(second), viewModel.canvas.value.strokes)
+        assertEquals(listOf(second), viewModel.canvas.value.side.strokes)
         assertTrue(shown.isNewCard)
         // История отмены после перезапуска пуста, а сама загрузка черновик не перезаписывает.
         assertFalse(shown.canUndo)
@@ -389,7 +391,7 @@ class EditorViewModelTest {
         startEditing(cardId = 2)
         runUntilIdle()
         assertFalse(shown.isNewCard)
-        assertEquals(FakeCardContentRepository.buildContent(2).front.strokes, viewModel.canvas.value.strokes)
+        assertEquals(FakeCardContentRepository.buildContent(2).front.strokes, viewModel.canvas.value.side.strokes)
 
         viewModel.onStroke(second)
         runUntilIdle()
@@ -431,7 +433,7 @@ class EditorViewModelTest {
 
         runUntilIdle()
 
-        assertTrue(viewModel.canvas.value.strokes.isEmpty())
+        assertTrue(viewModel.canvas.value.side.strokes.isEmpty())
         assertTrue(viewModel.canvas.value.isPenEnabled)
         assertFalse(shown.isNewCard)
     }
@@ -587,7 +589,7 @@ class EditorViewModelTest {
         runUntilIdle()
 
         assertEquals(1, drafts.storedCalls.size)
-        assertEquals(listOf(first), viewModel.canvas.value.strokes)
+        assertEquals(listOf(first), viewModel.canvas.value.side.strokes)
         assertTrue(drafts.commits.isEmpty())
         assertEquals(CardSideShown.FRONT, shown.side)
         assertEquals(Thickness.MEDIUM, shown.thickness)
@@ -646,7 +648,7 @@ class EditorViewModelTest {
         runUntilIdle()
 
         assertEquals(revision, viewModel.canvas.value.uiRevision)
-        assertEquals(listOf(first, second), viewModel.canvas.value.strokes)
+        assertEquals(listOf(first, second), viewModel.canvas.value.side.strokes)
     }
 
     @Test
@@ -661,7 +663,7 @@ class EditorViewModelTest {
         viewModel.onErase(touchingFirst, 2f)
         runUntilIdle()
 
-        assertEquals(listOf(second), viewModel.canvas.value.strokes)
+        assertEquals(listOf(second), viewModel.canvas.value.side.strokes)
         assertEquals(revision, viewModel.canvas.value.uiRevision)
     }
 
@@ -758,6 +760,7 @@ class EditorViewModelTest {
             clock = DayClock { now },
             random = Random(1),
             nowMillis = { NOW_MILLIS },
+            outlineWidths = outlineWidths,
             navigate = { navigated += it },
         )
     }

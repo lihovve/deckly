@@ -5,6 +5,8 @@ import android.content.Context
 import android.os.Environment
 import app.deckly.data.DecklyData
 import app.deckly.data.openDecklyData
+import app.deckly.editor.OutlineWidthStore
+import app.deckly.editor.PreferencesOutlineWidthStore
 import app.deckly.startup.StartupLoader
 import java.io.File
 import kotlin.random.Random
@@ -26,6 +28,8 @@ class AppContainer(
     private val hasFileAccess: () -> Boolean = { Environment.isExternalStorageManager() },
     private val openStorage: suspend (Context, File) -> DecklyData = ::openDecklyData,
     scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    val outlineWidthStore: OutlineWidthStore =
+        PreferencesOutlineWidthStore(application.getSharedPreferences(SETTINGS_NAME, Context.MODE_PRIVATE)),
 ) {
     private val context: Context = application.applicationContext
     private val openLock = Mutex()
@@ -50,5 +54,6 @@ class AppContainer(
 
     private companion object {
         const val STORAGE_DIR_NAME = "Deckly"
+        const val SETTINGS_NAME = "deckly-settings"
     }
 }

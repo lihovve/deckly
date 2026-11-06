@@ -2,9 +2,12 @@ package app.deckly.deck
 
 import app.deckly.DayClock
 import app.deckly.SerialWriter
+import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.EpochValues
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Side
 import app.deckly.domain.day.computeDayNumber
 import app.deckly.fakes.FakeAppStateRepository
@@ -53,7 +56,7 @@ class DeckViewModelTest {
     private val today = computeDayNumber(now)
     private val navigated = mutableListOf<AppScreen>()
     private val appState = FakeAppStateRepository()
-    private val contents = FakeCardContentRepository()
+    private var contents = FakeCardContentRepository()
     private lateinit var repository: FakeDeckRepository
     private lateinit var viewModel: DeckViewModel
 
@@ -150,15 +153,42 @@ class DeckViewModelTest {
     fun shownCardCarriesStrokesOfVisibleSide() {
         startWith(buildLearningState())
         runUntilIdle()
-        assertEquals(FakeCardContentRepository.buildContent(1).front.strokes, viewModel.shownCard.value?.strokes)
+        assertEquals(FakeCardContentRepository.buildContent(1).front.strokes, viewModel.shownCard.value?.content?.strokes)
 
         viewModel.onAction(DeckAction.Flip)
         runUntilIdle()
 
         val shown = checkNotNull(viewModel.shownCard.value)
         assertEquals(Side.BACK, shown.side)
-        assertEquals(FakeCardContentRepository.buildContent(1).back.strokes, shown.strokes)
+        assertEquals(FakeCardContentRepository.buildContent(1).back.strokes, shown.content.strokes)
         assertFalse(shown.isDamaged)
+    }
+
+    @Test
+    fun shownCardCarriesShapesOfVisibleSideAndFlipShowsTheOthers() {
+        val front = Shape(Shape.Kind.STAR, 100f, 100f, 300f, 300f, 0f, 3f)
+        val back = Shape(Shape.Kind.HEART, 400f, 400f, 600f, 600f, 0f, 3f)
+        contents = FakeCardContentRepository(mapOf(1L to CardContent(1, CardSide(shapes = listOf(front)), CardSide(shapes = listOf(back)))))
+        startWith(buildLearningState())
+        runUntilIdle()
+
+        assertEquals(listOf(front), viewModel.shownCard.value?.content?.shapes)
+
+        viewModel.onAction(DeckAction.Flip)
+        runUntilIdle()
+
+        assertEquals(listOf(back), viewModel.shownCard.value?.content?.shapes)
+    }
+
+    @Test
+    fun damagedCardShowsNoShapes() {
+        contents.damagedCardIds += 1L
+        startWith(buildLearningState())
+        runUntilIdle()
+
+        val shown = checkNotNull(viewModel.shownCard.value)
+        assertTrue(shown.isDamaged)
+        assertEquals(CardSide(), shown.content)
     }
 
     @Test
@@ -667,7 +697,7 @@ class DeckViewModelTest {
 
         val shown = checkNotNull(viewModel.shownCard.value)
         assertTrue(shown.isDamaged)
-        assertTrue(shown.strokes.isEmpty())
+        assertTrue(shown.content.strokes.isEmpty())
         assertEquals(DeckBody.Card(CardSideShown.FRONT, isContentDamaged = true), readScreen().body)
 
         // С такой карточкой можно работать: перевернуть, оценить, удалить.

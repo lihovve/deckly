@@ -198,7 +198,7 @@ private fun DeckHost(entry: ScreenEntry, screen: AppScreen.Deck, environment: Sc
         CardFrameTimingEffect(shownCard)
         environment.design.DeckScreen(shown, viewModel::onAction) { modifier ->
             val card = shownCard
-            if (card != null) environment.sheets.DeckSheet(card.strokes, modifier) else Box(modifier)
+            if (card != null) environment.sheets.DeckSheet(card.content, modifier) else Box(modifier)
         }
     }
 }
@@ -218,6 +218,7 @@ private fun EditorHost(entry: ScreenEntry, screen: AppScreen.Editor, environment
             clock = container.clock,
             random = container.random,
             nowMillis = System::currentTimeMillis,
+            outlineWidths = container.outlineWidthStore,
             navigate = environment.app::navigate,
         )
     }
@@ -235,7 +236,7 @@ private fun EditorHost(entry: ScreenEntry, screen: AppScreen.Editor, environment
             viewModel::onAction,
             sheet = { modifier ->
                 val shownCanvas = if (isRefreshing) canvas.copy(isPenEnabled = false) else canvas
-                environment.sheets.EditorSheet(shownCanvas, viewModel::onStroke, viewModel::onErase, modifier)
+                environment.sheets.EditorSheet(shownCanvas, viewModel::onStroke, viewModel::onErase, viewModel::onShapeTap, modifier)
             },
             shapeGlyph = { kind, outline, modifier -> environment.sheets.ShapeGlyph(kind, outline, modifier) },
         )

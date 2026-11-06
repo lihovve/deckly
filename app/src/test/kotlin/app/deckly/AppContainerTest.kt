@@ -50,6 +50,24 @@ class AppContainerTest {
     }
 
     @Test
+    fun outlineWidthIsRememberedInSettingsAndSurvivesANewContainer() {
+        val first = AppContainer(application, hasFileAccess = { true })
+        first.outlineWidthStore.writeWidth(9)
+
+        // Процесс начался заново: новый контейнер читает ту же настройку приложения.
+        val second = AppContainer(application, hasFileAccess = { true })
+
+        assertEquals(9, second.outlineWidthStore.readWidth())
+    }
+
+    @Test
+    fun outlineWidthIsThreeOnTheFirstRun() {
+        application.getSharedPreferences("deckly-settings", Context.MODE_PRIVATE).edit().clear().commit()
+
+        assertEquals(3, AppContainer(application, hasFileAccess = { true }).outlineWidthStore.readWidth())
+    }
+
+    @Test
     fun simultaneousStartsOpenStorageOnce() = runBlocking {
         var openCount = 0
         val data = buildFakeData(context, folder.newFolder())

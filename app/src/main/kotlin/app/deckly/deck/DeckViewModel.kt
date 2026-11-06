@@ -6,10 +6,10 @@ import app.deckly.DayClock
 import app.deckly.SerialWriter
 import app.deckly.data.timing.DecklyTiming
 import app.deckly.domain.model.CardContent
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
 import app.deckly.domain.model.Side
-import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.collectDeckChanges
 import app.deckly.domain.model.listSectionCards
 import app.deckly.domain.port.AppStateRepository
@@ -36,10 +36,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Карточка на листе: штрихи видимой стороны. Файл штрихов не открылся — [isDamaged], лист пуст, а с
+ * Карточка на листе: штрихи и фигуры видимой стороны. Файл штрихов не открылся — [isDamaged], лист пуст, а с
  * карточкой можно работать дальше.
  */
-data class ShownCard(val cardId: Long, val side: Side, val strokes: List<Stroke>, val isDamaged: Boolean) {
+data class ShownCard(val cardId: Long, val side: Side, val content: CardSide, val isDamaged: Boolean) {
     /** Для лога времени (`DecklyTiming`): когда карточка собрана. В равенство не входит. */
     val publishedNanos: Long = System.nanoTime()
 }
@@ -208,7 +208,7 @@ class DeckViewModel(
     // Лог для проверки на планшете: от прихода действия до публикации и чтение содержимого (из кэша оно близко к нулю).
     private fun logCardTiming(shown: ShownCard, loadStartNanos: Long) {
         DecklyTiming.logInfo {
-            "card id=${shown.cardId} side=${shown.side} strokes=${shown.strokes.size} " +
+            "card id=${shown.cardId} side=${shown.side} strokes=${shown.content.strokes.size} shapes=${shown.content.shapes.size} " +
                 "action→publish=${DecklyTiming.describeElapsed(actionArrivedNanos, shown.publishedNanos)}ms " +
                 "load=${DecklyTiming.describeElapsed(loadStartNanos, shown.publishedNanos)}ms"
         }
@@ -216,8 +216,8 @@ class DeckViewModel(
 
     private fun buildShownCard(cardId: Long, content: Result<CardContent>): ShownCard {
         val side = deckState.deck.visibleSide
-        val loaded = content.getOrNull() ?: return ShownCard(cardId, side, emptyList(), isDamaged = true)
-        return ShownCard(cardId, side, (if (side == Side.FRONT) loaded.front else loaded.back).strokes, isDamaged = false)
+        val loaded = content.getOrNull() ?: return ShownCard(cardId, side, CardSide(), isDamaged = true)
+        return ShownCard(cardId, side, if (side == Side.FRONT) loaded.front else loaded.back, isDamaged = false)
     }
 
     private fun prefetchNext() {

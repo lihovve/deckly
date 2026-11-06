@@ -4,9 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.deckly.DayClock
 import app.deckly.SerialWriter
+import app.deckly.domain.editor.ActiveShapeGesture
 import app.deckly.domain.editor.EditorSession
+import app.deckly.domain.editor.HeldShape
 import app.deckly.domain.editor.addStroke
+import app.deckly.domain.editor.applyHeldShape
 import app.deckly.domain.editor.eraseAlong
+import app.deckly.domain.editor.findShapeAt
+import app.deckly.domain.editor.insertShape
+import app.deckly.domain.editor.listVisibleContent
 import app.deckly.domain.editor.resumeDraft
 import app.deckly.domain.editor.saveDraft
 import app.deckly.domain.editor.startEditing
@@ -30,6 +36,7 @@ import app.deckly.navigation.EditorStart
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.EditorDialog
 import app.deckly.ui.contract.EditorScreenState
+import app.deckly.ui.contract.ShapeKind
 import app.deckly.ui.contract.Thickness
 import java.io.IOException
 import kotlin.random.Random
@@ -40,11 +47,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Что нужно листу рисования ([app.deckly.ink.DrawingSheet]). [uiRevision] растёт, когда вне холста изменилось
- * что-то видимое, и пока перо включено, прошивка этого не показывает: лист выключает перо на время обновления.
+ * Что нужно листу рисования ([app.deckly.ink.DrawingSheet]): штрихи и фигуры видимой стороны, фигура в руках среди
+ * них. [uiRevision] растёт, когда вне холста изменилось что-то видимое, и пока перо включено, прошивка этого не
+ * показывает: лист выключает перо на время обновления.
  */
 data class CanvasState(
-    val strokes: List<Stroke>,
+    val side: CardSide,
     val penWidthPx: Float,
     val isPenEnabled: Boolean,
     val uiRevision: Int,
@@ -53,10 +61,13 @@ data class CanvasState(
 /**
  * Редактор карточки. Штрихи, стирания и отмены приходят от листа, действия — от дизайна; всё идёт по одному
  * в порядке прихода. Черновик появляется с первого изменения (до него в базу ничего не пишется) и после
- * каждого штриха, стирания, отмены и смены стороны записывается через [SerialWriter]. Новое состояние
- * публикуется только после записи. Ошибка записи не ловится: приложение падает, база остаётся целой.
+ * каждого штриха, стирания, отмены, смены стороны и применения фигуры записывается через [SerialWriter]. Новое
+ * состояние публикуется только после записи. Ошибка записи не ловится: приложение падает, база остаётся целой.
  *
- * Пока открыто окно или идёт выход, холст не принимает ни штрихов, ни действий, а перо выключено.
+ * Фигура в руках (новая из палитры или выбранная касанием у контура) в черновик не входит: движения, повороты и
+ * растяжение живут только в памяти, пишется применённое. Применяют её галочка, касание мимо, выбор другой фигуры,
+ * палитра, «Сохранить» и смена стороны; крест возвращает фигуру, какой она была. Пока открыто окно, палитра или фигура
+ * в руках, перо выключено, а пока открыто окно или идёт выход, холст не принимает ни штрихов, ни действий.
  */
 class EditorViewModel(
     private val deckId: Long,
@@ -68,12 +79,14 @@ class EditorViewModel(
     private val clock: DayClock,
     private val random: Random,
     private val nowMillis: () -> Long,
+    private val outlineWidths: OutlineWidthStore,
     private val navigate: (AppScreen) -> Unit,
 ) : ViewModel() {
     private sealed interface Input {
         data class Action(val action: EditorAction) : Input
         data class Stroked(val stroke: Stroke) : Input
         data class Erased(val path: List<StrokePoint>, val radius: Float) : Input
+        data class ShapeTapped(val index: Int) : Input
     }
 
     // Что вне черновика и не пишется в базу: толщина, окно. `null` в session — редактор ещё грузится.
@@ -83,11 +96,19 @@ class EditorViewModel(
     private var dialog: EditorDialog? = null
     private var isLeaving = false
 
+    // Фигура в руках и жест над ней; палитра и запомненная толщина контура новых фигур (в единицах макета).
+    private var held: HeldShape? = null
+    private var gesture: ActiveShapeGesture? = null
+    private var isPaletteOpen = false
+    private var outlineWidth = outlineWidths.readWidth().coerceIn(MIN_OUTLINE_WIDTH, MAX_OUTLINE_WIDTH)
+
     private data class UiSignature(
         val thickness: Thickness,
         val canUndo: Boolean,
         val dialog: EditorDialog?,
         val side: Side,
+        val isPaletteOpen: Boolean,
+        val hasSelection: Boolean,
     )
 
     private var uiSignature = buildUiSignature()
@@ -129,6 +150,11 @@ class EditorViewModel(
         inputs.trySend(Input.Erased(path, radius))
     }
 
+    /** Лист сообщает, что короткое касание у контура выбрало фигуру [index] видимой стороны. */
+    fun onShapeTap(index: Int) {
+        inputs.trySend(Input.ShapeTapped(index))
+    }
+
     private suspend fun loadSession(): EditorSession = when (start) {
         is EditorStart.NewCard -> error("Новая карточка начинается без загрузки")
         is EditorStart.EditCard -> {
@@ -152,21 +178,30 @@ class EditorViewModel(
         if (isLeaving) return
         when (input) {
             is Input.Stroked -> if (dialog == null) applyChange(current.addStroke(input.stroke), startsDraft = true)
+            // Стирание из-под руки сняло бы фигуру, место (индекс) которой держат в руках: пока она в руках, не стираем.
             is Input.Erased ->
-                if (dialog == null) applyChange(current.eraseAlong(input.path, input.radius), startsDraft = true)
+                if (dialog == null && held == null) applyChange(current.eraseAlong(input.path, input.radius), startsDraft = true)
+            is Input.ShapeTapped -> selectPlacedShape(input.index)
             is Input.Action -> handleAction(input.action)
         }
     }
 
+    // Состояния взаимоисключающие, сверху вниз по строгости: окно закрывает всё, палитра закрывает лист, фигура в руках
+    // закрывает обычные инструменты.
     private suspend fun handleAction(action: EditorAction) {
-        if (dialog != null) {
-            when (action) {
+        when {
+            dialog != null -> when (action) {
                 EditorAction.ConfirmDialog -> confirmDialog()
                 EditorAction.DismissDialog -> closeDialog()
                 else -> Unit
             }
-            return
+            isPaletteOpen -> handlePaletteAction(action)
+            held != null -> handleSelectionAction(action)
+            else -> handleOrdinaryAction(action)
         }
+    }
+
+    private suspend fun handleOrdinaryAction(action: EditorAction) {
         when (action) {
             is EditorAction.SelectSide -> applyChange(current.switchSide(action.side.toSide()), startsDraft = false)
             is EditorAction.SelectThickness -> {
@@ -178,18 +213,145 @@ class EditorViewModel(
             EditorAction.Cancel -> if (current.draft.cardId == null) openDialog(EditorDialog.DISCARD_DRAFT)
             EditorAction.Delete -> if (current.draft.cardId != null) openDialog(EditorDialog.DELETE_CARD)
             EditorAction.Back -> openDialog(EditorDialog.SAVE_ON_BACK)
-            EditorAction.ConfirmDialog, EditorAction.DismissDialog -> Unit
-            // Палитра, выделение и жесты фигур: дизайн их уже присылает, модель получит их в задаче 6 плана 4.3.
-            EditorAction.OpenShapePalette, EditorAction.CloseShapePalette, is EditorAction.ChooseShape,
-            is EditorAction.SetOutlineWidth, is EditorAction.StartShapeGesture, is EditorAction.MoveShapeGesture,
-            EditorAction.EndShapeGesture, EditorAction.CancelShapeGesture, EditorAction.ApplyShape, EditorAction.CancelShape,
-            -> Unit
+            EditorAction.OpenShapePalette -> openPalette()
+            // Остальное без фигуры в руках и без палитры не имеет смысла (дизайн такого не присылает): поздний жест, галочка.
+            else -> Unit
         }
     }
 
+    // Палитра закрывает лист: от неё идут только её действия. Системная «Назад» закрывает её, а не предлагает выйти.
+    private fun handlePaletteAction(action: EditorAction) {
+        when (action) {
+            is EditorAction.SetOutlineWidth -> rememberOutlineWidth(action.width)
+            // Новая фигура встаёт по центру листа с запомненным контуром, выделена и в руках; в черновик не входит.
+            is EditorAction.ChooseShape -> {
+                val shape = insertShape(action.kind.toDomainKind(), outlineWidth.toShapeWidth())
+                isPaletteOpen = false
+                held = HeldShape(shape, editedIndex = null, original = null)
+                publish()
+            }
+            EditorAction.CloseShapePalette, EditorAction.Back -> {
+                isPaletteOpen = false
+                publish()
+            }
+            else -> Unit
+        }
+    }
+
+    private suspend fun handleSelectionAction(action: EditorAction) {
+        when (action) {
+            is EditorAction.StartShapeGesture -> startShapeGesture(action)
+            // `Move` и `Cancel` без жеста (его оборвали: касание мимо убирает слой жестов вместе с корутиной) ничего не меняют.
+            is EditorAction.MoveShapeGesture -> gesture?.let { active ->
+                held = held?.copy(shape = active.applyTo(action.x, action.y))
+                publish()
+            }
+            EditorAction.EndShapeGesture -> gesture = null
+            EditorAction.CancelShapeGesture -> gesture?.let { active ->
+                gesture = null
+                held = held?.copy(shape = active.startShape)
+                publish()
+            }
+            EditorAction.ApplyShape -> {
+                applyHeldShape()
+                publish()
+            }
+            EditorAction.CancelShape -> {
+                held = null
+                gesture = null
+                publish()
+            }
+            EditorAction.OpenShapePalette -> {
+                applyHeldShape()
+                openPalette()
+            }
+            is EditorAction.SelectSide -> {
+                applyHeldShape()
+                publish()
+                handleOrdinaryAction(action)
+            }
+            EditorAction.Save -> {
+                applyHeldShape()
+                saveAndLeave()
+            }
+            // Окно открывается поверх выделения; «Keep editing» вернёт к нему, «Save and exit» применит фигуру.
+            EditorAction.Back, EditorAction.Cancel, EditorAction.Delete -> handleOrdinaryAction(action)
+            // Отмена и толщина пера при фигуре в руках не работают: их кнопок на панели фигуры нет.
+            else -> Unit
+        }
+    }
+
+    private fun openPalette() {
+        isPaletteOpen = true
+        publish()
+    }
+
+    // Одно значение подряд не пишем и не публикуем: ползунок шлёт его на каждое движение пера внутри деления.
+    private fun rememberOutlineWidth(width: Int) {
+        val next = width.coerceIn(MIN_OUTLINE_WIDTH, MAX_OUTLINE_WIDTH)
+        if (next == outlineWidth) return
+        outlineWidth = next
+        outlineWidths.writeWidth(next)
+        publish()
+    }
+
+    // Фигура, выбранная касанием у контура: в руках, запомнена как была. Устаревший номер (фигуру успели снять) молча теряется.
+    private fun selectPlacedShape(index: Int) {
+        if (dialog != null || isPaletteOpen || held != null) return
+        val shape = current.listVisibleContent(null).shapes.getOrNull(index) ?: return
+        held = HeldShape(shape, index, shape)
+        publish()
+    }
+
+    /**
+     * Касание листа при выделенной фигуре. С ручкой: жест ручки. Без неё решает, чья лента выбора задета (верхней из
+     * задетых): своя фигура двигается за контур; другая применяет текущую, выделяется и тем же касанием двигается, как
+     * в демо; мимо всех применяет фигуру и возвращает перо, а касание дальше станет штрихом.
+     */
+    private suspend fun startShapeGesture(action: EditorAction.StartShapeGesture) {
+        val inHand = held ?: return
+        val handle = action.handle
+        if (handle != null) {
+            gesture = ActiveShapeGesture(handle.toDomainHandle(), action.x, action.y, inHand.shape)
+            return
+        }
+        val shapes = current.listVisibleContent(inHand).shapes
+        val inHandIndex = inHand.editedIndex ?: shapes.lastIndex
+        when (val hit = findShapeAt(shapes, action.x, action.y)) {
+            inHandIndex -> gesture = ActiveShapeGesture(null, action.x, action.y, inHand.shape)
+            null -> {
+                applyHeldShape()
+                publish()
+            }
+            else -> {
+                val other = shapes[hit]
+                applyHeldShape()
+                held = HeldShape(other, hit, other)
+                gesture = ActiveShapeGesture(null, action.x, action.y, other)
+                publish()
+            }
+        }
+    }
+
+    // Применение фигуры из рук: запись (если что-то изменилось) и снятие выделения; показывает вызывающий. Новое
+    // состояние публикуется только после записи, поэтому выделение снимается до неё, а публикуется после.
+    private suspend fun applyHeldShape() {
+        val inHand = held ?: return
+        held = null
+        gesture = null
+        commit(current.applyHeldShape(inHand), startsDraft = true)
+    }
+
     // Изменение черновика: запись, затем показ. Ничего не изменилось (ластик мимо, нечего отменять) — ничего не делаем.
-    // Смена стороны черновик не создаёт: он появляется только с изменением штрихов.
+    // Смена стороны черновик не создаёт: он появляется только с изменением штрихов или фигур.
     private suspend fun applyChange(next: EditorSession, startsDraft: Boolean) {
+        if (next == current) return
+        commit(next, startsDraft)
+        publish()
+    }
+
+    // Запись без показа: вызывающий публикует сам, когда закончит все изменения одного действия.
+    private suspend fun commit(next: EditorSession, startsDraft: Boolean) {
         if (next == current) return
         session = next
         if (startsDraft) hasDraft = true
@@ -197,11 +359,12 @@ class EditorViewModel(
             val stored = StoredDraft(deckId, next.draft)
             writer.write { drafts.storeDraft(stored) }
         }
-        publish()
     }
 
     private fun openDialog(kind: EditorDialog) {
         dialog = kind
+        // Под окном жест не продолжается: его движения и конец окно не пропустит. Фигура остаётся там, где её оставили.
+        gesture = null
         publish()
     }
 
@@ -214,7 +377,10 @@ class EditorViewModel(
         when (dialog) {
             EditorDialog.DISCARD_DRAFT -> discardAndLeave()
             EditorDialog.DELETE_CARD -> deleteAndLeave()
-            EditorDialog.SAVE_ON_BACK -> saveAndLeave()
+            EditorDialog.SAVE_ON_BACK -> {
+                applyHeldShape()
+                saveAndLeave()
+            }
             null -> Unit
         }
     }
@@ -267,21 +433,25 @@ class EditorViewModel(
         mutableCanvas.value = buildCanvas()
     }
 
-    // Видимое вне холста: толщина, кнопка отмены, окно и вкладка стороны. Вкладка стороны тут нужна,
-    // потому что у пустых сторон список штрихов не меняется, и лист сам смену стороны не заметит.
+    // Видимое вне холста: толщина, кнопка отмены, окно, вкладка стороны, палитра и панель фигуры. Вкладка стороны тут
+    // нужна, потому что у пустых сторон список штрихов не меняется, и лист сам смену стороны не заметит. Сами движения
+    // фигуры в подпись не входят: пока она в руках, перо выключено, и рамка с ручками показывается обычным путём.
     private fun buildUiSignature() = UiSignature(
         thickness,
         canUndo = session?.history?.isNotEmpty() == true,
         dialog,
         side = session?.draft?.visibleSide ?: Side.FRONT,
+        isPaletteOpen,
+        hasSelection = held != null,
     )
 
-    private fun buildState(): EditorScreenState? = session?.let { buildEditorScreenState(it, thickness, dialog) }
+    private fun buildState(): EditorScreenState? =
+        session?.let { buildEditorScreenState(it, thickness, dialog, held, isPaletteOpen, outlineWidth) }
 
     private fun buildCanvas() = CanvasState(
-        strokes = session?.let { listVisibleStrokes(it) } ?: emptyList(),
+        side = session?.listVisibleContent(held) ?: CardSide(),
         penWidthPx = thickness.toPenWidthPx(),
-        isPenEnabled = session != null && dialog == null && !isLeaving,
+        isPenEnabled = session != null && dialog == null && !isLeaving && !isPaletteOpen && held == null,
         uiRevision = uiRevision,
     )
 }

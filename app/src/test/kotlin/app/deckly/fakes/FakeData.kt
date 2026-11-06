@@ -123,3 +123,15 @@ private object UnusedDeckTransfer : DeckTransfer {
 
     override suspend fun importDeck(input: InputStream): Deck = error("Порт не нужен тесту")
 }
+
+/** Толщина контура в памяти: [writes] — все записи по порядку, [width] — что прочитает следующий редактор. */
+class FakeOutlineWidthStore(var width: Int = 3) : app.deckly.editor.OutlineWidthStore {
+    val writes = mutableListOf<Int>()
+
+    override fun readWidth(): Int = width
+
+    override fun writeWidth(width: Int) {
+        writes += width
+        this.width = width
+    }
+}

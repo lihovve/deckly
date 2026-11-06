@@ -16,9 +16,9 @@ import app.deckly.ui.contract.ShapeKind
  * видели, что листу передали, не поднимая перо и холст: настоящие листы проверяет `ink`.
  */
 interface SheetSlots {
-    /** Сторона карточки в обучении и просмотре. */
+    /** Сторона карточки в обучении и просмотре: штрихи и фигуры. */
     @Composable
-    fun DeckSheet(strokes: List<Stroke>, modifier: Modifier)
+    fun DeckSheet(side: CardSide, modifier: Modifier)
 
     /** Холст редактора; [canvas] уже учитывает паузу пера на время обновления экрана. */
     @Composable
@@ -26,6 +26,7 @@ interface SheetSlots {
         canvas: CanvasState,
         onStroke: (Stroke) -> Unit,
         onErase: (List<StrokePoint>, Float) -> Unit,
+        onShapeTap: (Int) -> Unit,
         modifier: Modifier,
     )
 
@@ -37,8 +38,8 @@ interface SheetSlots {
 /** Настоящие листы из `ink`. Описание листа ставит дизайн через модификатор слота, поэтому здесь его нет. */
 object InkSheetSlots : SheetSlots {
     @Composable
-    override fun DeckSheet(strokes: List<Stroke>, modifier: Modifier) {
-        CardSideImage(CardSide(strokes), modifier, description = null)
+    override fun DeckSheet(side: CardSide, modifier: Modifier) {
+        CardSideImage(side, modifier, description = null)
     }
 
     @Composable
@@ -46,17 +47,17 @@ object InkSheetSlots : SheetSlots {
         canvas: CanvasState,
         onStroke: (Stroke) -> Unit,
         onErase: (List<StrokePoint>, Float) -> Unit,
+        onShapeTap: (Int) -> Unit,
         modifier: Modifier,
     ) {
         DrawingSheet(
-            side = CardSide(canvas.strokes),
+            side = canvas.side,
             penWidthPx = canvas.penWidthPx,
             isPenEnabled = canvas.isPenEnabled,
             uiRevision = canvas.uiRevision,
             onStroke = onStroke,
             onErase = onErase,
-            // Выбор фигуры придёт в задаче 6: пока в приложении фигур нет, касание у контура случиться не может.
-            onShapeTap = {},
+            onShapeTap = onShapeTap,
             modifier = modifier,
         )
     }

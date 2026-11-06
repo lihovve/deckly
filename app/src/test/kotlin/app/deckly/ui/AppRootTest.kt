@@ -35,8 +35,10 @@ import app.deckly.AppContainer
 import app.deckly.data.DecklyData
 import app.deckly.data.db.DatabaseDamagedException
 import app.deckly.domain.editor.Draft
+import app.deckly.domain.model.CardContent
 import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Section
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Side
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
@@ -57,6 +59,8 @@ import app.deckly.fakes.buildFakeData
 import app.deckly.fixtures.buildCard
 import app.deckly.fixtures.buildDeck
 import app.deckly.fixtures.buildDeckState
+import app.deckly.fixtures.buildEpochRange
+import app.deckly.fixtures.buildPassDeck
 import app.deckly.navigation.AppScreen
 import app.deckly.navigation.AppViewModel
 import app.deckly.navigation.EditorStart
@@ -398,7 +402,7 @@ class AppRootTest {
         val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"), card)))
         startApp(buildData(decks = catalog, appState = FakeAppStateRepository(DECK_ID)))
 
-        assertEquals(FakeCardContentRepository.buildContent(7).front.strokes, sheets.deckStrokes.last())
+        assertEquals(FakeCardContentRepository.buildContent(7).front.strokes, sheets.deckSides.last().strokes)
         // Описание листа ставит дизайн, слот его не затирает.
         composeRule.onNodeWithContentDescription("Handwritten card").assertExists()
     }
@@ -409,8 +413,104 @@ class AppRootTest {
         val draft = Draft(null, CardSide(listOf(stroke)), CardSide(), Side.FRONT, Section.NEW)
         startApp(buildData(drafts = FakeDraftRepository(StoredDraft(DECK_ID, draft))))
 
-        assertEquals(listOf(stroke), sheets.canvases.last().strokes)
+        assertEquals(listOf(stroke), sheets.canvases.last().side.strokes)
         composeRule.onNodeWithContentDescription("Canvas. Draw with the pen only").assertExists()
+    }
+
+    @Test
+    fun browseShowsShapesOfShownCardAndFlipShowsTheOtherSide() {
+        val card = buildCard(id = 7, section = Section.NEW, position = 0)
+        val repository = FakeDeckRepository(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"), card))
+        startApp(buildData(decks = repository, appState = FakeAppStateRepository(DECK_ID), contents = buildContentsWithShapes(7)))
+
+        assertEquals(CardSide(listOf(FRONT_STROKE), listOf(FRONT_SHAPE)), sheets.deckSides.last())
+
+        composeRule.onNodeWithContentDescription("Show answer").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(CardSide(emptyList(), listOf(BACK_SHAPE)), sheets.deckSides.last())
+    }
+
+    @Test
+    fun learningShowsShapesOfShownCardAndFlipShowsTheOtherSide() {
+        val repository = FakeDeckRepository(buildDeckState(buildPassDeck(epoch = 1), buildEpochRange(1, 7, 1)))
+        startApp(buildData(decks = repository, appState = FakeAppStateRepository(DECK_ID), contents = buildContentsWithShapes(7)))
+
+        assertEquals(CardSide(listOf(FRONT_STROKE), listOf(FRONT_SHAPE)), sheets.deckSides.last())
+
+        composeRule.onNodeWithContentDescription("Show answer").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(CardSide(emptyList(), listOf(BACK_SHAPE)), sheets.deckSides.last())
+    }
+
+    @Test
+    fun shapesButtonOpensPaletteChoosingKindShowsShapePanelAndApplyBringsBackTheToolbar() {
+        val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
+        startApp(buildData(drafts = drafts))
+
+        composeRule.onNodeWithContentDescription("Shapes").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Outline width").assertExists()
+        assertFalse("под палитрой перо выключено", sheets.canvases.last().isPenEnabled)
+
+        composeRule.onNodeWithContentDescription("Rectangle").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Outline width").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Apply shape").assertExists()
+        composeRule.onNodeWithContentDescription("Shape and outline width").assertExists()
+        assertEquals(listOf(Shape.Kind.RECTANGLE), sheets.canvases.last().side.shapes.map { it.kind })
+        assertFalse("при выделении перо выключено", sheets.canvases.last().isPenEnabled)
+        assertEquals("фигура в руках на диск не идёт", null, drafts.stored?.draft?.front?.shapes?.firstOrNull())
+
+        composeRule.onNodeWithContentDescription("Apply shape").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Undo stroke").assertIsEnabled()
+        composeRule.onNodeWithContentDescription("Apply shape").assertDoesNotExist()
+        assertTrue(sheets.canvases.last().isPenEnabled)
+        assertEquals(listOf(Shape.Kind.RECTANGLE), drafts.stored?.draft?.front?.shapes?.map { it.kind })
+    }
+
+    @Test
+    fun canvasShapeTapSelectsTheShapeAndShowsTheShapePanel() {
+        val draft = Draft(null, CardSide(shapes = listOf(FRONT_SHAPE)), CardSide(), Side.FRONT, Section.NEW)
+        startApp(buildData(drafts = FakeDraftRepository(StoredDraft(DECK_ID, draft))))
+        composeRule.onNodeWithContentDescription("Apply shape").assertDoesNotExist()
+
+        composeRule.runOnUiThread { sheets.onShapeTap(0) }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription("Apply shape").assertExists()
+        assertFalse(sheets.canvases.last().isPenEnabled)
+    }
+
+    @Test
+    fun systemBackClosesTheShapePaletteAndDoesNotAskToLeave() {
+        val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
+        startApp(buildData(drafts = drafts))
+        composeRule.onNodeWithContentDescription("Shapes").performClick()
+        composeRule.waitForIdle()
+
+        pressBack()
+
+        composeRule.onNodeWithText("Outline width").assertDoesNotExist()
+        composeRule.onNodeWithText("Save and exit?").assertDoesNotExist()
+        assertTrue(sheets.canvases.last().isPenEnabled)
+    }
+
+    @Test
+    fun rememberedOutlineWidthReachesTheNextEditorFromThePreferences() {
+        val container = AppContainer(application, hasFileAccess = { true })
+        container.outlineWidthStore.writeWidth(10)
+        val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
+        startApp(buildData(drafts = drafts))
+        composeRule.onNodeWithContentDescription("Shapes").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Rectangle").performClick()
+        composeRule.waitForIdle()
+
+        // Контейнер приложения читает ту же настройку: новая фигура получает толщину 10 единиц макета.
+        assertEquals(10f * app.deckly.domain.model.CardUnits.PER_DESIGN_UNIT, sheets.canvases.last().side.shapes.single().width, 1e-3f)
     }
 
     @Test
@@ -422,14 +522,14 @@ class AppRootTest {
         composeRule.runOnUiThread { sheets.onStroke(stroke) }
         composeRule.waitForIdle()
 
-        assertEquals(listOf(stroke), sheets.canvases.last().strokes)
+        assertEquals(listOf(stroke), sheets.canvases.last().side.strokes)
         assertEquals("штрих записан в черновик", listOf(stroke), drafts.stored?.draft?.front?.strokes)
         composeRule.onNodeWithContentDescription("Undo stroke").assertIsEnabled()
 
         composeRule.runOnUiThread { sheets.onErase(listOf(StrokePoint(150f, 150f, 1f)), 50f) }
         composeRule.waitForIdle()
 
-        assertEquals(emptyList<Stroke>(), sheets.canvases.last().strokes)
+        assertEquals(emptyList<Stroke>(), sheets.canvases.last().side.strokes)
     }
 
     @Test
@@ -646,7 +746,7 @@ class AppRootTest {
         app.navigate(AppScreen.Deck(DECK_ID, openSection = Section.EPOCH_2, focusCardId = 8))
         composeRule.waitForIdle()
 
-        assertEquals(FakeCardContentRepository.buildContent(8).front.strokes, sheets.deckStrokes.last())
+        assertEquals(FakeCardContentRepository.buildContent(8).front.strokes, sheets.deckSides.last().strokes)
         composeRule.onNode(hasContentDescription("II, 2 cards")).assertIsSelected()
     }
 
@@ -784,14 +884,15 @@ class AppRootTest {
 
     // Листы вместо настоящих: записывают, что им передали. Настоящие (CardSideImage, DrawingSheet) проверяет ink.
     private class RecordingSheets : SheetSlots {
-        val deckStrokes = mutableListOf<List<Stroke>>()
+        val deckSides = mutableListOf<CardSide>()
         val canvases = mutableListOf<CanvasState>()
         lateinit var onStroke: (Stroke) -> Unit
         lateinit var onErase: (List<StrokePoint>, Float) -> Unit
+        lateinit var onShapeTap: (Int) -> Unit
 
         @Composable
-        override fun DeckSheet(strokes: List<Stroke>, modifier: Modifier) {
-            SideEffect { deckStrokes += strokes }
+        override fun DeckSheet(side: CardSide, modifier: Modifier) {
+            SideEffect { deckSides += side }
             Box(modifier)
         }
 
@@ -800,12 +901,14 @@ class AppRootTest {
             canvas: CanvasState,
             onStroke: (Stroke) -> Unit,
             onErase: (List<StrokePoint>, Float) -> Unit,
+            onShapeTap: (Int) -> Unit,
             modifier: Modifier,
         ) {
             SideEffect {
                 canvases += canvas
                 this.onStroke = onStroke
                 this.onErase = onErase
+                this.onShapeTap = onShapeTap
             }
             Box(modifier)
         }
@@ -860,8 +963,15 @@ class AppRootTest {
         override fun DeckNameScreen(state: DeckNameState, onAction: (DeckNameAction) -> Unit) = Unit
     }
 
+    private fun buildContentsWithShapes(cardId: Long) = FakeCardContentRepository(
+        mapOf(cardId to CardContent(cardId, CardSide(listOf(FRONT_STROKE), listOf(FRONT_SHAPE)), CardSide(shapes = listOf(BACK_SHAPE)))),
+    )
+
     private companion object {
         const val DECK_ID = 1L
+        val FRONT_STROKE = Stroke(6f, listOf(StrokePoint(1f, 1f, 1f)))
+        val FRONT_SHAPE = Shape(Shape.Kind.STAR, 100f, 100f, 300f, 300f, 0f, 3f)
+        val BACK_SHAPE = Shape(Shape.Kind.HEART, 400f, 400f, 600f, 600f, 0f, 3f)
 
         // Период полного обновления из ТЗ: первый экран после запуска и затем каждая 30-я смена.
         const val REFRESH_PERIOD = 30
