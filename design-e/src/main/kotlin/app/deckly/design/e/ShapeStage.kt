@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -51,8 +52,10 @@ import kotlin.math.roundToInt
  * с `null`, остальное решает модель. Начало и каждое движение несут нажим, начало ещё и масштаб листа. Дальше движение,
  * конец или отмена жеста. Система отдаёт отсчёты пера пачкой за кадр: в модель идут все, по одному движению на отсчёт
  * (линии нужны все, иначе быстрая выйдет ломаной хордами), нажим исторических отсчётов берётся из исходного события.
- * Перед концом положение подъёма уходит ещё одним движением, если оно не совпало с последним. Координаты — в единицах
- * карточки.
+ * Перед концом положение подъёма уходит ещё одним движением, если оно не совпало с последним. Подъём не сразу конец
+ * жеста: система сообщает отрыв посреди контакта (дребезг, пары «UP → DOWN» через 0–60 мс), поэтому слой ждёт касание пером
+ * ещё [REBOUND_WINDOW_MS] и, если оно пришло, ведёт тот же жест дальше (без нового `Start` и без новой проверки ленты, новое
+ * касание идёт обычным движением). Координаты — в единицах карточки.
  */
 @Composable
 internal fun ShapeStage(selected: SelectedShape?, onAction: (EditorAction) -> Unit, modifier: Modifier = Modifier) {
@@ -69,20 +72,8 @@ internal fun ShapeStage(selected: SelectedShape?, onAction: (EditorAction) -> Un
                 down.consume()
                 val pressure = down.pressure.coerceIn(0f, 1f)
                 currentOnAction.invoke(EditorAction.StartShapeGesture(handle, down.position.x / scale, down.position.y / scale, pressure, scale))
-                var last = PenPoint(down.position, pressure)
-                val isFinished = drag(down.id) { change ->
-                    for (point in collectPenPoints(change, currentEvent.motionEvent)) {
-                        last = point
-                        currentOnAction.invoke(buildMove(point, scale))
-                    }
-                    change.consume()
-                }
-                // Подъём приходит без движения (`drag` не зовёт на него обработчик) и может оказаться не там, где последнее
-                // движение: без этого шага фигура останавливалась бы там, где было последнее движение. Нажим при подъёме
-                // нулевой, поэтому у точки подъёма нажим последнего движения.
-                val lift = currentEvent.changes.firstOrNull { it.id == down.id }?.position
-                if (isFinished && lift != null && lift != last.position) currentOnAction.invoke(buildMove(PenPoint(lift, last.pressure), scale))
-                currentOnAction.invoke(if (isFinished) EditorAction.EndShapeGesture else EditorAction.CancelShapeGesture)
+                val isLifted = followPen(down, scale) { currentOnAction.invoke(it) }
+                currentOnAction.invoke(if (isLifted) EditorAction.EndShapeGesture else EditorAction.CancelShapeGesture)
             }
         },
     ) {
@@ -91,6 +82,50 @@ internal fun ShapeStage(selected: SelectedShape?, onAction: (EditorAction) -> Un
 }
 
 private const val CARD_WIDTH = 1000f
+
+/**
+ * Окно склейки дребезга пера, мс. В проверке владельца на планшете пары «UP → DOWN» посреди касания по паузе: 0–20 мс 45
+ * пар, 20–40 мс 13, 40–60 мс 5, 60–80 мс 1, 80–100 мс 0, а настоящие отрывы начинаются от 100 мс (100–200 мс 5, от 300 мс
+ * 67). 80 мс стоят на границе: дребезг внутри, настоящий отрыв снаружи. По нажиму их не разделить (у дребезга UP несёт
+ * нажим последнего движения, как и настоящий), по смещению нельзя: ложный DOWN в 706 px тоже должен склеиваться.
+ */
+private const val REBOUND_WINDOW_MS = 80L
+
+// Ведёт перо с [down] до настоящего подъёма (`true`) или отмены касания (`false`). Отсчёты идут движениями; подъём с
+// положением, отличным от последнего, ещё одним движением. После подъёма ждёт касание пером [REBOUND_WINDOW_MS]: пришло
+// (дребезг), тот же жест продолжается, его первая точка идёт движением; не пришло, это настоящий подъём.
+private suspend fun AwaitPointerEventScope.followPen(down: PointerInputChange, scale: Float, send: (EditorAction) -> Unit): Boolean {
+    var pointer = down.id
+    var last = PenPoint(down.position, down.pressure.coerceIn(0f, 1f))
+    while (true) {
+        val isLifted = drag(pointer) { change ->
+            for (point in collectPenPoints(change, currentEvent.motionEvent)) {
+                last = point
+                send(buildMove(point, scale))
+            }
+            change.consume()
+        }
+        if (!isLifted) return false
+        // Подъём приходит без движения (`drag` не зовёт на него обработчик) и может оказаться не там, где последнее движение:
+        // без этого шага фигура останавливалась бы там, где было последнее движение. Нажим при подъёме нулевой, поэтому у
+        // точки подъёма нажим последнего движения.
+        val lift = currentEvent.changes.firstOrNull { it.id == pointer }?.position
+        if (lift != null && lift != last.position) send(buildMove(PenPoint(lift, last.pressure), scale))
+        val rebound = awaitRebound() ?: return true
+        rebound.consume()
+        pointer = rebound.id
+        last = PenPoint(rebound.position, rebound.pressure.coerceIn(0f, 1f))
+        send(buildMove(last, scale))
+    }
+}
+
+// Касание пером без боковой кнопки в течение окна после подъёма или `null`. Палец и ладонь жест не склеивают.
+private suspend fun AwaitPointerEventScope.awaitRebound(): PointerInputChange? =
+    withTimeoutOrNull(REBOUND_WINDOW_MS) {
+        var next = awaitFirstDown(requireUnconsumed = false)
+        while (next.type != PointerType.Stylus || isStylusButtonPressed(currentEvent.motionEvent)) next = awaitFirstDown(requireUnconsumed = false)
+        next
+    }
 
 // Отсчёт пера: положение на листе в пикселях и нажим от 0 до 1.
 private data class PenPoint(val position: Offset, val pressure: Float)

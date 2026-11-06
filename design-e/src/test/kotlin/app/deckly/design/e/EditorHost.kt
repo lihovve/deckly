@@ -122,5 +122,7 @@ internal fun dispatchGesture(
         val last = if (isCancelled) MotionEvent.ACTION_CANCEL else MotionEvent.ACTION_UP
         dispatchPointer(activity, tool, last, lift.first, lift.second, downTime, buttons, if (pressures == null) 1f else 0f)
     }
+    // После подъёма слой жестов ждёт касание пером окно склейки дребезга (80 мс), и только потом конец жеста: часы теста идут за него.
+    rule.mainClock.advanceTimeBy(100, ignoreFrameDuration = true)
     rule.waitForIdle()
 }

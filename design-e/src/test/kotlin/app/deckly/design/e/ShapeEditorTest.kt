@@ -445,6 +445,149 @@ class ShapeEditorTest {
         assertEquals(EditorAction.CancelShapeGesture, actions.last())
     }
 
+    // --- склейка дребезга: UP и DOWN пера почти подряд внутри касания --------------------------------
+
+    // Система на планшете сообщает отрыв посреди контакта: пары UP→DOWN с паузой 0–60 мс (в проверке владельца 64 пары за 8
+    // минут), настоящие отрывы от 100 мс. Слой на подъёме не шлёт конец жеста сразу, а ждёт касание пером 80 мс: пришло, это
+    // тот же жест (без нового `Start` и без новой проверки ленты), не пришло, конец. Время управляется часами теста.
+
+    @Test
+    fun liftFollowedByATouchInsideTheWindowIsTheSameGesture() {
+        composeRule.mainClock.autoAdvance = false
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+
+        pen(MotionEvent.ACTION_DOWN, x, y, 0.5f)
+        pen(MotionEvent.ACTION_MOVE, x + 30f, y, 0.6f)
+        pen(MotionEvent.ACTION_UP, x + 30f, y, 0.6f)
+        advance(20)
+        pen(MotionEvent.ACTION_DOWN, x + 45f, y, 0.4f)
+        pen(MotionEvent.ACTION_MOVE, x + 60f, y, 0.5f)
+        pen(MotionEvent.ACTION_UP, x + 60f, y, 0.5f)
+        advance(200)
+
+        assertEquals(listOf("Start", "Move", "Move", "Move", "End"), actions.map { it::class.simpleName!!.removeSuffix("ShapeGesture") })
+        val moves = actions.filterIsInstance<EditorAction.MoveShapeGesture>()
+        val start = actions.first() as EditorAction.StartShapeGesture
+        assertEquals(listOf(30f, 45f, 60f), moves.map { Math.round((it.x - start.x) * scale).toFloat() })
+        assertEquals("нажим нового касания у его движения", 0.4f, moves[1].pressure, 0.001f)
+    }
+
+    @Test
+    fun liftWithoutANewTouchSendsTheEndOnlyAfterTheWindow() {
+        composeRule.mainClock.autoAdvance = false
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+        pen(MotionEvent.ACTION_DOWN, x, y, 0.5f)
+        pen(MotionEvent.ACTION_MOVE, x + 30f, y, 0.6f)
+        pen(MotionEvent.ACTION_UP, x + 30f, y, 0.6f)
+
+        advance(79)
+        assertTrue("окно ещё не прошло", actions.none { it == EditorAction.EndShapeGesture })
+        advance(1)
+
+        assertEquals(EditorAction.EndShapeGesture, actions.last())
+        assertEquals(1, actions.count { it == EditorAction.EndShapeGesture })
+    }
+
+    @Test
+    fun touchAfterTheWindowIsANewGesture() {
+        composeRule.mainClock.autoAdvance = false
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+        pen(MotionEvent.ACTION_DOWN, x, y, 0.5f)
+        pen(MotionEvent.ACTION_UP, x, y, 0.5f)
+        advance(100)
+
+        pen(MotionEvent.ACTION_DOWN, x + 40f, y, 0.5f)
+        pen(MotionEvent.ACTION_UP, x + 40f, y, 0.5f)
+        advance(100)
+
+        assertEquals(listOf("Start", "End", "Start", "End"), actions.map { it::class.simpleName!!.removeSuffix("ShapeGesture") })
+    }
+
+    @Test
+    fun severalReboundsInARowStayOneGesture() {
+        composeRule.mainClock.autoAdvance = false
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+        pen(MotionEvent.ACTION_DOWN, x, y, 0.5f)
+        repeat(3) { step ->
+            pen(MotionEvent.ACTION_UP, x + step * 20f, y, 0.5f)
+            advance(10)
+            pen(MotionEvent.ACTION_DOWN, x + step * 20f + 10f, y, 0.5f)
+        }
+        pen(MotionEvent.ACTION_UP, x + 60f, y, 0.5f)
+        advance(200)
+
+        assertEquals(1, actions.count { it is EditorAction.StartShapeGesture })
+        assertEquals(1, actions.count { it == EditorAction.EndShapeGesture })
+        assertEquals(EditorAction.EndShapeGesture, actions.last())
+    }
+
+    @Test
+    fun reboundIsGluedWhateverTheDistanceBecauseAFalseCoordinateMustNotStartANewGesture() {
+        composeRule.mainClock.autoAdvance = false
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+        pen(MotionEvent.ACTION_DOWN, x, y, 0.5f)
+        pen(MotionEvent.ACTION_UP, x, y, 0.5f)
+        advance(30)
+
+        // Точка на листе (лист начинается в кадре с (32, 200)) в сотнях пикселей от угла рамки.
+        val origin = findFrameOrigin()
+        pen(MotionEvent.ACTION_DOWN, origin.x + 32f + 40f, origin.y + 200f + 40f, 0.3f)
+        pen(MotionEvent.ACTION_MOVE, x + 5f, y, 0.5f)
+        pen(MotionEvent.ACTION_UP, x + 5f, y, 0.5f)
+        advance(200)
+
+        assertEquals(listOf("Start", "Move", "Move", "End"), actions.map { it::class.simpleName!!.removeSuffix("ShapeGesture") })
+    }
+
+    @Test
+    fun cancelAfterAReboundIsStillACancel() {
+        composeRule.mainClock.autoAdvance = false
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+        pen(MotionEvent.ACTION_DOWN, x, y, 0.5f)
+        pen(MotionEvent.ACTION_UP, x, y, 0.5f)
+        advance(10)
+        pen(MotionEvent.ACTION_DOWN, x + 10f, y, 0.5f)
+
+        pen(MotionEvent.ACTION_CANCEL, x + 20f, y, 0.5f)
+        advance(200)
+
+        assertEquals(EditorAction.CancelShapeGesture, actions.last())
+        assertTrue(actions.none { it == EditorAction.EndShapeGesture })
+    }
+
+    @Test
+    fun aFingerInsideTheWindowDoesNotGlueTheGesture() {
+        composeRule.mainClock.autoAdvance = false
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+        pen(MotionEvent.ACTION_DOWN, x, y, 0.5f)
+        pen(MotionEvent.ACTION_UP, x, y, 0.5f)
+        advance(10)
+        composeRule.runOnUiThread {
+            dispatchPointer(composeRule.activity, MotionEvent.TOOL_TYPE_FINGER, MotionEvent.ACTION_DOWN, x + 30f, y, 2_000L)
+            dispatchPointer(composeRule.activity, MotionEvent.TOOL_TYPE_FINGER, MotionEvent.ACTION_UP, x + 30f, y, 2_000L)
+        }
+        advance(100)
+
+        assertEquals(listOf("Start", "End"), actions.map { it::class.simpleName!!.removeSuffix("ShapeGesture") })
+    }
+
+    // Часы теста идут ровно на столько миллисекунд, без округления до кадра (окно склейки 80 мс не должно округляться).
+    private fun advance(milliseconds: Long) = composeRule.mainClock.advanceTimeBy(milliseconds, ignoreFrameDuration = true)
+
+    // Событие пера без ожидания: часы теста стоят, время идёт только по `advance`.
+    private fun pen(action: Int, x: Float, y: Float, pressure: Float) {
+        composeRule.runOnUiThread {
+            dispatchPointer(composeRule.activity, MotionEvent.TOOL_TYPE_STYLUS, action, x, y, 1_000L, pressure = pressure)
+        }
+    }
+
     @Test
     fun fingerAndPalmNeverStartAGesture() {
         host.show(buildEditorState(selectedShape = rectangle))
@@ -540,6 +683,7 @@ class ShapeEditorTest {
         send(MotionEvent.ACTION_MOVE, 40f)
         host.show(buildEditorState(selectedShape = rectangle.copy(frame = rectangle.frame.copy(right = 680f))))
         send(MotionEvent.ACTION_UP, 40f)
+        advance(100)
 
         assertEquals(
             listOf("Start", "Move", "Move", "End"),
@@ -625,6 +769,7 @@ class ShapeEditorTest {
             )
             dispatchPointer(composeRule.activity, MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.ACTION_UP, x + 30f, y + 3f, downTime, pressure = 0f)
         }
+        advance(100)
         composeRule.waitForIdle()
     }
 
@@ -670,6 +815,7 @@ class ShapeEditorTest {
         send(MotionEvent.ACTION_MOVE, 20f)
         send(MotionEvent.ACTION_MOVE, 40f)
         send(MotionEvent.ACTION_UP, 40f, pressure = 0f)
+        advance(100)
         host.show(buildEditorState(selectedShape = null, isCapturingStroke = false))
 
         assertEquals(listOf("Start", "Move", "Move", "End"), actions.map { it::class.simpleName!!.removeSuffix("ShapeGesture") })
