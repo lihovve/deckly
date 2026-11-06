@@ -2,6 +2,7 @@ package app.deckly
 
 import android.content.ActivityNotFoundException
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
@@ -10,6 +11,7 @@ import androidx.activity.viewModels
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import app.deckly.data.timing.TouchTrace
 import app.deckly.navigation.AppViewModel
 import app.deckly.ui.AppRoot
 
@@ -32,6 +34,12 @@ open class MainActivity : ComponentActivity() {
             AppRoot(app = app, container = container, onOpenSettings = ::openFileAccessSettings, onClose = ::finishAndRemoveTask)
         }
         hideSystemBars()
+    }
+
+    // Трасса касаний для проверки на планшете (только отлаживаемая сборка): дошло ли касание до приложения.
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        TouchTrace.logTouch(event)
+        return super.dispatchTouchEvent(event)
     }
 
     // Панели могут вернуться после шторки или чужого окна: прячем их снова, когда окно получает фокус.

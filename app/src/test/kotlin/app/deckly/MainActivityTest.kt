@@ -1,12 +1,21 @@
 package app.deckly
 
+import android.app.Activity
 import android.app.Application
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
+import android.view.InputDevice
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
@@ -18,6 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import app.deckly.data.db.DatabaseDamagedException
+import app.deckly.data.timing.DecklyTiming
 import app.deckly.fakes.FakeCardContentRepository
 import app.deckly.fakes.FakeDeckCatalog
 import app.deckly.fakes.buildFakeData
@@ -38,6 +48,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 
 /** Activity целиком: приложение из [TestDecklyApplication], настоящие ViewModel и дизайн, хранение в памяти. */
 @RunWith(RobolectricTestRunner::class)
@@ -163,6 +174,55 @@ class MainActivityTest {
     }
 
     @Test
+    fun touchesAreTracedInDebuggableBuildAndStillReachTheWindow() {
+        TestWorld.hasFileAccess = false
+        val controller = Robolectric.buildActivity(RecordingMainActivity::class.java).setup()
+        val activity = controller.get()
+        val window = addTouchCountingView(activity)
+        val originalFlags = application.applicationInfo.flags
+        try {
+            application.applicationInfo.flags = originalFlags or ApplicationInfo.FLAG_DEBUGGABLE
+            DecklyTiming.enableIfDebuggable(application)
+            ShadowLog.clear()
+
+            tap(activity, MotionEvent.TOOL_TYPE_STYLUS, 12f, 21f)
+
+            val lines = ShadowLog.getLogsForTag(DecklyTiming.TAG).map { it.msg }.filter { it.startsWith("touch ") }
+            assertEquals(2, lines.size)
+            assertTrue(lines[0], Regex("touch tool=STYLUS action=DOWN x=12 y=21 delay=\\d+ms").matches(lines[0]))
+            assertTrue(lines[1], Regex("touch tool=STYLUS action=UP x=12 y=21 delay=\\d+ms").matches(lines[1]))
+            assertEquals("касание и подъём дошли до окна: прежний разбор не нарушен", 2, window.touchEvents)
+        } finally {
+            application.applicationInfo.flags = originalFlags
+            DecklyTiming.enableIfDebuggable(application)
+            controller.pause().stop().destroy()
+        }
+    }
+
+    @Test
+    fun touchesAreNotTracedInReleaseBuild() {
+        TestWorld.hasFileAccess = false
+        val controller = Robolectric.buildActivity(RecordingMainActivity::class.java).setup()
+        val activity = controller.get()
+        val window = addTouchCountingView(activity)
+        val originalFlags = application.applicationInfo.flags
+        try {
+            application.applicationInfo.flags = originalFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
+            DecklyTiming.enableIfDebuggable(application)
+            ShadowLog.clear()
+
+            tap(activity, MotionEvent.TOOL_TYPE_FINGER, 12f, 21f)
+
+            assertTrue(ShadowLog.getLogsForTag(DecklyTiming.TAG).none { it.msg.startsWith("touch ") })
+            assertEquals("касание и подъём дошли до окна и без трассы", 2, window.touchEvents)
+        } finally {
+            application.applicationInfo.flags = originalFlags
+            DecklyTiming.enableIfDebuggable(application)
+            controller.pause().stop().destroy()
+        }
+    }
+
+    @Test
     fun closeRemovesTheTaskNotJustTheActivity() {
         TestWorld.openFailure = DatabaseDamagedException(File("deckly.db"), "повреждена")
         val controller = Robolectric.buildActivity(RecordingMainActivity::class.java).setup()
@@ -221,6 +281,39 @@ class MainActivityTest {
     }
 
     // --- вспомогательное -----------------------------------------------------------------------
+
+    // Касание и подъём одного указателя настоящими MotionEvent, доставленные окну активности.
+    private fun tap(activity: Activity, tool: Int, x: Float, y: Float) {
+        val properties = arrayOf(MotionEvent.PointerProperties().apply { id = 0; toolType = tool })
+        val coords = arrayOf(MotionEvent.PointerCoords().apply { this.x = x; this.y = y; pressure = 1f })
+        val downTime = SystemClock.uptimeMillis()
+        for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
+            val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, 1, properties, coords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0)
+            try {
+                activity.dispatchTouchEvent(event)
+            } finally {
+                event.recycle()
+            }
+        }
+    }
+
+    // Вид поверх всего окна: считает, сколько событий до него дошло.
+    private fun addTouchCountingView(activity: Activity): TouchCountingView {
+        val counter = TouchCountingView(activity)
+        activity.addContentView(counter, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        // Без прохода по очереди вид не измерен, и касания его не находят.
+        shadowOf(Looper.getMainLooper()).idle()
+        return counter
+    }
+
+    private class TouchCountingView(context: Context) : View(context) {
+        var touchEvents = 0
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            touchEvents++
+            return true
+        }
+    }
 
     private fun launch() {
         scenario = ActivityScenario.launch(MainActivity::class.java)
