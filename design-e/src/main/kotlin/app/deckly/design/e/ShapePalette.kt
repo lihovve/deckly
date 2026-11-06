@@ -174,7 +174,6 @@ private fun WidthPreview(outlineWidth: Int) {
  */
 @Composable
 internal fun OutlineWidthSlider(value: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
-    val currentValue by rememberUpdatedState(value)
     val currentOnChange by rememberUpdatedState(onChange)
     Box(
         modifier
