@@ -6,6 +6,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.IntState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -14,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -26,6 +28,9 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -762,6 +767,18 @@ class AppRootTest {
     }
 
     @Test
+    fun systemFontScaleDoesNotChangeTheTextSize() {
+        val probe = ProbeDesign()
+        // Системный масштаб шрифта на планшете владельца 0,85: без закрепления весь текст был бы на 15 % мельче макета.
+        startApp(buildData(), hasFileAccess = false, design = probe, systemDensity = Density(density = 1.5f, fontScale = 0.85f))
+
+        val density = checkNotNull(probe.density)
+        assertEquals(1f, density.fontScale, 0f)
+        assertEquals(1.5f, density.density, 0f)
+        assertEquals(with(density) { 18.dp.toPx() }, with(density) { 18.sp.toPx() }, 0.001f)
+    }
+
+    @Test
     fun keyboardLiftsTheWholeScreen() {
         startApp(buildData())
         val footerBottom = composeRule.onNodeWithText("New deck").getUnclippedBoundsInRoot().bottom.value
@@ -783,6 +800,7 @@ class AppRootTest {
         design: Design = DesignE,
         refreshScreen: (() -> Unit)? = null,
         parentTick: IntState? = null,
+        systemDensity: Density? = null,
     ): AppViewModel {
         val container = AppContainer(
             application,
@@ -798,15 +816,18 @@ class AppRootTest {
         composeRule.setContent {
             // Чтение состояния перекомпонует родителя корня, и ссылки на методы activity вычисляются заново, как в MainActivity.
             parentTick?.intValue
-            AppRoot(
-                app = app,
-                container = container,
-                onOpenSettings = ::openSettings,
-                onClose = ::closeApp,
-                design = design,
-                sheets = sheetsInUse,
-                refreshScreen = { fullRefreshes++; refreshScreen?.invoke() },
-            )
+            val systemSettings = systemDensity?.let { LocalDensity provides it }
+            CompositionLocalProvider(*listOfNotNull(systemSettings).toTypedArray()) {
+                AppRoot(
+                    app = app,
+                    container = container,
+                    onOpenSettings = ::openSettings,
+                    onClose = ::closeApp,
+                    design = design,
+                    sheets = sheetsInUse,
+                    refreshScreen = { fullRefreshes++; refreshScreen?.invoke() },
+                )
+            }
         }
         composeRule.waitForIdle()
         return app
@@ -924,6 +945,7 @@ class AppRootTest {
         var loadingShown = false
         var indication: Any? = null
         var overscroll: Any? = null
+        var density: Density? = null
         var storeOwnerStore: Any? = null
         val listMarkers = mutableListOf<Any>()
         val editorStates = mutableListOf<EditorScreenState>()
@@ -937,6 +959,7 @@ class AppRootTest {
         override fun StartupScreen(state: StartupState, onAction: (StartupAction) -> Unit) {
             indication = LocalIndication.current
             overscroll = LocalOverscrollFactory.current
+            density = LocalDensity.current
             storeOwnerStore = LocalViewModelStoreOwner.current?.viewModelStore
         }
 

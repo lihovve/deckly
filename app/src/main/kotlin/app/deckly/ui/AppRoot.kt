@@ -22,6 +22,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.node.DelegatableNode
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -84,10 +86,20 @@ fun AppRoot(
     }
 }
 
-/** Без ripple, подсветки и свечения на краю списка: e-ink их не показывает, а анимации запрещены ТЗ. */
+/**
+ * Без ripple, подсветки и свечения на краю списка: e-ink их не показывает, а анимации запрещены ТЗ. Масштаб шрифта
+ * системы не действует: размеры текста заданы макетом в sp и должны совпадать с ним при любой системной настройке
+ * (на планшете владельца она стояла на 0,85, и весь текст был на 15 % мельче макета).
+ */
 @Composable
 internal fun AppTheme(content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalIndication provides NoIndication, LocalOverscrollFactory provides null, content = content)
+    val system = LocalDensity.current
+    CompositionLocalProvider(
+        LocalIndication provides NoIndication,
+        LocalOverscrollFactory provides null,
+        LocalDensity provides Density(system.density, fontScale = 1f),
+        content = content,
+    )
 }
 
 internal object NoIndication : IndicationNodeFactory {
