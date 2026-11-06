@@ -11,7 +11,6 @@ import androidx.activity.viewModels
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import app.deckly.data.timing.TouchTrace
 import app.deckly.navigation.AppViewModel
 import app.deckly.ui.AppRoot
 

@@ -1,7 +1,8 @@
-package app.deckly.data.timing
+package app.deckly
 
 import android.os.SystemClock
 import android.view.MotionEvent
+import app.deckly.data.timing.DecklyTiming
 import kotlin.math.roundToInt
 
 /**

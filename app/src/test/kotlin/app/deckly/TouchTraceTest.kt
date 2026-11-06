@@ -1,4 +1,4 @@
-package app.deckly.data.timing
+package app.deckly
 
 import android.view.MotionEvent
 import org.junit.Assert.assertEquals
