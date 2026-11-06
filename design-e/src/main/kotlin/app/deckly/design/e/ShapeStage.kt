@@ -101,8 +101,11 @@ private fun buildMove(point: PenPoint, scale: Float) =
 
 // Все отсчёты пера из одного события по порядку: накопленные за кадр (`historical`) и текущий. Compose нажим исторических
 // отсчётов не несёт, он лежит в истории исходного `MotionEvent`; если её нет или она другой длины, нажим берётся у текущего.
+// Указатель в `MotionEvent` ищется по инструменту, а не по `change.id`: `PointerId` у Compose не равен номеру в
+// `MotionEvent` (Compose считает касания с создания окна, и совпадает с нулём только первое), так что со второго жеста поиск
+// по `change.id` ничего не находил. Слой работает только с пером, а ладонь может стоять другим указателем.
 private fun collectPenPoints(change: PointerInputChange, event: MotionEvent?): List<PenPoint> {
-    val index = event?.findPointerIndex(change.id.value.toInt()) ?: -1
+    val index = event?.let { source -> (0 until source.pointerCount).firstOrNull { source.getToolType(it) == MotionEvent.TOOL_TYPE_STYLUS } } ?: -1
     val history = event?.takeIf { index >= 0 && it.historySize == change.historical.size }
     val past = change.historical.mapIndexed { step, sample ->
         PenPoint(sample.position, history?.getHistoricalPressure(index, step) ?: change.pressure)

@@ -485,8 +485,15 @@ class EditorViewModel(
     private fun buildState(): EditorScreenState? =
         session?.let { buildEditorScreenState(it, thickness, dialog, held, isPaletteOpen, outlineWidth, isCapturingStroke = capture != null) }
 
+    // Видимая сторона с фигурой в руках и линией, которая собирается из касания мимо (кусками из двух точек).
+    private fun buildShownSide(): CardSide {
+        val visible = session?.listVisibleContent(held) ?: return CardSide()
+        val line = capture ?: return visible
+        return visible.copy(strokes = visible.strokes + line.listPieces())
+    }
+
     private fun buildCanvas() = CanvasState(
-        side = session?.listVisibleContent(held)?.let { visible -> capture?.let { visible.copy(strokes = visible.strokes + it.listPieces()) } ?: visible } ?: CardSide(),
+        side = buildShownSide(),
         penWidthPx = thickness.toPenWidthPx(),
         isPenEnabled = session != null && dialog == null && !isLeaving && !isPaletteOpen && held == null && capture == null,
         uiRevision = uiRevision,

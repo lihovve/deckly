@@ -592,8 +592,31 @@ class ShapeEditorTest {
         // Система отдаёт отсчёты пера пачкой за кадр (`historical`); линии нужны все, иначе быстрая выйдет ломаной хордами.
         host.show(buildEditorState(selectedShape = rectangle))
         val (x, y) = findCornerCenter("Resize: bottom right corner")
-        val downTime = 1_000L
 
+        dispatchGestureWithBatch(x, y)
+
+        assertBatchGoesToTheModel(x, y)
+    }
+
+    @Test
+    fun pressureOfTheBatchIsFoundForEveryGestureNotOnlyForTheFirstOfTheWindow() {
+        // Номер указателя у Compose (`PointerId`) не равен номеру в `MotionEvent`: Compose считает касания с создания окна,
+        // и совпадает с нулём в `MotionEvent` только первое. Со второго жеста поиск по `change.id` не находил указатель, и
+        // все отсчёты пачки молча получали нажим текущего.
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+        dispatchGestureWithBatch(x, y)
+        dispatchGestureWithBatch(x, y)
+        actions.clear()
+
+        dispatchGestureWithBatch(x, y)
+
+        assertBatchGoesToTheModel(x, y)
+    }
+
+    // Касание с нажимом 0,5, одно движение с двумя накопленными отсчётами и текущим (0,6 / 0,7 / 0,8), подъём.
+    private fun dispatchGestureWithBatch(x: Float, y: Float) {
+        val downTime = 1_000L
         composeRule.runOnUiThread {
             dispatchPointer(composeRule.activity, MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.ACTION_DOWN, x, y, downTime, pressure = 0.5f)
             dispatchPointer(
@@ -603,7 +626,9 @@ class ShapeEditorTest {
             dispatchPointer(composeRule.activity, MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.ACTION_UP, x + 30f, y + 3f, downTime, pressure = 0f)
         }
         composeRule.waitForIdle()
+    }
 
+    private fun assertBatchGoesToTheModel(x: Float, y: Float) {
         val moves = actions.filterIsInstance<EditorAction.MoveShapeGesture>()
         val start = actions.first() as EditorAction.StartShapeGesture
         assertEquals(listOf(0.6f, 0.7f, 0.8f), moves.map { it.pressure })
