@@ -1,11 +1,22 @@
 package app.deckly.ink
 
+import app.deckly.domain.editor.findShapeAt
+import app.deckly.domain.editor.listPolylines
+import app.deckly.domain.model.CardSide
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
 import kotlin.math.ceil
+import kotlin.math.hypot
 
 /** Радиус ластика в пикселях листа; наружу уходит в единицах карточки ([computeEraserRadius]). */
 internal const val ERASER_RADIUS_PX = 16f
+
+/** Касание пером, все точки которого в пределах 12 px листа от первой, может быть выбором фигуры, а не штрихом. */
+internal const val TAP_RADIUS_PX = 12f
+
+/** Запас вокруг следа пера, который рисует прошивка: расчёт её толщины не проверен на устройстве. */
+private const val TRACE_MARGIN_PX = 4
 
 /** Точка пера в пикселях листа; нажим от устройства, 0..1 (за диапазон выходит редко, см. [buildStroke]). */
 internal data class RawPoint(val x: Float, val y: Float, val pressure: Float)
@@ -76,15 +87,55 @@ internal fun computeStrokeBounds(stroke: Stroke, scale: Float): PixelBounds? {
 }
 
 /**
- * Где на листе списки различаются: объединение прямоугольников штрихов, которые есть только в одном из них.
- * Порядок штрихов и повторы значения не имеют: одинаковые штрихи закрашивают те же пиксели.
- * Одинаковые списки дают `null`.
+ * Прямоугольник, в который попадает контур фигуры: ломаные на листе (с поворотом) плюс половина толщины контура и запас
+ * на сглаживание. У фигуры всегда есть контур, поэтому прямоугольник есть всегда.
  */
-internal fun computeChangedBounds(before: List<Stroke>, after: List<Stroke>, scale: Float): PixelBounds? {
-    val beforeSet = before.toHashSet()
-    val afterSet = after.toHashSet()
-    val changed = before.filter { it !in afterSet } + after.filter { it !in beforeSet }
-    return changed
-        .mapNotNull { computeStrokeBounds(it, scale) }
+internal fun computeShapeBounds(shape: Shape, scale: Float): PixelBounds {
+    val margin = ceil(shape.width * scale / 2f + 2.5f).toInt()
+    val points = shape.listPolylines().flatten()
+    return PixelBounds(
+        points.minOf { CardGeometry.toPixels(it.x, scale) }.toInt() - margin,
+        points.minOf { CardGeometry.toPixels(it.y, scale) }.toInt() - margin,
+        ceil(points.maxOf { CardGeometry.toPixels(it.x, scale) }).toInt() + margin,
+        ceil(points.maxOf { CardGeometry.toPixels(it.y, scale) }).toInt() + margin,
+    )
+}
+
+/**
+ * Где на листе стороны различаются: объединение прямоугольников штрихов и фигур, которые есть только в одной из них.
+ * Порядок и повторы значения не имеют: одинаковые штрихи и фигуры закрашивают те же пиксели. Одинаковые стороны дают
+ * `null`.
+ */
+internal fun computeChangedBounds(before: CardSide, after: CardSide, scale: Float): PixelBounds? {
+    val strokeSet = (before.strokes + after.strokes).filter { (it in before.strokes) != (it in after.strokes) }
+    val shapeSet = (before.shapes + after.shapes).filter { (it in before.shapes) != (it in after.shapes) }
+    return (strokeSet.mapNotNull { computeStrokeBounds(it, scale) } + shapeSet.map { computeShapeBounds(it, scale) })
         .reduceOrNull { first, second -> first.union(second) }
+}
+
+/**
+ * Прямоугольник, в котором прошивка рисует след касания пера: точки плюс половина самой широкой точки пера [penWidthPx]
+ * и запас. Без точек следа нет.
+ */
+internal fun computeTraceBounds(points: List<RawPoint>, penWidthPx: Float): PixelBounds? {
+    if (points.isEmpty()) return null
+    val margin = ceil(penWidthPx / 2f + 2.5f).toInt() + TRACE_MARGIN_PX
+    return PixelBounds(
+        points.minOf { it.x }.toInt() - margin,
+        points.minOf { it.y }.toInt() - margin,
+        ceil(points.maxOf { it.x }).toInt() + margin,
+        ceil(points.maxOf { it.y }).toInt() + margin,
+    )
+}
+
+/**
+ * Какую фигуру выбрало касание пером или `null`, если это штрих. Касание — все точки в пределах [TAP_RADIUS_PX] листа от
+ * первой; выбирает фигуру только касание у её контура (лента `width / 2 + 8` единиц макета), внутренность пустой фигуры
+ * нет, поэтому точка внутри остаётся точкой штриха, а длинный штрих через контур остаётся штрихом. [points] в пикселях
+ * листа, [scale] — пикселей в единице карточки.
+ */
+internal fun findTappedShape(points: List<RawPoint>, shapes: List<Shape>, scale: Float): Int? {
+    val first = points.firstOrNull() ?: return null
+    if (shapes.isEmpty() || points.any { hypot(it.x - first.x, it.y - first.y) > TAP_RADIUS_PX }) return null
+    return findShapeAt(shapes, CardGeometry.toCardUnits(first.x, scale), CardGeometry.toCardUnits(first.y, scale))
 }

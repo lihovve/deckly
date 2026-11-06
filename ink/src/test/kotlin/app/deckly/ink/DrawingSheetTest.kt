@@ -16,6 +16,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
+import app.deckly.domain.model.CardSide
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
 import org.junit.Assert.assertEquals
@@ -37,11 +39,12 @@ class DrawingSheetTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    private var strokes by mutableStateOf(emptyList<Stroke>())
+    private var side by mutableStateOf(CardSide())
     private var penWidthPx by mutableStateOf(6f)
     private var isPenEnabled by mutableStateOf(true)
     private var onStroke by mutableStateOf<(Stroke) -> Unit>({})
     private var onErase by mutableStateOf<(List<StrokePoint>, Float) -> Unit>({ _, _ -> })
+    private var onShapeTap by mutableStateOf<(Int) -> Unit>({})
 
     @Test
     fun withoutOnyxSdkSheetIsCanvasView() {
@@ -54,7 +57,7 @@ class DrawingSheetTest {
     fun strokesFromComposeAreDrawn() {
         showSheet()
 
-        strokes = listOf(Stroke(12f, listOf(StrokePoint(500f, 500f, 1f))))
+        side = CardSide(listOf(Stroke(12f, listOf(StrokePoint(500f, 500f, 1f)))))
         composeRule.waitForIdle()
 
         // Лист 500 px: масштаб 0,5, точка в (500, 500) единиц карточки стоит в (250, 250) px.
@@ -119,15 +122,46 @@ class DrawingSheetTest {
         assertTrue(reported.isEmpty())
     }
 
+    @Test
+    fun shapeTapOnTheSheetReachesTheHostWithItsIndex() {
+        val taps = mutableListOf<Int>()
+        val reported = mutableListOf<Stroke>()
+        onShapeTap = { taps += it }
+        onStroke = { reported += it }
+        showSheet()
+
+        side = CardSide(shapes = listOf(Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)))
+        composeRule.waitForIdle()
+        // Лист 500 px, масштаб 0,5: левый край контура x = 128 единиц лежит в 64 px, середина по высоте — 175 px.
+        performStylusGesture(listOf(Triple(66f, 175f, 0.5f)))
+
+        assertEquals(listOf(0), taps)
+        assertTrue(reported.isEmpty())
+        assertTrue(drawSheet().isInk(64, 175))
+    }
+
+    @Test
+    fun shapesFromComposeAreDrawn() {
+        showSheet()
+
+        side = CardSide(shapes = listOf(Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)))
+        composeRule.waitForIdle()
+
+        val bitmap = drawSheet()
+        assertTrue(bitmap.isInk(64, 175))
+        assertFalse(bitmap.isInk(100, 175))
+    }
+
     private fun showSheet() {
         composeRule.setContent {
             DrawingSheet(
-                strokes = strokes,
+                side = side,
                 penWidthPx = penWidthPx,
                 isPenEnabled = isPenEnabled,
                 uiRevision = 0,
                 onStroke = onStroke,
                 onErase = onErase,
+                onShapeTap = onShapeTap,
                 modifier = Modifier.size(SHEET_DP.dp),
             )
         }

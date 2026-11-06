@@ -2,6 +2,7 @@ package app.deckly.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import app.deckly.domain.model.CardSide
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
 import app.deckly.editor.CanvasState
@@ -31,7 +32,7 @@ interface SheetSlots {
 object InkSheetSlots : SheetSlots {
     @Composable
     override fun DeckSheet(strokes: List<Stroke>, modifier: Modifier) {
-        CardSideImage(strokes, modifier, description = null)
+        CardSideImage(CardSide(strokes), modifier, description = null)
     }
 
     @Composable
@@ -42,12 +43,14 @@ object InkSheetSlots : SheetSlots {
         modifier: Modifier,
     ) {
         DrawingSheet(
-            strokes = canvas.strokes,
+            side = CardSide(canvas.strokes),
             penWidthPx = canvas.penWidthPx,
             isPenEnabled = canvas.isPenEnabled,
             uiRevision = canvas.uiRevision,
             onStroke = onStroke,
             onErase = onErase,
+            // Выбор фигуры придёт в задаче 6: пока в приложении фигур нет, касание у контура случиться не может.
+            onShapeTap = {},
             modifier = modifier,
         )
     }

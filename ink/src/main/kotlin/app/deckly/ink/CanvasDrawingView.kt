@@ -12,7 +12,7 @@ import kotlin.math.ceil
 
 /**
  * Запасной холст: обычный `View` с событиями `MotionEvent`. Включается, если Onyx SDK не поднялся; линия
- * здесь заметно отстаёт от пера. Рисует штрихи тем же кодом ([drawStrokes]), что и остальное приложение.
+ * здесь заметно отстаёт от пера. Рисует штрихи и фигуры тем же кодом ([drawCardSide]), что и остальное приложение.
  *
  * Рисует стилус без кнопки. Ластик пера и стилус с нажатой кнопкой стирают. Палец не рисует и не стирает, но
  * касание поглощается: ладонь не должна дойти до того, что под листом.
@@ -22,7 +22,7 @@ import kotlin.math.ceil
 internal class CanvasDrawingView(context: Context) : View(context), DrawingSurface {
     private enum class Gesture { NONE, DRAW, ERASE, IGNORE }
 
-    private val book = ShownStrokes()
+    private val book = ShownSide()
     private val gesturePoints = ArrayList<RawPoint>()
     private var gesture = Gesture.NONE
 
@@ -30,6 +30,7 @@ internal class CanvasDrawingView(context: Context) : View(context), DrawingSurfa
     private var isPenEnabled = true
     private var onStroke: (Stroke) -> Unit = {}
     private var onErase: (List<StrokePoint>, Float) -> Unit = { _, _ -> }
+    private var onShapeTap: (Int) -> Unit = {}
 
     private val backgroundPaint = Paint().apply {
         color = Color.WHITE
@@ -40,11 +41,12 @@ internal class CanvasDrawingView(context: Context) : View(context), DrawingSurfa
         penWidthPx = state.penWidthPx
         onStroke = state.onStroke
         onErase = state.onErase
+        onShapeTap = state.onShapeTap
         // Диалог открылся посреди жеста: штрих недорисован, отдавать его хозяину не нужно.
         if (isPenEnabled && !state.isPenEnabled) cancelGesture()
         isPenEnabled = state.isPenEnabled
 
-        if (book.updateFromHost(state.strokes) != StrokeChange.None) invalidate()
+        if (book.updateFromHost(state.side) != SideChange.None) invalidate()
     }
 
     // Фон — прямоугольник листа, а не drawColor: тот заливает всю область отсечения, а Compose не отсекает
@@ -52,7 +54,7 @@ internal class CanvasDrawingView(context: Context) : View(context), DrawingSurfa
     override fun onDraw(canvas: Canvas) {
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
         val scale = CardGeometry.computeScale(width.toFloat())
-        drawStrokes(canvas, book.shown, scale)
+        drawCardSide(canvas, book.shown, scale)
         if (gesture == Gesture.DRAW) {
             buildStroke(gesturePoints, penWidthPx, scale)?.let { drawStrokes(canvas, listOf(it), scale) }
         }
@@ -94,16 +96,27 @@ internal class CanvasDrawingView(context: Context) : View(context), DrawingSurfa
     private fun finishGesture() {
         val scale = CardGeometry.computeScale(width.toFloat())
         when (gesture) {
-            Gesture.DRAW -> buildStroke(gesturePoints, penWidthPx, scale)?.let { stroke ->
-                // Штрих виден сразу, не дожидаясь хоста: тот присылает список после записи.
-                book.appendLocal(stroke)
-                onStroke(stroke)
-            }
+            Gesture.DRAW -> finishDrawing(scale)
             Gesture.ERASE -> onErase(buildErasePath(gesturePoints, scale), computeEraserRadius(scale))
             Gesture.NONE, Gesture.IGNORE -> Unit
         }
         gesture = Gesture.NONE
         gesturePoints.clear()
+    }
+
+    // Короткое касание у контура фигуры выбирает её, а не пишет: следа не остаётся ни в списке, ни на листе.
+    private fun finishDrawing(scale: Float) {
+        val tapped = findTappedShape(gesturePoints, book.shapes, scale)
+        if (tapped != null) {
+            invalidate()
+            onShapeTap(tapped)
+            return
+        }
+        buildStroke(gesturePoints, penWidthPx, scale)?.let { stroke ->
+            // Штрих виден сразу, не дожидаясь хоста: тот присылает список после записи.
+            book.appendLocal(stroke)
+            onStroke(stroke)
+        }
     }
 
     private fun cancelGesture() {

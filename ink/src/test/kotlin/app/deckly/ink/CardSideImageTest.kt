@@ -17,6 +17,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
+import app.deckly.domain.model.CardSide
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
 import org.junit.Assert.assertEquals
@@ -39,7 +41,7 @@ class CardSideImageTest {
     @Test
     fun imageHasDescriptionForAccessibility() {
         composeRule.setContent {
-            CardSideImage(emptyList(), Modifier.size(SHEET_DP.dp), "Drawing unavailable")
+            CardSideImage(CardSide(), Modifier.size(SHEET_DP.dp), "Drawing unavailable")
         }
 
         composeRule.onNodeWithContentDescription("Drawing unavailable")
@@ -51,7 +53,7 @@ class CardSideImageTest {
     fun imageWithoutDescriptionKeepsTheOneOfItsCaller() {
         // Дизайн ставит описание листа сам через модификатор слота и передаёт null, чтобы описание не затёрлось.
         composeRule.setContent {
-            CardSideImage(emptyList(), Modifier.size(SHEET_DP.dp).semantics { contentDescription = "Question" }, description = null)
+            CardSideImage(CardSide(), Modifier.size(SHEET_DP.dp).semantics { contentDescription = "Question" }, description = null)
         }
 
         composeRule.onNodeWithContentDescription("Question").assertExists()
@@ -63,7 +65,7 @@ class CardSideImageTest {
     @Test
     fun imageWithoutDescriptionAddsNoneOfItsOwn() {
         composeRule.setContent {
-            CardSideImage(emptyList(), Modifier.size(SHEET_DP.dp).testTag("sheet"), description = null)
+            CardSideImage(CardSide(), Modifier.size(SHEET_DP.dp).testTag("sheet"), description = null)
         }
 
         val config = composeRule.onNodeWithTag("sheet").fetchSemanticsNode().config
@@ -76,7 +78,7 @@ class CardSideImageTest {
         // (500, 500) единиц карточки — (250, 250) px, толщина пера 12 единиц = 6 px, нажим 1: диаметр 9 px.
         val stroke = Stroke(12f, listOf(StrokePoint(500f, 500f, 1f)))
         composeRule.setContent {
-            CardSideImage(listOf(stroke), Modifier.size(SHEET_DP.dp, SHEET_HEIGHT_DP.dp), "Рисунок")
+            CardSideImage(CardSide(listOf(stroke)), Modifier.size(SHEET_DP.dp, SHEET_HEIGHT_DP.dp), "Рисунок")
         }
 
         val image = composeRule.onRoot().captureToImage().asAndroidBitmap()
@@ -84,6 +86,22 @@ class CardSideImageTest {
         assertTrue(isInk(image.getPixel(250, 250)))
         assertTrue(isInk(image.getPixel(253, 250)))
         assertFalse(isInk(image.getPixel(256, 250)))
+    }
+
+    @Test
+    fun imageDrawsShapesNextToStrokesWithTheScaleOfItsSheet() {
+        // Лист 500 px: масштаб 0,5. Левый край контура прямоугольника x = 128 единиц, то есть 64 px, толщина 6 единиц = 3 px.
+        val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)
+        val stroke = Stroke(12f, listOf(StrokePoint(800f, 800f, 1f)))
+        composeRule.setContent {
+            CardSideImage(CardSide(listOf(stroke), listOf(rectangle)), Modifier.size(SHEET_DP.dp, SHEET_HEIGHT_DP.dp), "Рисунок")
+        }
+
+        val image = composeRule.onRoot().captureToImage().asAndroidBitmap()
+
+        assertTrue(isInk(image.getPixel(64, 175)))
+        assertFalse(isInk(image.getPixel(68, 175)))
+        assertTrue(isInk(image.getPixel(400, 400)))
     }
 
     private fun isInk(argb: Int): Boolean = Color.red(argb) < 128

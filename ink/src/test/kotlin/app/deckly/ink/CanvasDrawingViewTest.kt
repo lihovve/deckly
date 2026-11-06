@@ -9,6 +9,8 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
 import androidx.test.core.app.ApplicationProvider
+import app.deckly.domain.model.CardSide
+import app.deckly.domain.model.Shape
 import app.deckly.domain.model.Stroke
 import app.deckly.domain.model.StrokePoint
 import org.junit.Assert.assertEquals
@@ -29,6 +31,11 @@ class CanvasDrawingViewTest {
     private lateinit var view: CanvasDrawingView
     private val strokes = mutableListOf<Stroke>()
     private val erasures = mutableListOf<Pair<List<StrokePoint>, Float>>()
+    private val taps = mutableListOf<Int>()
+
+    // Рамка 200 × 300 единиц карточки: левый край контура x = 128 (234 px при масштабе 1,83), середина по высоте y = 350
+    // (640 px). Контур толщиной 6 единиц, лента выбора шире на 8 единиц макета с каждой стороны.
+    private val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)
 
     @Before
     fun createView() {
@@ -264,17 +271,226 @@ class CanvasDrawingViewTest {
         strokes: List<Stroke> = emptyList(),
         penWidthPx: Float = 6f,
         isPenEnabled: Boolean = true,
+        shapes: List<Shape> = emptyList(),
     ) {
         view.bind(
             DrawingState(
-                strokes = strokes,
+                side = CardSide(strokes, shapes),
                 penWidthPx = penWidthPx,
                 isPenEnabled = isPenEnabled,
                 uiRevision = 0,
                 onStroke = { this.strokes += it },
                 onErase = { path, radius -> erasures += path to radius },
+                onShapeTap = { taps += it },
             ),
         )
+    }
+
+    // --- фигуры --------------------------------------------------------------------------------
+
+    @Test
+    fun tapNearShapeOutlineSelectsItAndReportsNoStroke() {
+        bind(shapes = listOf(rectangle))
+
+        val isConsumed = performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(240f, 640f, 0.5f)))
+
+        assertTrue(isConsumed)
+        assertEquals(listOf(0), taps)
+        assertTrue(strokes.isEmpty())
+        assertTrue(erasures.isEmpty())
+    }
+
+    @Test
+    fun tapAtTheSecondShapeReportsItsIndex() {
+        val far = Shape(Shape.Kind.OVAL, 600f, 100f, 900f, 300f, 0f, 3f)
+        bind(shapes = listOf(rectangle, far))
+
+        // Левая точка овала: x = 600 + 12 % · 300 = 636 единиц, y = 200: 1164 и 366 px.
+        performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(1165f, 366f, 0.5f)))
+
+        assertEquals(listOf(1), taps)
+        assertTrue(strokes.isEmpty())
+    }
+
+    @Test
+    fun shapeTapLeavesNoTraceOnTheSheet() {
+        bind(shapes = listOf(rectangle))
+        val downTime = SystemClock.uptimeMillis()
+        // Точка в 15 px от оси контура: внутри ленты выбора, но вне самого контура толщиной 11 px.
+        dispatch(downTime, MotionEvent.ACTION_DOWN, MotionEvent.TOOL_TYPE_STYLUS, Sample(249f, 640f, 1f))
+        dispatch(downTime, MotionEvent.ACTION_MOVE, MotionEvent.TOOL_TYPE_STYLUS, Sample(253f, 641f, 1f))
+        assertTrue("след пера виден, пока касание идёт", drawView().isInk(251, 640))
+        shadowOf(view).clearWasInvalidated()
+
+        dispatch(downTime, MotionEvent.ACTION_UP, MotionEvent.TOOL_TYPE_STYLUS, Sample(253f, 641f, 1f))
+
+        assertEquals(listOf(0), taps)
+        assertFalse("следа не осталось ни в списке, ни на листе", drawView().isInk(251, 640))
+        assertTrue("лист перерисован без следа", shadowOf(view).wasInvalidated())
+        // Контур самой фигуры на месте.
+        assertTrue(drawView().isInk(234, 640))
+    }
+
+    @Test
+    fun dotInsideAnEmptyShapeIsAStroke() {
+        bind(shapes = listOf(rectangle))
+
+        performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(366f, 640f, 0.7f)))
+
+        assertTrue(taps.isEmpty())
+        assertEquals(1, strokes.single().points.size)
+    }
+
+    @Test
+    fun strokeInsideAShapeIsAStrokeAndStaysVisible() {
+        bind(shapes = listOf(rectangle))
+
+        performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(330f, 600f, 1f), Sample(420f, 600f, 1f), Sample(480f, 640f, 1f)))
+
+        assertEquals(1, strokes.size)
+        assertTrue(taps.isEmpty())
+        assertTrue(drawView().isInk(375, 600))
+    }
+
+    @Test
+    fun longStrokeAcrossTheOutlineIsAStrokeNotATap() {
+        bind(shapes = listOf(rectangle))
+
+        performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(150f, 640f, 1f), Sample(300f, 640f, 1f), Sample(450f, 640f, 1f)))
+
+        assertTrue(taps.isEmpty())
+        assertEquals(1, strokes.size)
+    }
+
+    @Test
+    fun disabledPenDoesNotSelectShapes() {
+        bind(shapes = listOf(rectangle), isPenEnabled = false)
+
+        performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(240f, 640f, 0.5f)))
+
+        assertTrue(taps.isEmpty())
+        assertTrue(strokes.isEmpty())
+    }
+
+    @Test
+    fun fingerOnTheOutlineDoesNotSelectShape() {
+        bind(shapes = listOf(rectangle))
+
+        val isConsumed = performGesture(MotionEvent.TOOL_TYPE_FINGER, listOf(Sample(240f, 640f, 0.5f)))
+
+        assertTrue(isConsumed)
+        assertTrue(taps.isEmpty())
+        assertTrue(strokes.isEmpty())
+    }
+
+    @Test
+    fun stylusButtonOnTheOutlineErasesInsteadOfSelecting() {
+        bind(shapes = listOf(rectangle))
+
+        performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(240f, 640f, 0.5f), Sample(300f, 640f, 0.5f)), buttons = MotionEvent.BUTTON_STYLUS_PRIMARY)
+
+        assertTrue(taps.isEmpty())
+        assertEquals(1, erasures.size)
+    }
+
+    @Test
+    fun penDisabledMidTapReportsNothing() {
+        bind(shapes = listOf(rectangle))
+        val downTime = SystemClock.uptimeMillis()
+        dispatch(downTime, MotionEvent.ACTION_DOWN, MotionEvent.TOOL_TYPE_STYLUS, Sample(240f, 640f, 1f))
+
+        bind(shapes = listOf(rectangle), isPenEnabled = false)
+        dispatch(downTime, MotionEvent.ACTION_UP, MotionEvent.TOOL_TYPE_STYLUS, Sample(240f, 640f, 1f))
+
+        assertTrue(taps.isEmpty())
+        assertTrue(strokes.isEmpty())
+    }
+
+    @Test
+    fun drawsShapesFromHost() {
+        bind(shapes = listOf(rectangle))
+
+        val bitmap = drawView()
+
+        assertTrue(bitmap.isInk(234, 640))
+        assertFalse(bitmap.isInk(366, 640))
+    }
+
+    @Test
+    fun changeOfHostShapesInvalidatesView() {
+        shadowOf(view).clearWasInvalidated()
+
+        bind(shapes = listOf(rectangle))
+
+        assertTrue(shadowOf(view).wasInvalidated())
+    }
+
+    @Test
+    fun repeatedHostShapesDoNotInvalidateView() {
+        bind(shapes = listOf(rectangle))
+        shadowOf(view).clearWasInvalidated()
+
+        bind(shapes = listOf(rectangle.copy()))
+
+        assertFalse(shadowOf(view).wasInvalidated())
+    }
+
+    @Test
+    fun shapeRemovedByHostDisappears() {
+        bind(shapes = listOf(rectangle))
+        assertTrue(drawView().isInk(234, 640))
+
+        bind(shapes = emptyList())
+
+        assertFalse(drawView().isInk(234, 640))
+    }
+
+    @Test
+    fun shapeMovedByHostIsDrawnAtTheNewPlaceOnly() {
+        bind(shapes = listOf(rectangle))
+
+        bind(shapes = listOf(rectangle.copy(left = 500f, right = 700f)))
+
+        val bitmap = drawView()
+        assertFalse(bitmap.isInk(234, 640))
+        // Левый край нового контура: x = 500 + 14 % · 200 = 528 единиц, 966 px.
+        assertTrue(bitmap.isInk(966, 640))
+    }
+
+    @Test
+    fun pendingStrokeSurvivesNewShapesFromHost() {
+        // Штрих нарисован листом, хост его ещё не записал; в этот момент от хоста пришли новые фигуры со старым
+        // (пустым) списком штрихов. Штрих не должен пропасть, а фигура должна появиться.
+        performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(300f, 300f, 1f), Sample(600f, 300f, 1f)))
+        val reported = strokes.single()
+        assertTrue(drawView().isInk(450, 300))
+        shadowOf(view).clearWasInvalidated()
+
+        bind(strokes = emptyList(), shapes = listOf(rectangle))
+
+        val bitmap = drawView()
+        assertTrue("штрих листа пропал вместе со сменой фигур", bitmap.isInk(450, 300))
+        assertTrue("фигура не нарисована", bitmap.isInk(234, 640))
+        assertTrue(shadowOf(view).wasInvalidated())
+
+        // Хост догнал штрих: ничего не пропадает и ничего не перерисовывается.
+        shadowOf(view).clearWasInvalidated()
+        bind(strokes = listOf(reported), shapes = listOf(rectangle))
+        assertTrue(drawView().isInk(450, 300))
+        assertTrue(drawView().isInk(234, 640))
+        assertFalse(shadowOf(view).wasInvalidated())
+    }
+
+    @Test
+    fun pendingStrokeSurvivesShapesRemovedByHost() {
+        bind(shapes = listOf(rectangle))
+        performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(600f, 900f, 1f), Sample(900f, 900f, 1f)))
+
+        bind(strokes = emptyList(), shapes = emptyList())
+
+        val bitmap = drawView()
+        assertTrue(bitmap.isInk(750, 900))
+        assertFalse(bitmap.isInk(234, 640))
     }
 
     private fun drawView(): Bitmap {
