@@ -391,6 +391,59 @@ class ShapeEditorTest {
         assertTrue(actions.none { it == EditorAction.EndShapeGesture })
     }
 
+    // Подъём приходит без движения: быстрое перо отдаёт последнее движение и сразу подъём уже далеко от него. Положение
+    // подъёма должно дойти до модели последним движением, иначе фигура остановится там, где было последнее движение.
+
+    @Test
+    fun liftPointFarFromTheLastMoveIsReportedAsTheLastMove() {
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+
+        dispatchPen(listOf(x to y, (x + 30f) to (y + 10f)), liftAt = (x + 120f) to (y + 40f))
+
+        val start = actions.first() as EditorAction.StartShapeGesture
+        val moves = actions.filterIsInstance<EditorAction.MoveShapeGesture>()
+        assertEquals(2, moves.size)
+        assertEquals(start.x + 120f / scale, moves.last().x, 0.7f)
+        assertEquals(start.y + 40f / scale, moves.last().y, 0.7f)
+        assertEquals(EditorAction.EndShapeGesture, actions.last())
+        assertEquals(actions.lastIndex - 1, actions.indexOf(moves.last()))
+    }
+
+    @Test
+    fun liftPointWithoutAnyMoveBeforeItIsReportedAsAMove() {
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+
+        dispatchPen(listOf(x to y), liftAt = (x + 80f) to y)
+
+        val start = actions.first() as EditorAction.StartShapeGesture
+        assertEquals(3, actions.size)
+        assertEquals(start.x + 80f / scale, (actions[1] as EditorAction.MoveShapeGesture).x, 0.7f)
+        assertEquals(EditorAction.EndShapeGesture, actions[2])
+    }
+
+    @Test
+    fun liftAtTheLastMovePointAddsNoExtraMove() {
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+
+        dispatchPen(listOf(x to y, (x + 30f) to (y + 10f)))
+
+        assertEquals(listOf("Start", "Move", "End"), actions.map { it::class.simpleName!!.removeSuffix("ShapeGesture") })
+    }
+
+    @Test
+    fun cancelledGestureReportsNoLiftPoint() {
+        host.show(buildEditorState(selectedShape = rectangle))
+        val (x, y) = findCornerCenter("Resize: bottom right corner")
+
+        dispatchPen(listOf(x to y, (x + 30f) to y), isCancelled = true, liftAt = (x + 150f) to y)
+
+        assertEquals(1, actions.filterIsInstance<EditorAction.MoveShapeGesture>().size)
+        assertEquals(EditorAction.CancelShapeGesture, actions.last())
+    }
+
     @Test
     fun fingerAndPalmNeverStartAGesture() {
         host.show(buildEditorState(selectedShape = rectangle))
@@ -512,8 +565,15 @@ class ShapeEditorTest {
 
     // --- вспомогательное -----------------------------------------------------------------------
 
-    private fun dispatchPen(points: List<Pair<Float, Float>>, isCancelled: Boolean = false) =
-        dispatchGesture(composeRule.activity, composeRule, MotionEvent.TOOL_TYPE_STYLUS, points, isCancelled = isCancelled)
+    private fun dispatchPen(points: List<Pair<Float, Float>>, isCancelled: Boolean = false, liftAt: Pair<Float, Float>? = null) =
+        dispatchGesture(composeRule.activity, composeRule, MotionEvent.TOOL_TYPE_STYLUS, points, isCancelled = isCancelled, liftAt = liftAt)
+
+    // Центр ручки в координатах окна: туда и ставится перо, чтобы жест начался с этой ручки.
+    private fun findCornerCenter(description: String): Pair<Float, Float> {
+        val corner = composeRule.onNodeWithContentDescription(description).findBounds()
+        val origin = findFrameOrigin()
+        return (origin.x + findCenterX(corner)) to (origin.y + findCenterY(corner))
+    }
 
     // Начало кадра в окне: активность может сдвигать содержимое, касания идут в координатах окна.
     private fun findFrameOrigin(): Offset =

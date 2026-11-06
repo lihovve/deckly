@@ -87,7 +87,11 @@ internal fun dispatchPointer(
     }
 }
 
-/** Жест из касания в первой точке, движения по остальным и подъёма (или отмены системой, [isCancelled]) в последней. */
+/**
+ * Жест из касания в первой точке, движения по остальным и подъёма (или отмены системой, [isCancelled]) в последней.
+ * [liftAt] — подъём в другой точке, чем последнее движение: быстрое перо отдаёт последнее движение и сразу подъём, уже
+ * далеко от него.
+ */
 internal fun dispatchGesture(
     activity: ComponentActivity,
     rule: ComposeContentTestRule,
@@ -95,13 +99,15 @@ internal fun dispatchGesture(
     points: List<Pair<Float, Float>>,
     buttons: Int = MotionEvent.BUTTON_PRIMARY,
     isCancelled: Boolean = false,
+    liftAt: Pair<Float, Float>? = null,
 ) {
     val downTime = 1_000L
+    val lift = liftAt ?: points.last()
     rule.runOnUiThread {
         dispatchPointer(activity, tool, MotionEvent.ACTION_DOWN, points.first().first, points.first().second, downTime, buttons)
         for ((x, y) in points.drop(1)) dispatchPointer(activity, tool, MotionEvent.ACTION_MOVE, x, y, downTime, buttons)
         val last = if (isCancelled) MotionEvent.ACTION_CANCEL else MotionEvent.ACTION_UP
-        dispatchPointer(activity, tool, last, points.last().first, points.last().second, downTime, buttons)
+        dispatchPointer(activity, tool, last, lift.first, lift.second, downTime, buttons)
     }
     rule.waitForIdle()
 }

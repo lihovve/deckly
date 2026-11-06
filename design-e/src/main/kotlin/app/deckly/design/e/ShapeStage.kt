@@ -46,7 +46,8 @@ import kotlin.math.roundToInt
  *
  * Жесты только пером (`PointerType.Stylus`) и без нажатой кнопки: палец и ладонь ничего не двигают и не ставят, перо с
  * кнопкой стирает. Касание в цели ручки даёт [EditorAction.StartShapeGesture] с этой ручкой, в любом другом месте листа
- * с `null`, остальное решает модель. Дальше движение, конец или отмена жеста. Координаты — в единицах карточки.
+ * с `null`, остальное решает модель. Дальше движение, конец или отмена жеста; перед концом положение подъёма уходит ещё
+ * одним движением, если оно не совпало с последним. Координаты — в единицах карточки.
  */
 @Composable
 internal fun ShapeStage(selected: SelectedShape, onAction: (EditorAction) -> Unit, modifier: Modifier = Modifier) {
@@ -62,10 +63,16 @@ internal fun ShapeStage(selected: SelectedShape, onAction: (EditorAction) -> Uni
                 val handle = findHandleAt(currentFrame, down.position.x, down.position.y, scale, density)
                 down.consume()
                 currentOnAction.invoke(EditorAction.StartShapeGesture(handle, down.position.x / scale, down.position.y / scale))
+                var lastPosition = down.position
                 val isFinished = drag(down.id) { change ->
-                    currentOnAction.invoke(EditorAction.MoveShapeGesture(change.position.x / scale, change.position.y / scale))
+                    lastPosition = change.position
+                    currentOnAction.invoke(buildMove(change.position, scale))
                     change.consume()
                 }
+                // Подъём приходит без движения (`drag` не зовёт на него обработчик), а быстрое перо отдаёт его далеко от
+                // последнего движения: без этого шага фигура останавливалась бы там, где было последнее движение.
+                val lift = currentEvent.changes.firstOrNull { it.id == down.id }?.position
+                if (isFinished && lift != null && lift != lastPosition) currentOnAction.invoke(buildMove(lift, scale))
                 currentOnAction.invoke(if (isFinished) EditorAction.EndShapeGesture else EditorAction.CancelShapeGesture)
             }
         },
@@ -75,6 +82,9 @@ internal fun ShapeStage(selected: SelectedShape, onAction: (EditorAction) -> Uni
 }
 
 private const val CARD_WIDTH = 1000f
+
+// Положение пера на листе в пикселях — движение жеста в единицах карточки.
+private fun buildMove(position: Offset, scale: Float) = EditorAction.MoveShapeGesture(position.x / scale, position.y / scale)
 
 // Боковая кнопка стилуса стирает: так решает и лист (`CanvasDrawingView`), поэтому с ней перо фигуру не двигает. Смотрим на
 // исходное событие: в `PointerButtons` Compose кончик пера (BUTTON_PRIMARY) и боковая кнопка (BUTTON_STYLUS_PRIMARY) оба
