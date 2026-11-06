@@ -41,12 +41,14 @@ data class DialogAction(val label: String, val isPrimary: Boolean, val icon: Ima
 /** Пункт меню: [isDanger] отделён линией сверху (удаление). */
 data class PopupItem(val label: String, val icon: ImageVector, val isDanger: Boolean, val onClick: () -> Unit)
 
-// Поглощает все касания в своей области: то, что лежит под окном, их не получает. Ребёнок обрабатывает событие раньше
-// (основной проход идёт от потомков к родителю), поэтому кнопки внутри работают.
+// Занимает свою область в пути касания: то, что лежит под окном, касания не получает, потому что Compose отдаёт касание
+// только верхнему узлу с обработчиком. События не потребляются: `clickable` кнопки внутри после основного прохода смотрит
+// ещё и финальный, и если родитель успел потребить движение, отменяет нажатие. Перо и палец всегда чуть сдвигаются между
+// касанием и подъёмом, и с потреблением кнопки окон срабатывали через раз.
 internal fun Modifier.blockTouches(): Modifier = pointerInput(Unit) {
     awaitPointerEventScope {
         while (true) {
-            awaitPointerEvent().changes.forEach { it.consume() }
+            awaitPointerEvent()
         }
     }
 }
