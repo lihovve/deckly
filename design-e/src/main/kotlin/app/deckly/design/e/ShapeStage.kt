@@ -61,12 +61,12 @@ internal fun ShapeStage(selected: SelectedShape, onAction: (EditorAction) -> Uni
                 val scale = size.width / CARD_WIDTH
                 val handle = findHandleAt(currentFrame, down.position.x, down.position.y, scale, density)
                 down.consume()
-                currentOnAction(EditorAction.StartShapeGesture(handle, down.position.x / scale, down.position.y / scale))
+                currentOnAction.invoke(EditorAction.StartShapeGesture(handle, down.position.x / scale, down.position.y / scale))
                 val isFinished = drag(down.id) { change ->
-                    currentOnAction(EditorAction.MoveShapeGesture(change.position.x / scale, change.position.y / scale))
+                    currentOnAction.invoke(EditorAction.MoveShapeGesture(change.position.x / scale, change.position.y / scale))
                     change.consume()
                 }
-                currentOnAction(if (isFinished) EditorAction.EndShapeGesture else EditorAction.CancelShapeGesture)
+                currentOnAction.invoke(if (isFinished) EditorAction.EndShapeGesture else EditorAction.CancelShapeGesture)
             }
         },
     ) {

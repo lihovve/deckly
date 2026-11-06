@@ -183,10 +183,10 @@ internal fun OutlineWidthSlider(value: Int, onChange: (Int) -> Unit, modifier: M
                 awaitEachGesture {
                     val thumb = Tokens.ShapeSliderThumb.toPx()
                     val down = awaitFirstDown(requireUnconsumed = false)
-                    currentOnChange(chooseWidthAt(down.position.x, size.width.toFloat(), thumb))
+                    currentOnChange.invoke(chooseWidthAt(down.position.x, size.width.toFloat(), thumb))
                     down.consume()
                     drag(down.id) { change ->
-                        currentOnChange(chooseWidthAt(change.position.x, size.width.toFloat(), thumb))
+                        currentOnChange.invoke(chooseWidthAt(change.position.x, size.width.toFloat(), thumb))
                         change.consume()
                     }
                 }
@@ -200,7 +200,7 @@ internal fun OutlineWidthSlider(value: Int, onChange: (Int) -> Unit, modifier: M
                     Tokens.OutlineWidthMax - Tokens.OutlineWidthMin - 1,
                 )
                 setProgress { target ->
-                    currentOnChange(target.roundToInt().coerceIn(Tokens.OutlineWidthMin, Tokens.OutlineWidthMax))
+                    currentOnChange.invoke(target.roundToInt().coerceIn(Tokens.OutlineWidthMin, Tokens.OutlineWidthMax))
                     true
                 }
             },
