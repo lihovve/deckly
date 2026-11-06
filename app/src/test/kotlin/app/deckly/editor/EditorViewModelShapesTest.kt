@@ -453,21 +453,42 @@ class EditorViewModelShapesTest {
     // --- касание мимо: линия с первой точки ----------------------------------------------------------
 
     @Test
-    fun touchAwayAppliesTheShapeAndStartsTheLineFromTheFirstPoint() {
+    fun touchAwayAppliesTheShapeAndShowsNothingWhileThePenStaysInsideTheRadius() {
         startNewCard()
         chooseShape(ShapeKind.OVAL)
 
         touchAway(pressure = 0.6f)
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 3f, emptySpot.second + 2f, 0.7f))
+        runUntilIdle()
 
         assertNull(shown.selectedShape)
         assertTrue(shown.isCapturingStroke)
         val side = viewModel.canvas.value.side
         assertEquals(listOf(Shape.Kind.OVAL), side.shapes.map { it.kind })
-        assertEquals(listOf(StrokePoint(emptySpot.first, emptySpot.second, 0.6f)), side.strokes.single().points)
+        assertTrue("пока перо не вышло за радиус, на листе ничего", side.strokes.isEmpty())
         assertFalse("перо выключено, пока линия собирается", viewModel.canvas.value.isPenEnabled)
         val written = drafts.storedCalls.single().draft.front
         assertEquals(listOf(Shape.Kind.OVAL), written.shapes.map { it.kind })
         assertTrue("линия на диск ещё не идёт", written.strokes.isEmpty())
+    }
+
+    @Test
+    fun leavingTheRadiusShowsTheWholeLineFromTheFirstPoint() {
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+        touchAway(pressure = 0.6f)
+        val first = StrokePoint(emptySpot.first, emptySpot.second, 0.6f)
+        val inside = StrokePoint(emptySpot.first + 2f, emptySpot.second, 0.7f)
+        val outside = StrokePoint(emptySpot.first + 10f, emptySpot.second, 0.8f)
+
+        viewModel.onAction(EditorAction.MoveShapeGesture(inside.x, inside.y, inside.pressure))
+        runUntilIdle()
+        assertTrue(viewModel.canvas.value.side.strokes.isEmpty())
+        viewModel.onAction(EditorAction.MoveShapeGesture(outside.x, outside.y, outside.pressure))
+        runUntilIdle()
+
+        val pieces = viewModel.canvas.value.side.strokes
+        assertEquals("линия с первой точки, точки внутри радиуса тоже", listOf(listOf(first, inside), listOf(inside, outside)), pieces.map { it.points })
     }
 
     @Test
@@ -545,9 +566,11 @@ class EditorViewModelShapesTest {
             chooseShape(ShapeKind.OVAL)
 
             touchAway(scale = 2f)
+            viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 20f, emptySpot.second))
+            runUntilIdle()
 
             // Ту же ширину в единицах карточки даёт лист обычному штриху: `buildStroke` переводит `penWidthPx` через `CardGeometry`.
-            assertEquals("$thickness", CardGeometry.toCardUnits(thickness.toPenWidthPx(), 2f), viewModel.canvas.value.side.strokes.single().width, 0.0001f)
+            assertEquals("$thickness", CardGeometry.toCardUnits(thickness.toPenWidthPx(), 2f), viewModel.canvas.value.side.strokes.first().width, 0.0001f)
         }
     }
 
@@ -572,7 +595,7 @@ class EditorViewModelShapesTest {
     }
 
     @Test
-    fun touchAwayWithoutMovementIsADotOfOnePoint() {
+    fun touchAwayWithoutMovementOnlyReleasesTheSelectionAndLeavesNoStrokeAndNoStep() {
         startNewCard()
         chooseShape(ShapeKind.OVAL)
         touchAway(pressure = 0.5f)
@@ -580,8 +603,66 @@ class EditorViewModelShapesTest {
         viewModel.onAction(EditorAction.EndShapeGesture)
         runUntilIdle()
 
-        val stroke = drafts.storedCalls.last().draft.front.strokes.single()
-        assertEquals(listOf(StrokePoint(emptySpot.first, emptySpot.second, 0.5f)), stroke.points)
+        assertTrue(viewModel.canvas.value.side.strokes.isEmpty())
+        assertEquals("записана только фигура", 1, drafts.storedCalls.size)
+        assertTrue(drafts.storedCalls.single().draft.front.strokes.isEmpty())
+        assertFalse(shown.isCapturingStroke)
+        assertTrue(viewModel.canvas.value.isPenEnabled)
+        assertNull(shown.selectedShape)
+        viewModel.onAction(EditorAction.Undo)
+        runUntilIdle()
+        assertTrue("шаг один, это применение фигуры", viewModel.canvas.value.side.shapes.isEmpty())
+    }
+
+    @Test
+    fun liftInsideTheRadiusAfterSmallMovesLeavesNoStrokeEither() {
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+        touchAway()
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 3f, emptySpot.second - 2f))
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first - 4f, emptySpot.second + 1f))
+
+        viewModel.onAction(EditorAction.EndShapeGesture)
+        runUntilIdle()
+
+        assertTrue(viewModel.canvas.value.side.strokes.isEmpty())
+        assertEquals(1, drafts.storedCalls.size)
+        assertTrue(viewModel.canvas.value.isPenEnabled)
+        assertFalse(shown.isCapturingStroke)
+    }
+
+    @Test
+    fun theRadiusIsTwelvePixelsOfTheSheetInCardUnitsAndTheEdgeStillIsInside() {
+        // 12 px листа от первой точки, как у выбора фигуры касанием: при масштабе 2 это 6 единиц карточки.
+        for ((scale, outside) in listOf(1f to 12.01f, 2f to 6.01f, 4f to 3.01f)) {
+            val radius = 12f / scale
+            for ((distance, isLine) in listOf(radius to false, outside to true)) {
+                startNewCard()
+                chooseShape(ShapeKind.OVAL)
+                touchAway(scale = scale)
+
+                viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + distance, emptySpot.second))
+                runUntilIdle()
+
+                assertEquals("масштаб $scale, расстояние $distance", isLine, viewModel.canvas.value.side.strokes.isNotEmpty())
+            }
+        }
+    }
+
+    @Test
+    fun returningInsideTheRadiusAfterLeavingKeepsTheLine() {
+        startNewCard()
+        chooseShape(ShapeKind.OVAL)
+        touchAway(pressure = 0.6f)
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 30f, emptySpot.second, 0.7f))
+        viewModel.onAction(EditorAction.MoveShapeGesture(emptySpot.first + 1f, emptySpot.second, 0.5f))
+        runUntilIdle()
+        assertEquals("линия на листе идёт и после возврата", emptySpot.first + 1f, viewModel.canvas.value.side.strokes.last().points.last().x, 0.001f)
+
+        viewModel.onAction(EditorAction.EndShapeGesture)
+        runUntilIdle()
+
+        assertEquals(listOf(0.6f, 0.7f, 0.5f), drafts.storedCalls.last().draft.front.strokes.single().points.map { it.pressure })
     }
 
     @Test

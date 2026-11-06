@@ -32,6 +32,7 @@ import app.deckly.domain.port.StoredDraft
 import app.deckly.domain.review.ReviewAction
 import app.deckly.domain.review.ReviewEngine
 import app.deckly.ink.CardGeometry
+import app.deckly.ink.TAP_RADIUS_PX
 import app.deckly.navigation.AppScreen
 import app.deckly.navigation.EditorStart
 import app.deckly.ui.contract.EditorAction
@@ -40,6 +41,7 @@ import app.deckly.ui.contract.EditorScreenState
 import app.deckly.ui.contract.ShapeKind
 import app.deckly.ui.contract.Thickness
 import java.io.IOException
+import kotlin.math.hypot
 import kotlin.random.Random
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -267,7 +269,12 @@ class EditorViewModel(
     private suspend fun finishLine() {
         val line = capture ?: return
         capture = null
-        applyChange(current.addStroke(line.toStroke()), startsDraft = true)
+        if (line.isLine) {
+            applyChange(current.addStroke(line.toStroke()), startsDraft = true)
+        } else {
+            // Перо не вышло за радиус: касание только сняло выделение, штриха и шага отмены нет.
+            publish()
+        }
     }
 
     private suspend fun handleSelectionAction(action: EditorAction, inHand: HeldShape) {
@@ -357,6 +364,7 @@ class EditorViewModel(
                 capture = CapturedLine(
                     CardGeometry.toCardUnits(thickness.toPenWidthPx(), action.scale),
                     StrokePoint(action.x, action.y, action.pressure),
+                    CardGeometry.toCardUnits(TAP_RADIUS_PX, action.scale),
                 )
                 publish()
             }
@@ -502,19 +510,29 @@ class EditorViewModel(
 
 /**
  * Линия, которая собирается из касания мимо фигуры: точки с нажимом для настоящего штриха ([toStroke]) и для показа куски
- * из двух точек ([listPieces]). Лист рисует штрих цепочкой отрезков (толщина отрезка по двум его точкам), поэтому куски
- * дают ту же картинку, что и целый штрих, а новый кусок лист только дорисовывает: растущий штрих менялся бы целиком, и
- * рисовалась бы область всего штриха. Единственная точка (касание без движения) показывается точкой.
+ * из двух точек ([listPieces]). Пока перо не вышло за [radius] от первой точки, это ещё не линия: ничего не показывается,
+ * а на подъёме штриха нет (касание только снимает выделение). Как только вышло, показываются куски от самой первой точки и
+ * линия остаётся линией, даже если перо вернулось. Лист рисует штрих цепочкой отрезков (толщина отрезка по двум его
+ * точкам), поэтому куски дают ту же картинку, что и целый штрих, а новый кусок лист только дорисовывает: растущий штрих
+ * менялся бы целиком, и рисовалась бы область всего штриха.
  */
-private class CapturedLine(private val width: Float, first: StrokePoint) {
+private class CapturedLine(private val width: Float, private val first: StrokePoint, private val radius: Float) {
     private val points = mutableListOf(first)
-    private val pieces = mutableListOf(Stroke(width, listOf(first)))
+    private val pieces = mutableListOf<Stroke>()
+
+    var isLine = false
+        private set
 
     fun add(point: StrokePoint) {
         val previous = points.last()
         points += point
-        if (points.size == 2) pieces.clear()
-        pieces += Stroke(width, listOf(previous, point))
+        when {
+            isLine -> pieces += Stroke(width, listOf(previous, point))
+            hypot(point.x - first.x, point.y - first.y) > radius -> {
+                isLine = true
+                pieces += points.zipWithNext { from, to -> Stroke(width, listOf(from, to)) }
+            }
+        }
     }
 
     fun listPieces(): List<Stroke> = pieces.toList()
