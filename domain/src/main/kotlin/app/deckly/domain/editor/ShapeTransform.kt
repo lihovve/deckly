@@ -12,8 +12,9 @@ import kotlin.math.sin
 /*
  * Перенос чистых функций `design/editor-shapes.js`: те же формулы движений. Демо считает в единицах макета на листе
  * 928 × 963; здесь рамка переводится из единиц карточки в единицы макета, считается и возвращается обратно.
- * `ShapeTransformTest` сверяет движения без упора с значениями, снятыми у самого демо. Одно отличие от демо — решение
- * владельца 18 ноября: что считается «помещается на лист» (см. [canFitShape]); упор у края проверяют свои тесты.
+ * `ShapeTransformTest` сверяет движения без упора с значениями, снятыми у самого демо. Отличия от демо — по замечаниям
+ * владельца после проверки 18 ноября (фигура должна доходить до края листа): что считается «помещается на лист» (см.
+ * [canFitShape]) и как вставляется фигура (см. [insertShape]); упор у края и вставку проверяют свои тесты.
  */
 
 /** Ручка выделенной фигуры: четыре угла рамки, два конца линии или стрелки и ручка поворота. */
@@ -36,7 +37,10 @@ private const val LIMIT_STEPS = 20
  */
 private const val TOLERANCE = 1e-3
 
-/** Рамка в единицах макета: `x`, `y` — левый верхний угол до поворота, [angle] в градусах вокруг центра. */
+/**
+ * Рамка в единицах макета: `x`, `y` — левый верхний угол до поворота, [angle] в градусах вокруг центра, [outline] — толщина
+ * контура фигуры: у края листа она выступает за точки правила «помещается» на половину.
+ */
 private data class Frame(
     val x: Double,
     val y: Double,
@@ -44,6 +48,7 @@ private data class Frame(
     val h: Double,
     val angle: Double,
     val kind: Shape.Kind,
+    val outline: Double,
 ) {
     val isLinear: Boolean get() = kind.isLinear
 }
@@ -57,6 +62,7 @@ private fun Shape.toFrame() = Frame(
     (bottom.toDouble() - top) / UNIT,
     angle.toDouble(),
     kind,
+    width / UNIT,
 )
 
 private fun Frame.toShape(template: Shape): Shape = template.copy(
@@ -79,19 +85,21 @@ private fun Frame.findPoint(offsetX: Double, offsetY: Double): Pair<Double, Doub
 /**
  * Помещается ли фигура на лист. Обычные виды: четыре угла рамки на листе, ручка поворота в правило не входит. Линия и
  * стрелки: на листе все точки контура (ось и острия, из того же кода, что и рисует фигуру), а рамка высотой 80 у них
- * невидима и не считается.
+ * невидима и не считается. Лист для этих точек уже на половину толщины контура с каждой стороны: концы и стыки контура
+ * круглые, поэтому ровно полтолщины выступает за точку, и без этого край холста срезал бы половину линии.
  */
 private fun Frame.canFit(tolerance: Double = 0.0): Boolean {
     val points = if (isLinear) listContourPoints() else listCorners()
+    val margin = outline / 2 - tolerance
     return points.all { (px, py) ->
-        px >= -tolerance && px <= SHEET_WIDTH + tolerance && py >= -tolerance && py <= SHEET_HEIGHT + tolerance
+        px >= margin && px <= SHEET_WIDTH - margin && py >= margin && py <= SHEET_HEIGHT - margin
     }
 }
 
 private fun Frame.listCorners(): List<Pair<Double, Double>> =
     listOf(-1, 1).flatMap { sx -> listOf(-1, 1).map { sy -> findPoint(sx * w / 2, sy * h / 2) } }
 
-// Точки контура линии или стрелки в единицах макета; толщина контура на их положение не влияет.
+// Точки контура линии или стрелки в единицах макета; толщина контура на их положение не влияет (её учитывает [canFit]).
 private fun Frame.listContourPoints(): List<Pair<Double, Double>> =
     toShape(Shape(kind, 0f, 0f, 1f, 1f, 0f, 1f)).listPolylines().flatten().map { it.x / UNIT to it.y / UNIT }
 
@@ -126,20 +134,32 @@ private fun limitTransform(start: Frame, candidate: Frame): Frame {
 }
 
 /**
- * Новая фигура на листе: рамка [size] × [size] единиц макета (у линии и стрелок [size] × 80) по центру, без поворота.
- * [size] держится в границах ползунка палитры, их следит вызывающий.
+ * Новая фигура на листе по центру, без поворота. У обычного вида большая сторона рамки равна [size] единиц макета, вторая
+ * идёт по пропорциям контура вида, но не меньше [MIN_FRAME]: прямоугольник при 220 получается 220 × 183,3, капля при 100 —
+ * 80 × 100. У линии и стрелок рамка [size] × 80. В демо макета рамка квадратная, а контур стоит в ней с полями значка;
+ * приложение ставит рамку по контуру (замечание владельца 18 ноября: фигура должна доходить до края листа). [size]
+ * держится в границах ползунка палитры, их следит вызывающий.
  */
 fun insertShape(kind: Shape.Kind, width: Float, size: Float): Shape {
-    val side = size.toDouble()
-    val height = if (kind.isLinear) LINE_HEIGHT else side
-    val frame = Frame((SHEET_WIDTH - side) / 2, (SHEET_HEIGHT - height) / 2, side, height, 0.0, kind)
+    val (frameWidth, frameHeight) = if (kind.isLinear) size.toDouble() to LINE_HEIGHT else sizeContourFrame(kind, size.toDouble())
+    val frame = Frame(
+        (SHEET_WIDTH - frameWidth) / 2, (SHEET_HEIGHT - frameHeight) / 2, frameWidth, frameHeight, 0.0, kind, width / UNIT,
+    )
     return frame.toShape(Shape(kind, 0f, 0f, 1f, 1f, 0f, width))
 }
 
+// Ширина и высота рамки вида по его контуру: большая сторона [size], вторая по отношению сторон контура, но не меньше 80.
+private fun sizeContourFrame(kind: Shape.Kind, size: Double): Pair<Double, Double> {
+    val bounds = kind.findGridBounds()
+    val aspect = (bounds.maxX.toDouble() - bounds.minX) / (bounds.maxY - bounds.minY)
+    return if (aspect >= 1) size to max(size / aspect, MIN_FRAME) else max(size * aspect, MIN_FRAME) to size
+}
+
 /**
- * Помещается ли фигура на лист: у обычных видов четыре угла рамки на листе 928 × 963 единиц макета (поля нет, ручка
- * поворота не считается), у линии и стрелок все точки контура. Это решение владельца 18 ноября; `canFitShape` демо
- * макета держит угол и ручку не ближе 32 к краю.
+ * Помещается ли фигура на лист: контур целиком на листе 928 × 963 единиц макета вместе со своей толщиной. Точки правила:
+ * у обычных видов четыре угла рамки (ручка поворота не считается), у линии и стрелок все точки контура; лист для них уже
+ * на половину толщины контура с каждой стороны, поля сверх этого нет. Так сделано по замечанию владельца после проверки
+ * 18 ноября (фигура должна доходить до края листа); `canFitShape` демо макета держит угол и ручку не ближе 32 к краю.
  */
 fun canFitShape(shape: Shape): Boolean = shape.toFrame().canFit(TOLERANCE)
 

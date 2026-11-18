@@ -212,11 +212,12 @@ class EditorViewModelShapesTest {
         chooseShape(ShapeKind.OVAL)
 
         val frame = checkNotNull(shown.selectedShape).frame
-        // Рамка 300 × 300 единиц макета по центру листа 928 × 963.
+        // Овал занимает в сетке 76 × 60: рамка 300 × 236,8 единиц макета (большая сторона равна размеру) по центру листа 928 × 963.
+        val halfHeight = 300f * 60f / 76f / 2f
         assertEquals(314f * unit, frame.left, 0.01f)
-        assertEquals(331.5f * unit, frame.top, 0.01f)
+        assertEquals((481.5f - halfHeight) * unit, frame.top, 0.01f)
         assertEquals(614f * unit, frame.right, 0.01f)
-        assertEquals(631.5f * unit, frame.bottom, 0.01f)
+        assertEquals((481.5f + halfHeight) * unit, frame.bottom, 0.01f)
     }
 
     @Test
@@ -237,12 +238,13 @@ class EditorViewModelShapesTest {
         startNewCard()
         viewModel.onAction(EditorAction.OpenShapePalette)
         viewModel.onAction(EditorAction.SetShapeSize(120))
-        viewModel.onAction(EditorAction.ChooseShape(ShapeKind.HEART))
+        viewModel.onAction(EditorAction.ChooseShape(ShapeKind.RECTANGLE))
         runUntilIdle()
 
         val frame = checkNotNull(shown.selectedShape).frame
+        // Прямоугольник занимает в сетке 72 × 60: при размере 120 рамка 120 × 100.
         assertEquals(120f * unit, frame.right - frame.left, 0.01f)
-        assertEquals(120f * unit, frame.bottom - frame.top, 0.01f)
+        assertEquals(100f * unit, frame.bottom - frame.top, 0.01f)
     }
 
     @Test
@@ -287,11 +289,12 @@ class EditorViewModelShapesTest {
         val selected = checkNotNull(shown.selectedShape)
         assertEquals(ShapeKind.OVAL, selected.kind)
         assertEquals(7, selected.outlineWidth)
-        // Рамка 220 × 220 единиц макета по центру листа 928 × 963.
+        // Овал занимает в сетке 76 × 60: рамка 220 × 173,7 единиц макета по центру листа 928 × 963.
+        val halfHeight = 220f * 60f / 76f / 2f
         assertEquals(354f * unit, selected.frame.left, 0.01f)
-        assertEquals(371.5f * unit, selected.frame.top, 0.01f)
+        assertEquals((481.5f - halfHeight) * unit, selected.frame.top, 0.01f)
         assertEquals(574f * unit, selected.frame.right, 0.01f)
-        assertEquals(591.5f * unit, selected.frame.bottom, 0.01f)
+        assertEquals((481.5f + halfHeight) * unit, selected.frame.bottom, 0.01f)
         assertEquals(0f, selected.frame.angle, 0f)
         assertFalse(selected.frame.isLinear)
         assertTrue("новая фигура на листе поверх", viewModel.canvas.value.side.shapes.single().kind == Shape.Kind.OVAL)

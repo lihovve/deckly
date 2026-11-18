@@ -15,6 +15,10 @@ import kotlin.random.Random
 class ShapeTransformTest {
     private val unit = CardUnits.PER_DESIGN_UNIT
 
+    // Тестовые фигуры имеют контур толщиной 3 единицы карточки; круглые концы и стыки выступают за точки контура на половину
+    // толщины, поэтому у края листа точки останавливаются на 1,5 единицы карточки от него. В единицах макета:
+    private val halfOutline = 1.5 / unit
+
     // --- перевод между единицами макета и карточки ----------------------------------------------------
 
     private fun shapeOf(kind: String, box: DemoBox): Shape =
@@ -57,6 +61,10 @@ class ShapeTransformTest {
     // Все точки контура (ось и острия) в единицах макета: тот же код, что рисует фигуру на листе.
     private fun listContour(shape: Shape): List<Pair<Double, Double>> =
         shape.listPolylines().flatten().map { it.x / unit.toDouble() to it.y / unit.toDouble() }
+
+    // Точка контура вместе с круглым стыком толщины фигур теста на листе 928 × 963.
+    private fun isInsideSheetWithOutline(x: Double, y: Double, tolerance: Double): Boolean =
+        x >= halfOutline - tolerance && x <= 928.0 - halfOutline + tolerance && y >= halfOutline - tolerance && y <= 963.0 - halfOutline + tolerance
 
     private fun corner(name: String): ShapeHandle = when (name) {
         "nw" -> ShapeHandle.TOP_LEFT
@@ -107,8 +115,8 @@ class ShapeTransformTest {
     fun numbersAreTheOnesOfTheDemoFile() {
         val script = DesignSources.shapesScript
 
-        // Рамка не меньше 80, кратчайшая ось 64, ось 0,76 рамки, концы по 0,38, 20 делений, вставка размера ползунка. Поле 32 и
-        // ручка поворота в `canFitShape` демо в приложение не вошли: решение владельца 18 ноября, см. тест ниже.
+        // Рамка не меньше 80, кратчайшая ось 64, ось 0,76 рамки, концы по 0,38, 20 делений, высота рамки линии при вставке. Поле 32,
+        // ручка поворота в `canFitShape` демо и вставка квадратом в приложение не вошли: решения 18 ноября, см. тест ниже.
         assertTrue(script.contains("left = Math.min(left + localX, right - 80)"))
         assertTrue(script.contains("right = Math.max(right + localX, left + 80)"))
         assertTrue(script.contains("top = Math.min(top + localY, bottom - 80)"))
@@ -119,17 +127,18 @@ class ShapeTransformTest {
         assertTrue(script.contains("(endpoint === 'start' ? -0.38 : 0.38) * box.w"))
         assertTrue(script.contains("(endpoint === 'start' ? 0.38 : -0.38) * box.w"))
         assertTrue(script.contains("for (let i = 0; i < 20; i++)"))
-        assertTrue(script.contains("const size = Number(sizeSlider.value);"))
-        assertTrue(script.contains("const height = isLinearShape(kind) ? 80 : size;"))
-        assertTrue(script.contains("x: (stage.clientWidth - size) / 2, y: (stage.clientHeight - height) / 2, w: size, h: height"))
         assertTrue(script.contains("y: fixed.y + dy / 2 - 40, w, h: 80"))
     }
 
     @Test
-    fun demoStillKeepsTheFieldAndTheRotateHandleThatTheAppDropped() {
-        // Решение владельца 18 ноября: приложение отпускает фигуру до самого края листа, а в демо макета поле осталось.
+    fun demoStillKeepsTheFieldTheRotateHandleAndTheSquareInsertThatTheAppDropped() {
+        // Замечания владельца после проверки 18 ноября: фигура должна доходить до края листа, и приложение отпускает её до
+        // края с учётом толщины контура, а в демо макета поле осталось; вставка идёт по пропорциям контура, а в демо квадратом.
         // Если макет догонит приложение, этот тест напомнит убрать пометку в ТЗ и в шапке `ShapeTransform.kt`.
         val script = DesignSources.shapesScript
+        assertTrue(script.contains("const size = Number(sizeSlider.value);"))
+        assertTrue(script.contains("const height = isLinearShape(kind) ? 80 : size;"))
+        assertTrue(script.contains("x: (stage.clientWidth - size) / 2, y: (stage.clientHeight - height) / 2, w: size, h: height"))
 
         assertTrue(script.contains("point.x >= 32 && point.x <= width - 32 && point.y >= 32 && point.y <= height - 32"))
         assertTrue(script.contains("-box.h / 2 - 48"))
@@ -137,37 +146,70 @@ class ShapeTransformTest {
 
     // --- вставка ----------------------------------------------------------------------------------------
 
+    // Отношение сторон контура вида: на нём стоит вторая сторона рамки вставленной фигуры.
+    private fun measureContourAspect(kind: Shape.Kind): Double {
+        val bounds = kind.findGridBounds()
+        return (bounds.maxX.toDouble() - bounds.minX) / (bounds.maxY - bounds.minY)
+    }
+
     @Test
-    fun insertedShapeIsAtTheCenterOfTheSheet() {
+    fun insertedShapeIsAtTheCenterOfTheSheetWithoutTurn() {
         for (kind in Shape.Kind.entries) {
             val shape = insertShape(kind, 3f, 220f)
 
-            val height = if (kind.isLinear) 80.0 else 220.0
-            // Лист макета 928 × 963: рамка 220 × 220 (у линий 220 × 80) по центру, без поворота.
+            // Лист макета 928 × 963: центр рамки в центре листа, поворота нет.
             val box = boxOf(shape)
-            assertBox(DemoBox((928.0 - 220.0) / 2, (963.0 - height) / 2, 220.0, height, 0.0), box, kind.key)
+            assertEquals(928.0 / 2, box.x + box.w / 2, 0.01, "${kind.key}: центр по x")
+            assertEquals(963.0 / 2, box.y + box.h / 2, 0.01, "${kind.key}: центр по y")
+            assertEquals(0.0, box.angle, 0.0, kind.key)
             assertEquals(kind, shape.kind)
             assertEquals(3f, shape.width)
-            assertEquals(CardUnits.WIDTH / 2, (shape.left + shape.right) / 2, 0.01f, "центр по x")
-            assertEquals(CardUnits.HEIGHT / 2, (shape.top + shape.bottom) / 2, 0.01f, "центр по y")
+            assertEquals(CardUnits.WIDTH / 2, (shape.left + shape.right) / 2, 0.01f, "центр по x в единицах карточки")
+            assertEquals(CardUnits.HEIGHT / 2, (shape.top + shape.bottom) / 2, 0.01f, "центр по y в единицах карточки")
             assertTrue(canFitShape(shape), kind.key)
         }
     }
 
     @Test
-    fun insertedShapeHasTheGivenSizeAtTheCenterOfTheSheet() {
-        // Ползунок размера идёт от 100 до 440 с шагом 10; рамка size × size, у линий и стрелок size × 80, по центру.
+    fun insertedShapeHasItsLargerSideEqualToTheSizeAndTheOtherByTheProportionsOfTheContour() {
+        // Ползунок размера идёт от 100 до 440 с шагом 10; у линий и стрелок рамка size × 80.
         for (size in listOf(100f, 220f, 330f, 440f)) {
             for (kind in Shape.Kind.entries) {
-                val shape = insertShape(kind, 3f, size)
+                val box = boxOf(insertShape(kind, 3f, size))
 
-                val height = if (kind.isLinear) 80.0 else size.toDouble()
-                assertBox(DemoBox((928.0 - size) / 2, (963.0 - height) / 2, size.toDouble(), height, 0.0), boxOf(shape), "${kind.key} $size")
-                assertEquals(CardUnits.WIDTH / 2, (shape.left + shape.right) / 2, 0.01f, "${kind.key} $size: центр по x")
-                assertEquals(CardUnits.HEIGHT / 2, (shape.top + shape.bottom) / 2, 0.01f, "${kind.key} $size: центр по y")
-                assertTrue(canFitShape(shape), "${kind.key} $size")
+                if (kind.isLinear) {
+                    assertBox(DemoBox((928.0 - size) / 2, (963.0 - 80.0) / 2, size.toDouble(), 80.0, 0.0), box, "${kind.key} $size")
+                } else {
+                    val aspect = measureContourAspect(kind)
+                    val other = maxOf(80.0, if (aspect >= 1) size / aspect else size * aspect)
+                    assertEquals(size.toDouble(), maxOf(box.w, box.h), 0.01, "${kind.key} $size: большая сторона")
+                    assertEquals(other, minOf(box.w, box.h), 0.01, "${kind.key} $size: вторая сторона")
+                    // У солнца контур квадратный (7…93 по обеим осям): там стороны равны с точностью до округления `Float`.
+                    if (aspect > 1.001) assertTrue(box.w > box.h, "${kind.key} $size: шире, чем выше")
+                    if (aspect < 0.999) assertTrue(box.h > box.w, "${kind.key} $size: выше, чем шире")
+                }
             }
         }
+    }
+
+    @Test
+    fun insertedRectangleAndDropHaveTheNumbersOfTheirContours() {
+        // Прямоугольник занимает 72 × 60 сетки: при 220 это 220 × 183,3. Капля 60 × 82: при 100 ширина 73,2 поднимается до 80.
+        val rectangle = boxOf(insertShape(Shape.Kind.RECTANGLE, 3f, 220f))
+        assertEquals(220.0, rectangle.w, 0.01)
+        assertEquals(220.0 / 1.2, rectangle.h, 0.01)
+        val drop = boxOf(insertShape(Shape.Kind.DROP, 3f, 100f))
+        assertEquals(80.0, drop.w, 0.01)
+        assertEquals(100.0, drop.h, 0.01)
+    }
+
+    @Test
+    fun insertedShapeContourFillsItsFrameSoItsLargerSideOnTheSheetIsTheSize() {
+        val shape = insertShape(Shape.Kind.TRIANGLE, 3f, 330f)
+
+        val points = shape.listPolylines().flatten()
+
+        assertEquals(330.0 * unit, maxOf(points.maxOf { it.x } - points.minOf { it.x }, points.maxOf { it.y } - points.minOf { it.y }).toDouble(), 0.02)
     }
 
     @Test
@@ -185,45 +227,66 @@ class ShapeTransformTest {
     // --- помещается ли фигура на лист (решение владельца 18 ноября: всё поле листа, без отступа) -----------
 
     @Test
-    fun ordinaryShapeFitsWhenItsFourCornersAreOnTheSheetAndTheRotateHandleDoesNotCount() {
-        // Угол в самом углу листа: поля нет, а ручка поворота оказалась бы на 48 выше листа.
-        assertTrue(canFitShape(shapeOf("star", DemoBox(0.0, 0.0, 100.0, 100.0, 0.0))))
-        assertTrue(canFitShape(shapeOf("star", DemoBox(828.0, 863.0, 100.0, 100.0, 0.0))))
+    fun ordinaryShapeFitsWhenItsFourCornersAreOnTheSheetWithItsOutlineAndTheRotateHandleDoesNotCount() {
+        // Угол в самом углу листа (ручка поворота оказалась бы на 48 выше листа); контур толщиной 3 просит полтолщины у края.
+        val inset = halfOutline
+        assertTrue(canFitShape(shapeOf("star", DemoBox(inset, inset, 100.0, 100.0, 0.0))))
+        assertTrue(canFitShape(shapeOf("star", DemoBox(828.0 - inset, 863.0 - inset, 100.0, 100.0, 0.0))))
         assertTrue(canFitShape(shapeOf("star", DemoBox(300.0, 10.0, 200.0, 100.0, 0.0))))
-        assertFalse(canFitShape(shapeOf("star", DemoBox(-1.0, 0.0, 100.0, 100.0, 0.0))))
-        assertFalse(canFitShape(shapeOf("star", DemoBox(0.0, -1.0, 100.0, 100.0, 0.0))))
-        assertFalse(canFitShape(shapeOf("star", DemoBox(829.0, 863.0, 100.0, 100.0, 0.0))))
-        assertFalse(canFitShape(shapeOf("star", DemoBox(828.0, 864.0, 100.0, 100.0, 0.0))))
+        assertFalse(canFitShape(shapeOf("star", DemoBox(inset - 1.0, inset, 100.0, 100.0, 0.0))))
+        assertFalse(canFitShape(shapeOf("star", DemoBox(inset, inset - 1.0, 100.0, 100.0, 0.0))))
+        assertFalse(canFitShape(shapeOf("star", DemoBox(829.0 - inset, 863.0 - inset, 100.0, 100.0, 0.0))))
+        assertFalse(canFitShape(shapeOf("star", DemoBox(828.0 - inset, 864.0 - inset, 100.0, 100.0, 0.0))))
     }
 
     @Test
-    fun rotatedFrameFitsByItsRotatedCorners() {
+    fun frameFlushWithTheSheetDoesNotFitBecauseTheEdgeOfTheCanvasWouldCutHalfOfTheOutline() {
+        assertFalse(canFitShape(shapeOf("star", DemoBox(0.0, 0.0, 100.0, 100.0, 0.0))))
+        assertFalse(canFitShape(shapeOf("star", DemoBox(828.0, 863.0, 100.0, 100.0, 0.0))))
+    }
+
+    @Test
+    fun outlineWidthDecidesWhereTheSheetEndsForTheSameFrame() {
+        val frame = DemoBox(8.0, 300.0, 200.0, 200.0, 0.0)
+
+        // Толщина 12 единиц карточки просит 6 / unit = 5,57 макета у края, 20 единиц карточки — 9,28.
+        assertTrue(canFitShape(shapeOf("star", frame).copy(width = 12f)))
+        assertFalse(canFitShape(shapeOf("star", frame).copy(width = 20f)))
+        assertTrue(canFitShape(shapeOf("star", frame).copy(width = 0.5f)))
+    }
+
+    @Test
+    fun rotatedFrameFitsByItsRotatedCornersAndTheOutline() {
         // Квадрат 100 × 100 по 45° вокруг центра (60, 60): верхний угол на 60 − 70,7 выше листа.
         assertFalse(canFitShape(shapeOf("star", DemoBox(10.0, 10.0, 100.0, 100.0, 45.0))))
-        // Центр на 71 от краёв: все углы на листе.
-        assertTrue(canFitShape(shapeOf("star", DemoBox(21.0, 21.0, 100.0, 100.0, 45.0))))
+        // Центр на 71 от краёв: углы на листе, но полтолщины контура 1,39 до края не хватает (71 − 70,71 = 0,29).
+        assertFalse(canFitShape(shapeOf("star", DemoBox(21.0, 21.0, 100.0, 100.0, 45.0))))
+        // Центр на 72,5 от краёв: угол на 1,79 от края, это больше полтолщины.
+        assertTrue(canFitShape(shapeOf("star", DemoBox(22.5, 22.5, 100.0, 100.0, 45.0))))
     }
 
     @Test
-    fun lineFitsByItsContourAndNotByTheInvisibleEightyHighFrame() {
-        // Ось горизонтальной линии на самом верхнем крае листа (y = 0), рамка 80 высотой торчит выше листа на 40.
-        assertTrue(canFitShape(shapeOf("line", DemoBox(100.0, -40.0, 300.0, 80.0, 0.0))))
-        assertFalse(canFitShape(shapeOf("line", DemoBox(100.0, -41.0, 300.0, 80.0, 0.0))))
-        // Нижний край: ось на 963.
-        assertTrue(canFitShape(shapeOf("line", DemoBox(100.0, 923.0, 300.0, 80.0, 0.0))))
-        assertFalse(canFitShape(shapeOf("line", DemoBox(100.0, 924.0, 300.0, 80.0, 0.0))))
-        // Концы оси на 0,12 и 0,88 ширины: у левого края начало на 0 при x = −36.
-        assertTrue(canFitShape(shapeOf("line", DemoBox(-36.0, 400.0, 300.0, 80.0, 0.0))))
-        assertFalse(canFitShape(shapeOf("line", DemoBox(-37.0, 400.0, 300.0, 80.0, 0.0))))
+    fun lineFitsByItsContourWithItsOutlineAndNotByTheInvisibleEightyHighFrame() {
+        // Ось горизонтальной линии на y = полтолщины: рамка 80 высотой торчит выше листа на 40 − полтолщины.
+        val inset = halfOutline
+        assertTrue(canFitShape(shapeOf("line", DemoBox(100.0, -40.0 + inset, 300.0, 80.0, 0.0))))
+        assertFalse(canFitShape(shapeOf("line", DemoBox(100.0, -41.0 + inset, 300.0, 80.0, 0.0))))
+        // Нижний край: ось на 963 − полтолщины.
+        assertTrue(canFitShape(shapeOf("line", DemoBox(100.0, 923.0 - inset, 300.0, 80.0, 0.0))))
+        assertFalse(canFitShape(shapeOf("line", DemoBox(100.0, 924.0 - inset, 300.0, 80.0, 0.0))))
+        // Концы оси на 0,12 и 0,88 ширины: у левого края начало на полтолщины при x = −36 + полтолщины.
+        assertTrue(canFitShape(shapeOf("line", DemoBox(-36.0 + inset, 400.0, 300.0, 80.0, 0.0))))
+        assertFalse(canFitShape(shapeOf("line", DemoBox(-37.0 + inset, 400.0, 300.0, 80.0, 0.0))))
     }
 
     @Test
-    fun arrowheadMustStayOnTheSheetToo() {
-        // Остриё стрелки шире оси на 16 с каждой стороны: у верхнего края ось не ближе 16.
-        assertTrue(canFitShape(shapeOf("arrow", DemoBox(100.0, -24.0, 300.0, 80.0, 0.0))))
-        assertFalse(canFitShape(shapeOf("arrow", DemoBox(100.0, -25.0, 300.0, 80.0, 0.0))))
-        assertTrue(canFitShape(shapeOf("double-arrow", DemoBox(100.0, 907.0, 300.0, 80.0, 0.0))))
-        assertFalse(canFitShape(shapeOf("double-arrow", DemoBox(100.0, 908.0, 300.0, 80.0, 0.0))))
+    fun arrowheadMustStayOnTheSheetWithItsOutlineToo() {
+        // Остриё стрелки шире оси на 16 с каждой стороны: у верхнего края ось не ближе 16 + полтолщины.
+        val inset = halfOutline
+        assertTrue(canFitShape(shapeOf("arrow", DemoBox(100.0, -24.0 + inset, 300.0, 80.0, 0.0))))
+        assertFalse(canFitShape(shapeOf("arrow", DemoBox(100.0, -25.0 + inset, 300.0, 80.0, 0.0))))
+        assertTrue(canFitShape(shapeOf("double-arrow", DemoBox(100.0, 907.0 - inset, 300.0, 80.0, 0.0))))
+        assertFalse(canFitShape(shapeOf("double-arrow", DemoBox(100.0, 908.0 - inset, 300.0, 80.0, 0.0))))
     }
 
     // --- перенос ----------------------------------------------------------------------------------------
@@ -249,11 +312,13 @@ class ShapeTransformTest {
         val top = boxOf(moveShape(shape, 0f, -5000f * unit))
         val bottom = boxOf(moveShape(shape, 0f, 5000f * unit))
 
-        assertEquals(0.0, left.x, 0.01)
-        assertEquals(928.0, right.x + right.w, 0.01)
-        assertEquals(0.0, top.y, 0.01)
-        assertEquals(963.0, bottom.y + bottom.h, 0.01)
-        assertTrue(left.x >= -0.001 && right.x + right.w <= 928.0 + 0.001 && top.y >= -0.001 && bottom.y + bottom.h <= 963.0 + 0.001)
+        // Рамка останавливается в полтолщины контура от края: круглый стык угла выступает ровно на столько.
+        assertEquals(halfOutline, left.x, 0.01)
+        assertEquals(928.0 - halfOutline, right.x + right.w, 0.01)
+        assertEquals(halfOutline, top.y, 0.01)
+        assertEquals(963.0 - halfOutline, bottom.y + bottom.h, 0.01)
+        assertTrue(left.x >= halfOutline - 0.001 && right.x + right.w <= 928.0 - halfOutline + 0.001)
+        assertTrue(top.y >= halfOutline - 0.001 && bottom.y + bottom.h <= 963.0 - halfOutline + 0.001)
     }
 
     @Test
@@ -267,10 +332,10 @@ class ShapeTransformTest {
             "снизу" to listCorners(boxOf(moveShape(shape, 0f, 5000f * unit))).maxOf { it.second },
         )
 
-        assertEquals(0.0, corners.getValue("слева"), 0.01)
-        assertEquals(928.0, corners.getValue("справа"), 0.01)
-        assertEquals(0.0, corners.getValue("сверху"), 0.01)
-        assertEquals(963.0, corners.getValue("снизу"), 0.01)
+        assertEquals(halfOutline, corners.getValue("слева"), 0.01)
+        assertEquals(928.0 - halfOutline, corners.getValue("справа"), 0.01)
+        assertEquals(halfOutline, corners.getValue("сверху"), 0.01)
+        assertEquals(963.0 - halfOutline, corners.getValue("снизу"), 0.01)
     }
 
     @Test
@@ -278,37 +343,83 @@ class ShapeTransformTest {
         val line = shapeOf("line", DemoBox(300.0, 500.0, 300.0, 80.0, 0.0))
         val arrow = shapeOf("arrow", DemoBox(300.0, 500.0, 300.0, 80.0, 0.0))
 
-        // Конец ведут далеко за каждый край: ось (а у стрелки и остриё) кончается ровно на краю листа.
+        // Конец ведут далеко за каждый край: ось (а у стрелки и остриё) кончается в полтолщины контура от края листа.
         val lineRight = listContour(moveShapeEndpoint(line, ShapeHandle.END, 5000f * unit, 540f * unit))
         val lineLeft = listContour(moveShapeEndpoint(line, ShapeHandle.START, -5000f * unit, 540f * unit))
         val lineTop = listContour(moveShapeEndpoint(line, ShapeHandle.END, 450f * unit, -5000f * unit))
         val lineBottom = listContour(moveShapeEndpoint(line, ShapeHandle.END, 450f * unit, 5000f * unit))
-        assertEquals(928.0, lineRight.maxOf { it.first }, 0.01)
-        assertEquals(0.0, lineLeft.minOf { it.first }, 0.01)
-        assertEquals(0.0, lineTop.minOf { it.second }, 0.01)
-        assertEquals(963.0, lineBottom.maxOf { it.second }, 0.01)
-        for ((x, y) in lineRight + lineLeft + lineTop + lineBottom) assertTrue(x >= -0.001 && x <= 928.001 && y >= -0.001 && y <= 963.001, "($x, $y)")
+        assertEquals(928.0 - halfOutline, lineRight.maxOf { it.first }, 0.01)
+        assertEquals(halfOutline, lineLeft.minOf { it.first }, 0.01)
+        assertEquals(halfOutline, lineTop.minOf { it.second }, 0.01)
+        assertEquals(963.0 - halfOutline, lineBottom.maxOf { it.second }, 0.01)
+        for ((x, y) in lineRight + lineLeft + lineTop + lineBottom) assertTrue(isInsideSheetWithOutline(x, y, 0.001), "($x, $y)")
 
         // Конец стрелки: острие тоже на листе, где бы ни был указатель.
         for ((x, y) in listOf(5000.0 to 540.0, -5000.0 to 540.0, 450.0 to -5000.0, 450.0 to 5000.0, 5000.0 to 5000.0, -5000.0 to -5000.0)) {
             val moved = moveShapeEndpoint(arrow, ShapeHandle.END, (x * unit).toFloat(), (y * unit).toFloat())
-            for ((px, py) in listContour(moved)) assertTrue(px >= -0.001 && px <= 928.001 && py >= -0.001 && py <= 963.001, "указатель ($x, $y): ($px, $py)")
+            for ((px, py) in listContour(moved)) assertTrue(isInsideSheetWithOutline(px, py, 0.001), "указатель ($x, $y): ($px, $py)")
         }
     }
 
     @Test
-    fun horizontalLineTouchesTheTopEdgeButHorizontalArrowStopsSixteenBelowIt() {
+    fun horizontalLineStopsAtHalfOutlineButHorizontalArrowStopsSixteenMoreBelowIt() {
         val line = shapeOf("line", DemoBox(300.0, 500.0, 300.0, 80.0, 0.0))
         val arrow = shapeOf("arrow", DemoBox(300.0, 500.0, 300.0, 80.0, 0.0))
 
         val movedLine = moveShape(line, 0f, -5000f * unit)
         val movedArrow = moveShape(arrow, 0f, -5000f * unit)
 
-        // Ось линии на y = 0 (рамка 80 на 40 выше листа), у стрелки остриё шире оси на 16, ось на y = 16.
-        assertEquals(0.0, listContour(movedLine).minOf { it.second }, 0.01)
-        assertEquals(-40.0, boxOf(movedLine).y, 0.01)
-        assertEquals(0.0, listContour(movedArrow).minOf { it.second }, 0.01)
-        assertEquals(-24.0, boxOf(movedArrow).y, 0.01)
+        // Ось линии на y = полтолщины (рамка 80 выше листа на 40 − полтолщины), у стрелки остриё шире оси на 16, ось на 16 ниже.
+        assertEquals(halfOutline, listContour(movedLine).minOf { it.second }, 0.01)
+        assertEquals(-40.0 + halfOutline, boxOf(movedLine).y, 0.01)
+        assertEquals(halfOutline, listContour(movedArrow).minOf { it.second }, 0.01)
+        assertEquals(-24.0 + halfOutline, boxOf(movedArrow).y, 0.01)
+    }
+
+    // --- упор у края с учётом толщины контура (единицы карточки: толщина 3 просит 1,5 у каждого края) -------------
+
+    private fun insertCentered(kind: Shape.Kind, width: Float) = insertShape(kind, width, 220f)
+
+    @Test
+    fun rectangleWithOutlineThreeStopsItsFrameOneAndAHalfFromEachEdge() {
+        val rectangle = insertCentered(Shape.Kind.RECTANGLE, 3f)
+
+        val left = moveShape(rectangle, -5000f, 0f)
+        val right = moveShape(rectangle, 5000f, 0f)
+        val top = moveShape(rectangle, 0f, -5000f)
+        val bottom = moveShape(rectangle, 0f, 5000f)
+
+        assertEquals(1.5f, left.left, 0.01f)
+        assertEquals(CardUnits.WIDTH - 1.5f, right.right, 0.01f)
+        assertEquals(1.5f, top.top, 0.01f)
+        assertEquals(CardUnits.HEIGHT - 1.5f, bottom.bottom, 0.01f)
+    }
+
+    @Test
+    fun arrowEndWithOutlineThreeStopsItsTipOneAndAHalfFromTheEdge() {
+        val arrow = insertCentered(Shape.Kind.ARROW, 3f)
+        val rightEdge = CardUnits.WIDTH - 1.5f
+
+        val pulled = moveShapeEndpoint(arrow, ShapeHandle.END, 5000f, CardUnits.HEIGHT / 2)
+
+        assertEquals(rightEdge, pulled.listPolylines().flatten().maxOf { it.x }, 0.02f)
+        // Конец у верха: ось и острие не выше 1,5 от края.
+        val lifted = moveShapeEndpoint(arrow, ShapeHandle.END, CardUnits.WIDTH / 2, -5000f)
+        assertEquals(1.5f, lifted.listPolylines().flatten().minOf { it.y }, 0.02f)
+    }
+
+    @Test
+    fun thickerOutlineStopsFurtherFromTheEdgeByHalfOfItsOwnWidth() {
+        for (width in listOf(1f, 3f, 12f, 40f)) {
+            val moved = moveShape(insertCentered(Shape.Kind.OVAL, width), -5000f, 0f)
+
+            assertEquals(width / 2, moved.left, 0.01f, "толщина $width")
+        }
+    }
+
+    @Test
+    fun shapeInsertedAtTheBiggestSizeWithTheThickestOutlineFitsTheSheet() {
+        for (kind in Shape.Kind.entries) assertTrue(canFitShape(insertShape(kind, 12f * unit, 440f)), kind.key)
     }
 
     @Test
@@ -319,7 +430,7 @@ class ShapeTransformTest {
         // Перо ушло далеко за край и вернулось: упор не накопил ошибку, фигура на старте, и по пути помещалась всегда.
         for (dx in listOf(-5000f, -2000f, -600f)) assertTrue(canFitShape(gesture.applyTo(500f + dx, 500f)))
         val outside = boxOf(gesture.applyTo(-5000f, 500f))
-        assertEquals(0.0, outside.x, 0.01)
+        assertEquals(halfOutline, outside.x, 0.01)
 
         assertBox(boxOf(shape), boxOf(gesture.applyTo(500f, 500f)), "перо вернулось")
     }
@@ -332,7 +443,7 @@ class ShapeTransformTest {
         val turned = boxOf(rotateShape(shape, 700f * unit, 60f * unit, 500f * unit, 260f * unit))
 
         assertTrue(turned.angle > 3.0 && turned.angle < 5.0, "угол ${turned.angle}")
-        assertEquals(0.0, listCorners(turned).minOf { it.second }, 0.05)
+        assertEquals(halfOutline, listCorners(turned).minOf { it.second }, 0.05)
     }
 
     @Test
@@ -345,14 +456,14 @@ class ShapeTransformTest {
         val east = boxOf(resizeShape(shape, ShapeHandle.BOTTOM_RIGHT, 5000f * unit, 0f))
         val south = boxOf(resizeShape(shape, ShapeHandle.BOTTOM_RIGHT, 0f, 5000f * unit))
 
-        assertEquals(0.0, west.x, 0.01)
-        assertEquals(0.0, north.y, 0.01)
-        assertEquals(928.0, east.x + east.w, 0.01)
-        assertEquals(963.0, south.y + south.h, 0.01)
-        // Диагональ, плавный упор: угол остановился на первом достигнутом крае и за лист не вышел.
+        assertEquals(halfOutline, west.x, 0.01)
+        assertEquals(halfOutline, north.y, 0.01)
+        assertEquals(928.0 - halfOutline, east.x + east.w, 0.01)
+        assertEquals(963.0 - halfOutline, south.y + south.h, 0.01)
+        // Диагональ, плавный упор: угол остановился на первом достигнутом крае и за полтолщины от листа не вышел.
         val diagonal = boxOf(resizeShape(shape, ShapeHandle.TOP_LEFT, -5000f * unit, -5000f * unit))
-        assertEquals(0.0, diagonal.x, 0.01)
-        assertTrue(diagonal.y >= -0.001)
+        assertEquals(halfOutline, diagonal.x, 0.01)
+        assertTrue(diagonal.y >= halfOutline - 0.001)
     }
 
     // --- размер -----------------------------------------------------------------------------------------
