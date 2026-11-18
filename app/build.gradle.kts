@@ -24,6 +24,18 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    buildTypes {
+        // Релизная сборка нужна, чтобы ART исполнял приложение без отладочных ограничений: у отлаживаемого приложения
+        // часть оптимизаций выключена, и Compose в такой сборке заметно медленнее. Приложение ставится только на свой
+        // планшет и в магазин не идёт, поэтому отдельного ключа нет: подпись отладочным ключом даёт ставить релизную
+        // сборку поверх отладочной и обратно без удаления. R8 выключен, пока перо Onyx SDK (рефлексия) не проверено с ним
+        // на планшете.
+        release {
+            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
+        }
+    }
+
     // onyxsdk-pen и onyxsdk-pennative приносят каждый свой libc++_shared.so.
     packaging {
         jniLibs { pickFirsts += "**/libc++_shared.so" }
