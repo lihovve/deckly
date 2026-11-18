@@ -310,6 +310,46 @@ class ShapeOutlineTest {
         assertTrue(script.contains("hit.setAttribute('stroke-width', item.width + 16);"))
     }
 
+    // Хеши по битам `x` и `y` всех точек `listPolylines()` трёх рамок и углов у каждого вида. Сняты до того, как формула контура
+    // выделена в функцию на `Double`: рефакторинг не должен менять рисунок ни на бит. Менять их стоит только вместе с осознанной
+    // правкой формулы контура.
+    private val polylineHashes = mapOf(
+        Shape.Kind.LINE to longArrayOf(-1026831138848339871L, -8016943413030240553L, -5210225879204924700L),
+        Shape.Kind.ARROW to longArrayOf(-5235162840465835591L, -5226939618332248447L, -604144581446694754L),
+        Shape.Kind.DOUBLE_ARROW to longArrayOf(2539060755609918353L, 4037971848725878491L, 5501794797341402564L),
+        Shape.Kind.RECTANGLE to longArrayOf(7309690382727302329L, -1546394730552270523L, -4442083826050364538L),
+        Shape.Kind.OVAL to longArrayOf(-8846121065003976483L, -1251250345519788362L, 6056617431178486455L),
+        Shape.Kind.TRIANGLE to longArrayOf(-6970578524172740175L, -487774579151698442L, 5864053552285135590L),
+        Shape.Kind.DIAMOND to longArrayOf(7548985975795272889L, 4908648804472393815L, -1956244810168725408L),
+        Shape.Kind.HEXAGON to longArrayOf(-675571636215496311L, -4203331879671421867L, 8653894238612103128L),
+        Shape.Kind.STAR to longArrayOf(3385874259322322774L, 2693910103147328754L, -3604312307406387515L),
+        Shape.Kind.MOON to longArrayOf(4179732716574444143L, -8281802763794453784L, -2768718079615437997L),
+        Shape.Kind.SUN to longArrayOf(-8424241321237253701L, 3820730684575960507L, 1493857613745871164L),
+        Shape.Kind.HEART to longArrayOf(142876396446023267L, -2112962482988163173L, -5258879653902087767L),
+        Shape.Kind.CLOUD to longArrayOf(2319626549392518422L, -3833840364071054178L, 3468311427583586880L),
+        Shape.Kind.BOLT to longArrayOf(-2346628432577116740L, 9108804524815000409L, -3085865864327319457L),
+        Shape.Kind.DROP to longArrayOf(4936155314996197850L, 4799369850438500741L, 6311152057860361175L),
+    )
+
+    private val hashedFrames = listOf(
+        listOf(100f, 200f, 300f, 500f, 0f),
+        listOf(333.3f, 40.5f, 910f, 160.25f, 30f),
+        listOf(120f, 80f, 520f, 380f, -35f),
+    )
+
+    @Test
+    fun polylinesAreBitIdenticalToTheOnesRecordedBeforeTheContourFormulaMovedToDouble() {
+        for (kind in Shape.Kind.entries) {
+            for ((index, frame) in hashedFrames.withIndex()) {
+                val points = shape(kind, frame[0], frame[1], frame[2], frame[3], frame[4]).listPolylines().flatten()
+
+                val hash = points.fold(17L) { acc, point -> (acc * 1_000_003L + point.x.toRawBits()) * 1_000_003L + point.y.toRawBits() }
+
+                assertEquals(polylineHashes.getValue(kind)[index], hash, "${kind.key}, рамка $index")
+            }
+        }
+    }
+
     // --- касание ----------------------------------------------------------------------------------
 
     private fun path(vararg xy: Pair<Float, Float>) = xy.map { StrokePoint(it.first, it.second, 0.5f) }

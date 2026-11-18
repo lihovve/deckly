@@ -39,29 +39,44 @@ fun Shape.Kind.listGridOutlines(): List<List<GridPoint>> = GRID_OUTLINES.getValu
 fun Shape.Kind.findGridBounds(): GridBounds = GRID_BOUNDS.getValue(this)
 
 /**
- * Контуры фигуры на листе в единицах карточки: контур вида растягивается на рамку от своих границ независимо по осям
- * (его крайние точки стоят на сторонах рамки), затем всё поворачивается вокруг центра рамки. У линии и стрелок ось и
- * острия считаются по размерам макета (остриё не растёт с длиной), поэтому рамка у них только задаёт длину и положение.
+ * Контуры фигуры на листе в единицах карточки, в `Double` без перевода в `Float`: контур вида растягивается на рамку
+ * [left]…[right] × [top]…[bottom] от своих границ независимо по осям (его крайние точки стоят на сторонах рамки), затем всё
+ * поворачивается на [angle] градусов вокруг центра рамки. У линии и стрелок ось и острия считаются по размерам макета
+ * (остриё не растёт с длиной), поэтому рамка у них только задаёт длину и положение. Одна формула для рисунка
+ * ([listPolylines]) и для правила «помещается» (`ShapeTransform.kt`): правило сравнивает точки с границей листа, и шум
+ * перевода рамки в `Float` (порядка 5e-5) для фигуры у края сделал бы его случайным.
  */
-fun Shape.listPolylines(): List<List<StrokePoint>> {
-    val local = if (kind.isLinear) listLinearOutlines() else listStretchedOutlines()
-    val centerX = (left.toDouble() + right) / 2
-    val centerY = (top.toDouble() + bottom) / 2
-    val radians = Math.toRadians(angle.toDouble())
+internal fun listContourOutlines(
+    kind: Shape.Kind,
+    left: Double,
+    top: Double,
+    right: Double,
+    bottom: Double,
+    angle: Double,
+): List<List<Pair<Double, Double>>> {
+    val local = if (kind.isLinear) listLinearOutlines(kind, left, top, right, bottom) else listStretchedOutlines(kind, left, top, right, bottom)
+    val centerX = (left + right) / 2
+    val centerY = (top + bottom) / 2
+    val radians = Math.toRadians(angle)
     val cosine = cos(radians)
     val sine = sin(radians)
     return local.map { line ->
         line.map { (x, y) ->
             val dx = x - centerX
             val dy = y - centerY
-            StrokePoint((centerX + dx * cosine - dy * sine).toFloat(), (centerY + dx * sine + dy * cosine).toFloat(), 1f)
+            (centerX + dx * cosine - dy * sine) to (centerY + dx * sine + dy * cosine)
         }
     }
 }
 
-private fun Shape.listStretchedOutlines(): List<List<Pair<Double, Double>>> {
-    val width = right.toDouble() - left
-    val height = bottom.toDouble() - top
+/** Контуры фигуры на листе в единицах карточки для рисования: [listContourOutlines], переведённые в `Float`. */
+fun Shape.listPolylines(): List<List<StrokePoint>> =
+    listContourOutlines(kind, left.toDouble(), top.toDouble(), right.toDouble(), bottom.toDouble(), angle.toDouble())
+        .map { line -> line.map { (x, y) -> StrokePoint(x.toFloat(), y.toFloat(), 1f) } }
+
+private fun listStretchedOutlines(kind: Shape.Kind, left: Double, top: Double, right: Double, bottom: Double): List<List<Pair<Double, Double>>> {
+    val width = right - left
+    val height = bottom - top
     val bounds = kind.findGridBounds()
     val spanX = bounds.maxX.toDouble() - bounds.minX
     val spanY = bounds.maxY.toDouble() - bounds.minY
@@ -70,10 +85,10 @@ private fun Shape.listStretchedOutlines(): List<List<Pair<Double, Double>>> {
     }
 }
 
-private fun Shape.listLinearOutlines(): List<List<Pair<Double, Double>>> {
+private fun listLinearOutlines(kind: Shape.Kind, left: Double, top: Double, right: Double, bottom: Double): List<List<Pair<Double, Double>>> {
     val unit = CardUnits.PER_DESIGN_UNIT.toDouble()
-    val designWidth = (right.toDouble() - left) / unit
-    val designHeight = (bottom.toDouble() - top) / unit
+    val designWidth = (right - left) / unit
+    val designHeight = (bottom - top) / unit
     val start = designWidth * AXIS_START
     val end = designWidth * AXIS_END
     val y = designHeight / 2
