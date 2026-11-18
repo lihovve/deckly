@@ -11,6 +11,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sin
 import kotlin.random.Random
 
 /**
@@ -217,6 +220,85 @@ class EraserFullScanTest {
         assertTrue(found in 60..540, "found $found of 600")
     }
 
+    // --- траектории из нескольких далёких рук: отсев по парам отрезков -------------------------------
+
+    @Test
+    fun strokeAndShapeTouchEqualsFullScanForTracesWithFarArms() {
+        val random = Random(SEED + 6)
+        val strokes = generateStrokes(random, 300) + generateStrokesInside(random, 300)
+        val shapes = generateShapes(random)
+
+        for ((traceIndex, path) in generateArmedTraces().withIndex()) {
+            for (radius in radii) {
+                for ((index, stroke) in strokes.withIndex()) {
+                    assertEquals(
+                        isTouchedByFullScan(listOf(stroke.points), path, radius),
+                        isStrokeTouched(stroke, path, radius),
+                        "stroke $index, armed trace $traceIndex, radius $radius",
+                    )
+                }
+                for ((index, shape) in shapes.withIndex()) {
+                    assertEquals(
+                        isTouchedByFullScan(shape.listPolylines(), path, radius),
+                        isShapeTouched(shape, path, radius),
+                        "shape $index, armed trace $traceIndex, radius $radius",
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun armedTracesHaveSegmentsThatOnlyThePairwiseRectanglesDiscard() {
+        val random = Random(SEED + 6)
+        val strokes = (generateStrokes(random, 300) + generateStrokesInside(random, 300)).filter { it.points.isNotEmpty() }
+        var passingCommonRect = 0
+        var discardedByPairs = 0
+        var touched = 0
+        var total = 0
+
+        for (path in generateArmedTraces()) {
+            for (radius in radii) {
+                val pathBox = computeBox(path)
+                for (stroke in strokes) {
+                    for (segment in listSegmentsOf(stroke.points)) {
+                        val isInCommonRect = isBoxWithinReach(segment, buildDiagonalOf(pathBox), radius)
+                        val isNearSomeArm = listSegmentsOf(path).any { isBoxWithinReach(segment, it, radius) }
+                        if (isInCommonRect) passingCommonRect++
+                        if (isInCommonRect && !isNearSomeArm) discardedByPairs++
+                    }
+                    if (isTouchedByFullScan(listOf(stroke.points), path, radius)) touched++
+                    total++
+                }
+            }
+        }
+
+        assertTrue(discardedByPairs >= passingCommonRect / 10, "discarded by pairs $discardedByPairs of $passingCommonRect")
+        assertTrue(touched >= total / 20 && total - touched >= total / 2, "touched $touched of $total")
+    }
+
+    @Test
+    fun integerGridHasTouchingPairsExactlyOnTheEdgeOfThePairwiseRectangle() {
+        val random = Random(SEED + 2)
+        val strokes = generateGridStrokes(random, 400)
+        var onTheEdge = 0
+
+        for (path in generateGridTraces(random)) {
+            for (radius in gridRadii) {
+                for (stroke in strokes) {
+                    for (segment in listSegmentsOf(stroke.points)) {
+                        for (arm in listSegmentsOf(path)) {
+                            val isTouchingPair = isTouchedByFullScan(listOf(listOf(segment.first, segment.second)), listOf(arm.first, arm.second), radius)
+                            if (isTouchingPair && isBoxOnTheEdgeOfReach(segment, arm, radius)) onTheEdge++
+                        }
+                    }
+                }
+            }
+        }
+
+        assertTrue(onTheEdge >= 100, "touching pairs on the edge: $onTheEdge")
+    }
+
     // --- данные ------------------------------------------------------------------------------------
 
     private data class Box(val minX: Float, val minY: Float, val maxX: Float, val maxY: Float)
@@ -226,6 +308,62 @@ class EraserFullScanTest {
         points.minOf { it.y },
         points.maxOf { it.x },
         points.maxOf { it.y },
+    )
+
+    /** Отрезки ломаной как пары точек; одна точка — вырожденный отрезок, пустая — нет отрезков. */
+    private fun listSegmentsOf(points: List<StrokePoint>): List<Pair<StrokePoint, StrokePoint>> = when (points.size) {
+        0 -> emptyList()
+        1 -> listOf(points[0] to points[0])
+        else -> points.zipWithNext()
+    }
+
+    /** Общий прямоугольник траектории как диагональ из двух углов: так он проверяется тем же [isBoxWithinReach]. */
+    private fun buildDiagonalOf(box: Box): Pair<StrokePoint, StrokePoint> =
+        StrokePoint(box.minX, box.minY, 0.5f) to StrokePoint(box.maxX, box.maxY, 0.5f)
+
+    /** Пересекается ли прямоугольник отрезка [segment] с прямоугольником отрезка [arm], расширенным на [radius]. */
+    private fun isBoxWithinReach(segment: Pair<StrokePoint, StrokePoint>, arm: Pair<StrokePoint, StrokePoint>, radius: Float): Boolean =
+        min(segment.first.x, segment.second.x).toDouble() <= max(arm.first.x, arm.second.x).toDouble() + radius &&
+            max(segment.first.x, segment.second.x).toDouble() >= min(arm.first.x, arm.second.x).toDouble() - radius &&
+            min(segment.first.y, segment.second.y).toDouble() <= max(arm.first.y, arm.second.y).toDouble() + radius &&
+            max(segment.first.y, segment.second.y).toDouble() >= min(arm.first.y, arm.second.y).toDouble() - radius
+
+    /** Лежит ли край прямоугольника [segment] ровно на краю прямоугольника [arm], расширенного на [radius], при пересечении по другой оси. */
+    private fun isBoxOnTheEdgeOfReach(segment: Pair<StrokePoint, StrokePoint>, arm: Pair<StrokePoint, StrokePoint>, radius: Float): Boolean {
+        val sMinX = min(segment.first.x, segment.second.x).toDouble()
+        val sMaxX = max(segment.first.x, segment.second.x).toDouble()
+        val sMinY = min(segment.first.y, segment.second.y).toDouble()
+        val sMaxY = max(segment.first.y, segment.second.y).toDouble()
+        val aMinX = min(arm.first.x, arm.second.x).toDouble() - radius
+        val aMaxX = max(arm.first.x, arm.second.x).toDouble() + radius
+        val aMinY = min(arm.first.y, arm.second.y).toDouble() - radius
+        val aMaxY = max(arm.first.y, arm.second.y).toDouble() + radius
+        val isXOverlapping = sMinX <= aMaxX && sMaxX >= aMinX
+        val isYOverlapping = sMinY <= aMaxY && sMaxY >= aMinY
+        return (isYOverlapping && (sMinX == aMaxX || sMaxX == aMinX)) || (isXOverlapping && (sMinY == aMaxY || sMaxY == aMinY))
+    }
+
+    /** Штрихи письма внутри листа: начало в рамке 50..950, чтобы они лежали между руками траектории. */
+    private fun generateStrokesInside(random: Random, count: Int): List<Stroke> = List(count) {
+        var x = 50f + random.nextFloat() * 900f
+        var y = 50f + random.nextFloat() * 900f
+        Stroke(2f, List(random.nextInt(20, 61)) {
+            x = (x + (random.nextFloat() * 2 - 1) * 8f).coerceIn(0f, CardUnits.WIDTH)
+            y = (y + (random.nextFloat() * 2 - 1) * 8f).coerceIn(0f, CardUnits.HEIGHT)
+            StrokePoint(x, y, 0.5f)
+        })
+    }
+
+    /** Траектории из нескольких рук: Г, П, каракули в 150 × 80 посреди листа, гребёнка через весь лист, замкнутый квадрат. */
+    private fun generateArmedTraces(): List<List<StrokePoint>> = listOf(
+        listOf(StrokePoint(100f, 100f, 0.5f), StrokePoint(700f, 100f, 0.5f), StrokePoint(700f, 900f, 0.5f)),
+        listOf(StrokePoint(50f, 900f, 0.5f), StrokePoint(50f, 100f, 0.5f), StrokePoint(900f, 100f, 0.5f), StrokePoint(900f, 900f, 0.5f)),
+        List(300) { StrokePoint((500 + 75 * sin(it * 0.21)).toFloat(), (520 + 40 * sin(it * 0.77 + 1)).toFloat(), 0.5f) },
+        List(60) { StrokePoint(it * 16f, if (it % 2 == 0) 100f else 900f, 0.5f) },
+        listOf(
+            StrokePoint(300f, 300f, 0.5f), StrokePoint(600f, 300f, 0.5f), StrokePoint(600f, 600f, 0.5f),
+            StrokePoint(300f, 600f, 0.5f), StrokePoint(300f, 300f, 0.5f),
+        ),
     )
 
     /** Блуждание из [count] точек от случайного места листа, шаг каждой координаты до [step]. */

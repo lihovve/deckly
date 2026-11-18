@@ -24,24 +24,18 @@ fun isStrokeTouched(stroke: Stroke, path: List<StrokePoint>, radius: Float): Boo
 private const val REACH_SLACK = 1e-6
 
 /**
- * След ластика за один проход: отрезки траектории и прямоугольник досягаемости, то есть границы траектории, расширенные
- * на радиус. Отрезок штриха или контура вне прямоугольника не достаёт ни до одного отрезка траектории, и расстояния для
- * него не считаются; для остальных расчёт полный. Строится один раз и проверяет любое число штрихов и фигур.
+ * След ластика за один проход: отрезки траектории, у каждого свой прямоугольник досягаемости (границы отрезка,
+ * расширенные на радиус), и общий прямоугольник всех отрезков. Отрезок штриха или контура вне общего прямоугольника не
+ * достаёт ни до одного отрезка траектории; прошедший общий отсев считается только с теми отрезками траектории, чей
+ * прямоугольник его пересекает. Для остальных пар расстояние не считается. Строится один раз и проверяет любое число
+ * штрихов и фигур.
  */
 internal class EraserTrace(path: List<StrokePoint>, private val radius: Float) {
-    private val segments = listSegments(path)
-    private val reachMinX: Double
-    private val reachMinY: Double
-    private val reachMaxX: Double
-    private val reachMaxY: Double
-
-    init {
-        val margin = radius.toDouble() + REACH_SLACK
-        reachMinX = (path.minOfOrNull { it.x.toDouble() } ?: 0.0) - margin
-        reachMinY = (path.minOfOrNull { it.y.toDouble() } ?: 0.0) - margin
-        reachMaxX = (path.maxOfOrNull { it.x.toDouble() } ?: 0.0) + margin
-        reachMaxY = (path.maxOfOrNull { it.y.toDouble() } ?: 0.0) + margin
-    }
+    private val traceSegments = listSegments(path).map { TraceSegment(it, radius.toDouble() + REACH_SLACK) }
+    private val reachMinX = traceSegments.minOfOrNull { it.reachMinX } ?: 0.0
+    private val reachMinY = traceSegments.minOfOrNull { it.reachMinY } ?: 0.0
+    private val reachMaxX = traceSegments.maxOfOrNull { it.reachMaxX } ?: 0.0
+    private val reachMaxY = traceSegments.maxOfOrNull { it.reachMaxY } ?: 0.0
 
     fun isTouchingStroke(stroke: Stroke): Boolean = isTouchingPolyline(stroke.points)
 
@@ -49,7 +43,7 @@ internal class EraserTrace(path: List<StrokePoint>, private val radius: Float) {
     fun isTouchingShape(shape: Shape): Boolean = shape.listPolylines().any { isTouchingPolyline(it) }
 
     private fun isTouchingPolyline(points: List<StrokePoint>): Boolean {
-        if (segments.isEmpty()) return false
+        if (traceSegments.isEmpty()) return false
         if (points.size == 1) return isTouchingSegment(points[0], points[0])
         for (index in 1 until points.size) {
             if (isTouchingSegment(points[index - 1], points[index])) return true
@@ -62,12 +56,33 @@ internal class EraserTrace(path: List<StrokePoint>, private val radius: Float) {
         val ay = start.y.toDouble()
         val bx = end.x.toDouble()
         val by = end.y.toDouble()
-        val isOutsideReach = max(ax, bx) < reachMinX || min(ax, bx) > reachMaxX ||
-            max(ay, by) < reachMinY || min(ay, by) > reachMaxY
+        val minX = min(ax, bx)
+        val minY = min(ay, by)
+        val maxX = max(ax, bx)
+        val maxY = max(ay, by)
+        val isOutsideReach = maxX < reachMinX || minX > reachMaxX || maxY < reachMinY || minY > reachMaxY
         if (isOutsideReach) return false
         val segment = Segment(ax, ay, bx, by)
-        return segments.any { computeSegmentDistance(segment, it) <= radius }
+        for (index in traceSegments.indices) {
+            val trace = traceSegments[index]
+            if (trace.isReachedBy(minX, minY, maxX, maxY) && computeSegmentDistance(segment, trace.segment) <= radius) {
+                return true
+            }
+        }
+        return false
     }
+}
+
+/** Отрезок траектории и его прямоугольник досягаемости: границы отрезка, расширенные на [margin]. */
+private class TraceSegment(val segment: Segment, margin: Double) {
+    val reachMinX = min(segment.ax, segment.bx) - margin
+    val reachMinY = min(segment.ay, segment.by) - margin
+    val reachMaxX = max(segment.ax, segment.bx) + margin
+    val reachMaxY = max(segment.ay, segment.by) + margin
+
+    /** Пересекается ли с прямоугольником отрезка штриха; касание краем считается пересечением. */
+    fun isReachedBy(minX: Double, minY: Double, maxX: Double, maxY: Double): Boolean =
+        !(maxX < reachMinX || minX > reachMaxX || maxY < reachMinY || minY > reachMaxY)
 }
 
 private data class Segment(val ax: Double, val ay: Double, val bx: Double, val by: Double)
