@@ -115,6 +115,20 @@ function rememberOutlineWidth(value) {
     const normalTools = screen.querySelector('[data-normal-tools]');
     const shapeTools = screen.querySelector('[data-shape-tools]');
     const slider = screen.querySelector('#shape-width');
+    const sizeSlider = screen.querySelector('#shape-size');
+    const sizeOutput = palette.querySelector('output[for="shape-size"]');
+    try {
+        const storedSize = Number(localStorage.getItem('deckly.design.shapeSize'));
+        if (storedSize >= Number(sizeSlider.min) && storedSize <= Number(sizeSlider.max)) {
+            sizeSlider.value = storedSize;
+        }
+    } catch (_) { /* Storage can be blocked for local HTML files. */ }
+    sizeOutput.value = sizeSlider.value;
+    sizeSlider.addEventListener('input', () => {
+        sizeOutput.value = sizeSlider.value;
+        try { localStorage.setItem('deckly.design.shapeSize', sizeSlider.value); }
+        catch (_) { /* The slider retains the value for this page. */ }
+    });
     const apply = screen.querySelector('[data-apply-shape]');
     const choices = [...palette.querySelectorAll('[data-choose-shape]')];
     const templates = Object.fromEntries(choices.map(choice => [choice.dataset.chooseShape, {
@@ -215,9 +229,10 @@ function rememberOutlineWidth(value) {
     choices.forEach(choice => choice.addEventListener('click', event => {
         event.preventDefault();
         kind = choice.dataset.chooseShape;
-        const height = isLinearShape(kind) ? 80 : 220;
+        const size = Number(sizeSlider.value);
+        const height = isLinearShape(kind) ? 80 : size;
         objects.push({kind, angle: 0, width: lineWidth,
-            x: (stage.clientWidth - 220) / 2, y: (stage.clientHeight - height) / 2, w: 220, h: height});
+            x: (stage.clientWidth - size) / 2, y: (stage.clientHeight - height) / 2, w: size, h: height});
         selected = objects.length - 1;
         savedObject = null;
         renderShapeEditor();

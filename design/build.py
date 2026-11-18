@@ -304,7 +304,9 @@ def editor(new=True, back=False, shape_state=""):
                     f'aria-label="{label}" title="{label}">' + build_shape(shape) + '</a>')
     palette += '</div><div class="shape-width"><label for="shape-width">Outline width</label><output for="shape-width" data-width-value>3</output>'
     palette += '<svg class="stroke-preview" viewBox="0 0 80 24" aria-hidden="true"><path d="M8 12H72" stroke="currentColor" stroke-width="3" fill="none" data-width-preview/></svg>'
-    palette += '<input id="shape-width" type="range" min="1" max="12" step="1" value="3" aria-label="Outline width"></div></section></div>'
+    palette += '<input id="shape-width" type="range" min="1" max="12" step="1" value="3" aria-label="Outline width"></div>'
+    palette += '<div class="shape-width shape-size"><label for="shape-size">Default shape size</label><output for="shape-size">220</output>'
+    palette += '<input id="shape-size" type="range" min="100" max="440" step="10" value="220"></div></section></div>'
     frame = '<div class="shape-editor-frame" data-editor-frame' + (' inert' if state == 'palette' else '') + '>'
     return frame + header + sides + card(content + stage, 'Canvas. Draw with the pen only') + toolbar + edit_tools + '</div>' + palette
 
