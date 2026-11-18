@@ -10,6 +10,7 @@ import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Looper
+import android.util.Log
 import android.os.SystemClock
 import android.provider.Settings
 import android.view.InputDevice
@@ -182,7 +183,7 @@ class MainActivityTest {
         val originalFlags = application.applicationInfo.flags
         try {
             application.applicationInfo.flags = originalFlags or ApplicationInfo.FLAG_DEBUGGABLE
-            DecklyTiming.enableIfDebuggable(application)
+            DecklyTiming.enableIfRequested(application)
             ShadowLog.clear()
 
             tap(activity, MotionEvent.TOOL_TYPE_STYLUS, 12f, 21f)
@@ -194,7 +195,7 @@ class MainActivityTest {
             assertEquals("касание и подъём дошли до окна: прежний разбор не нарушен", 2, window.touchEvents)
         } finally {
             application.applicationInfo.flags = originalFlags
-            DecklyTiming.enableIfDebuggable(application)
+            DecklyTiming.enableIfRequested(application)
             controller.pause().stop().destroy()
         }
     }
@@ -208,7 +209,7 @@ class MainActivityTest {
         val originalFlags = application.applicationInfo.flags
         try {
             application.applicationInfo.flags = originalFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
-            DecklyTiming.enableIfDebuggable(application)
+            DecklyTiming.enableIfRequested(application)
             ShadowLog.clear()
 
             tap(activity, MotionEvent.TOOL_TYPE_FINGER, 12f, 21f)
@@ -217,7 +218,33 @@ class MainActivityTest {
             assertEquals("касание и подъём дошли до окна и без трассы", 2, window.touchEvents)
         } finally {
             application.applicationInfo.flags = originalFlags
-            DecklyTiming.enableIfDebuggable(application)
+            DecklyTiming.enableIfRequested(application)
+            controller.pause().stop().destroy()
+        }
+    }
+
+    @Test
+    fun touchesAreTracedInReleaseBuildWhenTheTagIsAllowedAtDebugLevel() {
+        TestWorld.hasFileAccess = false
+        val controller = Robolectric.buildActivity(RecordingMainActivity::class.java).setup()
+        val activity = controller.get()
+        val window = addTouchCountingView(activity)
+        val originalFlags = application.applicationInfo.flags
+        try {
+            application.applicationInfo.flags = originalFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
+            ShadowLog.setLoggable(DecklyTiming.TAG, Log.DEBUG)
+            DecklyTiming.enableIfRequested(application)
+            ShadowLog.clear()
+
+            tap(activity, MotionEvent.TOOL_TYPE_STYLUS, 12f, 21f)
+
+            val lines = ShadowLog.getLogsForTag(DecklyTiming.TAG).map { it.msg }.filter { it.startsWith("touch ") }
+            assertEquals(2, lines.size)
+            assertEquals("касание и подъём дошли до окна и со свойством тега", 2, window.touchEvents)
+        } finally {
+            application.applicationInfo.flags = originalFlags
+            ShadowLog.setLoggable(DecklyTiming.TAG, Log.INFO)
+            DecklyTiming.enableIfRequested(application)
             controller.pause().stop().destroy()
         }
     }

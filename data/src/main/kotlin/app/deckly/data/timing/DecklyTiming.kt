@@ -6,11 +6,12 @@ import android.util.Log
 import java.util.Locale
 
 /**
- * Строки времени для проверки на планшете: тег [TAG], уровень `Log.i`. Пишутся только в отлаживаемой сборке
- * (`FLAG_DEBUGGABLE`), в остальных [isEnabled] ложно и строка даже не собирается. Лог ничего не читает с диска:
- * замеры берутся из `System.nanoTime()`, которое звали бы и без лога.
+ * Строки времени для проверки на планшете: тег [TAG], уровень `Log.i`. Пишутся в отлаживаемой сборке (`FLAG_DEBUGGABLE`)
+ * и в любой другой, если для тега разрешён уровень `DEBUG`: `adb shell setprop log.tag.DecklyTiming DEBUG` и перезапуск
+ * приложения. Иначе [isEnabled] ложно и строка даже не собирается. Лог ничего не читает с диска: замеры берутся из
+ * `System.nanoTime()`, которое звали бы и без лога.
  *
- * Флаг ставит [enableIfDebuggable]; приложение зовёт его в начале [app.deckly.data.openDecklyData], до того как
+ * Флаг ставит [enableIfRequested]; приложение зовёт его в начале [app.deckly.data.openDecklyData], до того как
  * кто-то что-либо пишет в лог. До этого и в тестах без `Context` лог выключен.
  */
 object DecklyTiming {
@@ -20,8 +21,10 @@ object DecklyTiming {
     var isEnabled: Boolean = false
         private set
 
-    fun enableIfDebuggable(context: Context) {
-        isEnabled = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    /** Включает лог, если сборка отлаживаемая или для тега разрешён уровень `DEBUG`; значение берётся заново при каждом вызове. */
+    fun enableIfRequested(context: Context) {
+        val isDebuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        isEnabled = isDebuggable || Log.isLoggable(TAG, Log.DEBUG)
     }
 
     /** Строка собирается, только когда лог включён. */

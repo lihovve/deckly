@@ -51,7 +51,7 @@ class DecklyData(
  * ничего не пишет. Повреждённая база — [app.deckly.data.db.DatabaseDamagedException], файл не тронут.
  */
 suspend fun openDecklyData(context: Context, rootDir: File): DecklyData {
-    DecklyTiming.enableIfDebuggable(context)
+    DecklyTiming.enableIfRequested(context)
     val openStartNanos = System.nanoTime()
     val storage = DecklyStorage(rootDir)
     var quickCheckStartNanos = 0L
