@@ -252,13 +252,14 @@ class OtherScreensTest {
     }
 
     @Test
-    fun newDeckButtonFillsFooterAndCreatesDeck() {
+    fun newDeckButtonTakesTheLeftHalfOfTheFooterAndCreatesDeck() {
         showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
 
         val button = composeRule.onNodeWithText("New deck")
         val bounds = button.getUnclippedBoundsInRoot()
+        // `.foot.two`: две колонки по `1fr` с промежутком 16: (928 − 16) / 2 = 456.
         assertEquals(32f, bounds.left.value, 0.5f)
-        assertEquals(928f, bounds.right.value - bounds.left.value, 0.5f)
+        assertEquals(456f, bounds.right.value - bounds.left.value, 0.5f)
         assertEquals(112f, bounds.bottom.value - bounds.top.value, 0.5f)
         assertEquals(1323f - 32f, bounds.bottom.value, 0.5f)
         assertEquals(3, measureBorder(button))
@@ -266,6 +267,65 @@ class OtherScreensTest {
         composeRule.assertIconBeforeLabel("New deck", IconId.PLUS, borderMargin = 8)
         button.performClick()
         assertEquals(listOf<DeckListAction>(DeckListAction.CreateDeck), listActions)
+    }
+
+    @Test
+    fun importButtonTakesTheRightHalfOfTheFooterIsQuietAndImports() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+
+        val button = composeRule.onNodeWithText("Import from file")
+        val bounds = button.getUnclippedBoundsInRoot()
+        assertEquals(32f + 456f + 16f, bounds.left.value, 0.5f)
+        assertEquals(960f, bounds.right.value, 0.5f)
+        assertEquals(112f, bounds.bottom.value - bounds.top.value, 0.5f)
+        assertEquals(1323f - 32f, bounds.bottom.value, 0.5f)
+        // Тихая кнопка: без рамки, кегль 24 (`.foot .btn.quiet`), значок «файл» перед подписью.
+        assertEquals(0, measureBorder(button))
+        assertEquals(24f, readTextStyle(composeRule.onNodeWithText("Import from file", useUnmergedTree = true)).fontSize.value, 0.01f)
+        composeRule.assertIconBeforeLabel("Import from file", IconId.FILE, borderMargin = 8)
+        button.performClick()
+        assertEquals(listOf<DeckListAction>(DeckListAction.ImportDeck), listActions)
+    }
+
+    @Test
+    fun emptyListHasTheSameTwoFooterButtons() {
+        showFrame { DeckListScreen(buildListState(emptyList()), { listActions += it }) }
+
+        composeRule.onNodeWithText("New deck").performClick()
+        composeRule.onNodeWithText("Import from file").performClick()
+
+        assertEquals(listOf<DeckListAction>(DeckListAction.CreateDeck, DeckListAction.ImportDeck), listActions)
+        assertEquals(456f, composeRule.onNodeWithText("New deck").getUnclippedBoundsInRoot().let { it.right.value - it.left.value }, 0.5f)
+    }
+
+    // --- окно ошибки импорта ----------------------------------------------------------------------
+
+    @Test
+    fun importErrorDialogHasTheMockupTextAndOneMainButton() {
+        showFrame { DeckListScreen(buildListState(buildDecks(), isImportErrorShown = true), { listActions += it }) }
+
+        composeRule.onNodeWithText("Couldn't open file").assertExists()
+        composeRule.onNodeWithText("This file is damaged or uses a format we can't open.").assertExists()
+        assertEquals(3, measureBorder(composeRule.onNodeWithText("Close")))
+        composeRule.onNodeWithText("Close").performClick()
+        assertEquals(listOf<DeckListAction>(DeckListAction.DismissImportError), listActions)
+    }
+
+    @Test
+    fun noImportErrorUntilTheStateHasOne() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+
+        composeRule.onNodeWithText("Couldn't open file").assertDoesNotExist()
+    }
+
+    @Test
+    fun rowsBehindTheImportErrorDoNotGetTouches() {
+        showFrame { DeckListScreen(buildListState(buildDecks(), isImportErrorShown = true), { listActions += it }) }
+
+        composeRule.onNodeWithText("Formulas").performClick()
+        composeRule.onNodeWithText("Import from file").performClick()
+
+        assertTrue(listActions.isEmpty())
     }
 
     // --- меню и окно удаления у строки -----------------------------------------------------------
@@ -295,17 +355,29 @@ class OtherScreensTest {
     }
 
     @Test
-    fun buttonOpensTheMenuWithTheNameOfTheDeckAndOnlyRenameAndDelete() {
+    fun buttonOpensTheMenuWithTheNameOfTheDeckAndRenameExportDeleteInThatOrder() {
         showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
 
         composeRule.onNodeWithContentDescription("Deck menu: English tenses").performClick()
 
         composeRule.onNodeWithContentDescription("English tenses").assertExists()
-        composeRule.onNodeWithText("Rename").assertExists()
-        composeRule.onNodeWithText("Delete deck").assertExists()
-        // Экспорта и импорта на экране ещё нет, поэтому «Export to file» из макета не показывается.
-        composeRule.onNodeWithText("Export to file").assertDoesNotExist()
+        val tops = listOf("Rename", "Export to file", "Delete deck").map { composeRule.onNodeWithText(it, useUnmergedTree = true).getUnclippedBoundsInRoot().top.value }
+        assertEquals(tops.sorted(), tops)
+        // Пункты по 80 друг под другом, как в макете.
+        assertEquals(80f, tops[1] - tops[0], 2f)
+        assertEquals(80f, tops[2] - tops[1], 2f)
         assertTrue("кнопка только открывает меню", listActions.isEmpty())
+    }
+
+    @Test
+    fun exportItemSendsTheDeckAndClosesTheMenu() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+        composeRule.onNodeWithContentDescription("Deck menu: English tenses").performClick()
+
+        composeRule.onNodeWithText("Export to file").performClick()
+
+        assertEquals(listOf<DeckListAction>(DeckListAction.ExportDeck(102)), listActions)
+        composeRule.onNodeWithContentDescription("English tenses").assertDoesNotExist()
     }
 
     @Test
@@ -395,10 +467,15 @@ class OtherScreensTest {
         val rename = composeRule.onNodeWithText("Rename", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val delete = composeRule.onNodeWithText("Delete deck", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val frame = composeRule.onNodeWithTag("frame").captureToImage().asAndroidBitmap()
-        // Пункты по 80, у удаления линия 1 сверху: между текстами «Rename» и «Delete deck» на черте строки есть чернила.
-        val middle = ((rename.bottom.value + delete.top.value) / 2f).toInt()
+        // Пункты по 80, у удаления линия 1 сверху: между «Export to file» и «Delete deck» на черте строки есть чернила.
+        val export = composeRule.onNodeWithText("Export to file", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val middle = ((export.bottom.value + delete.top.value) / 2f).toInt()
         assertTrue((600..800).any { x -> (middle - 40..middle + 40).any { y -> frame.isInkAt(x, y) } })
-        assertEquals(80f, delete.top.value - rename.top.value, 2f)
+        assertEquals(160f, delete.top.value - rename.top.value, 2f)
+        // Черта во всю ширину пункта ровно одна и только над «Delete deck»: у «Export to file» её нет (по правому краю текста нет).
+        val lines = (rename.top.value.toInt() - 5..delete.bottom.value.toInt() + 30).filter { y -> (870..920).all { x -> frame.isInkAt(x, y) } }
+        assertEquals("черты между пунктами: $lines", 1, lines.size)
+        assertTrue("черта между «Export to file» и «Delete deck»: $lines", lines.single() > export.bottom.value && lines.single() < delete.top.value)
     }
 
     @Test
@@ -732,8 +809,12 @@ class OtherScreensTest {
         DeckRow(103, "Formulas", 18, activeEpoch = null, isAllLearned = true, isCurrent = false),
     )
 
-    private fun buildListState(decks: List<DeckRow>, canGoBack: Boolean = decks.isNotEmpty(), deleteDialog: DeleteDeckDialog? = null) =
-        DeckListState(decks, canGoBack, deleteDialog)
+    private fun buildListState(
+        decks: List<DeckRow>,
+        canGoBack: Boolean = decks.isNotEmpty(),
+        deleteDialog: DeleteDeckDialog? = null,
+        isImportErrorShown: Boolean = false,
+    ) = DeckListState(decks, canGoBack, deleteDialog, isImportErrorShown)
 
     private fun buildNameState(name: String, isRename: Boolean = false) = DeckNameState(name, canSave = name.isNotBlank(), isRename = isRename)
 }

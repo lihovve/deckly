@@ -38,9 +38,10 @@ import app.deckly.ui.contract.DeckRow
 import app.deckly.ui.contract.DeleteDeckDialog
 
 /**
- * Список колод по макетам `decks`, `decks-empty`, `deck-menu*` и `dlg-delete-deck*`. У строки справа кнопка «⋯» с меню
- * «Rename» и «Delete deck»; открыто ли меню и у какой строки, знает только дизайн, окно удаления приходит состоянием.
- * Пока нет страниц, список прокручивается, чтобы ни одна колода не потерялась за нижней строкой. Импорта здесь ещё нет.
+ * Список колод по макетам `decks`, `decks-empty`, `deck-menu*`, `dlg-delete-deck*` и `dlg-import-error`. У строки справа
+ * кнопка «⋯» с меню «Rename», «Export to file» и «Delete deck»; открыто ли меню и у какой строки, знает только дизайн,
+ * окна удаления и ошибки импорта приходят состоянием. В нижней строке «New deck» и «Import from file». Пока нет страниц,
+ * список прокручивается, чтобы ни одна колода не потерялась за нижней строкой.
  */
 @Composable
 fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) {
@@ -53,6 +54,7 @@ fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) {
             val deck = open?.let { opened -> state.decks.firstOrNull { it.id == opened.deckId } }
             if (open != null && deck != null) DeckMenuPopup(deck, open.rowTop, { menu = null }, onAction)
             state.deleteDialog?.let { DeleteDialogHost(it, onAction) }
+            if (state.isImportErrorShown) ImportErrorDialog(onAction)
         },
     ) {
         TitleBar(
@@ -82,7 +84,13 @@ fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) {
                 { onAction(DeckListAction.CreateDeck) }, cell, Tokens.FooterButtonText,
             )
         }
-        Footer(FooterLayout.ONE, listOf(newDeck))
+        val importFile: @Composable (Modifier) -> Unit = { cell ->
+            DecklyButton(
+                DeckListTexts.IMPORT_FILE, DecklyIcons.File, ButtonKind.QUIET, null,
+                { onAction(DeckListAction.ImportDeck) }, cell, Tokens.ButtonText,
+            )
+        }
+        Footer(FooterLayout.TWO, listOf(newDeck, importFile))
     }
 }
 
@@ -156,9 +164,8 @@ private fun DeckListRow(deck: DeckRow, onOpen: (Long) -> Unit, onMenu: (Long, Dp
     }
 }
 
-// Меню строки по макету `deck-menu`: «Rename» и «Delete deck». Пункта «Export to file» нет: экспорта и импорта на экране ещё
-// нет, это отдельная работа, как и «Import from file» в нижней строке. Верх меню на 77 ниже верха строки, а если оно не
-// помещается до нижнего поля кадра, сдвигается вверх ровно настолько, чтобы поместиться.
+// Меню строки по макету `deck-menu`: «Rename», «Export to file» и «Delete deck». Верх меню на 77 ниже верха строки, а если оно
+// не помещается до нижнего поля кадра, сдвигается вверх ровно настолько, чтобы поместиться.
 @Composable
 private fun DeckMenuPopup(deck: DeckRow, rowTop: Dp, onClose: () -> Unit, onAction: (DeckListAction) -> Unit) {
     Popup(
@@ -168,6 +175,10 @@ private fun DeckMenuPopup(deck: DeckRow, rowTop: Dp, onClose: () -> Unit, onActi
                 onClose()
                 onAction(DeckListAction.RenameDeck(deck.id))
             },
+            PopupItem(DeckListTexts.EXPORT_FILE, DecklyIcons.Export, isDanger = false) {
+                onClose()
+                onAction(DeckListAction.ExportDeck(deck.id))
+            },
             PopupItem(DeckListTexts.DELETE_DECK, DecklyIcons.Trash, isDanger = true) {
                 onClose()
                 onAction(DeckListAction.AskDeleteDeck(deck.id))
@@ -176,6 +187,15 @@ private fun DeckMenuPopup(deck: DeckRow, rowTop: Dp, onClose: () -> Unit, onActi
         onDismiss = onClose,
         top = rowTop + Tokens.DeckMenuOffset,
         bottomMargin = Tokens.FrameMargin,
+    )
+}
+
+// Окно по макету `dlg-import-error`: одна главная кнопка «Close».
+@Composable
+private fun ImportErrorDialog(onAction: (DeckListAction) -> Unit) {
+    Dialog(
+        DeckListTexts.IMPORT_ERROR_TITLE, DeckListTexts.IMPORT_ERROR_TEXT,
+        listOf(DialogAction(DeckListTexts.CLOSE, isPrimary = true) { onAction(DeckListAction.DismissImportError) }),
     )
 }
 

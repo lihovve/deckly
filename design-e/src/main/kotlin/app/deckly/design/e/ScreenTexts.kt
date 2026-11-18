@@ -107,7 +107,12 @@ internal object DeckListTexts {
     const val LEARNED = "learned"
     const val SEPARATOR = "·"
     const val RENAME = "Rename"
+    const val EXPORT_FILE = "Export to file"
     const val DELETE_DECK = "Delete deck"
+    const val IMPORT_FILE = "Import from file"
+    const val IMPORT_ERROR_TITLE = "Couldn't open file"
+    const val IMPORT_ERROR_TEXT = "This file is damaged or uses a format we can't open."
+    const val CLOSE = "Close"
 
     /** «Deck menu: English A2»: подпись кнопки «⋯» у строки для диктора. */
     fun formatMenuLabel(name: String): String = "Deck menu: $name"
