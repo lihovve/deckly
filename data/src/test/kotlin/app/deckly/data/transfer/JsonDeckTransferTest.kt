@@ -252,7 +252,7 @@ class JsonDeckTransferTest {
 
         val text = exportToText(deck.id)
 
-        assertTrue(text, text.startsWith("""{"format":"deckly-deck","version":2,"deck":{"""))
+        assertTrue(text, text.startsWith("""{"format":"deckly-deck","version":3,"deck":{"""))
     }
 
     @Test
@@ -330,17 +330,54 @@ class JsonDeckTransferTest {
     }
 
     @Test
-    fun versionTwoDeckImportsFromFixedJsonWithShapesOnBothSides() = runTest {
+    fun versionTwoDeckImportsWithShapesMovedToTheContourFrame() = runTest {
+        // Звезда в сетке значка занимает 9…91 × 10…90: рамка 100…400 × 200,5…500,25 становится 127…373 × 230,475…470,275
+        // вокруг того же центра (звезда симметрична, поворот на 30° центр не сдвигает). Линия не менялась.
         val imported = repos.transfer.importDeck(asStream(VALID_FILE_V2))
 
         val state = repos.decks.loadDeckState(imported.id)
         val epochTwoCard = state.cards.single { it.section == Section.EPOCH_2 }
         val newCard = state.cards.single { it.section == Section.NEW }
         val content = repos.contents.loadContent(epochTwoCard.id)
-        assertEquals(listOf(Shape(Shape.Kind.STAR, 100f, 200.5f, 400f, 500.25f, 30f, 6.5f)), content.front.shapes)
+        val star = content.front.shapes.single()
+        assertEquals(Shape.Kind.STAR, star.kind)
+        assertEquals(127f, star.left, 0.001f)
+        assertEquals(230.475f, star.top, 0.001f)
+        assertEquals(373f, star.right, 0.001f)
+        assertEquals(470.275f, star.bottom, 0.001f)
+        assertEquals(30f, star.angle)
+        assertEquals(6.5f, star.width)
         assertEquals(listOf(Shape(Shape.Kind.LINE, 10f, 20f, 300f, 100f, -179.5f, 1f)), content.back.shapes)
         assertEquals(1, content.front.strokes.size)
         assertEquals(CardSide(), repos.contents.loadContent(newCard.id).front)
+    }
+
+    @Test
+    fun versionTwoDeckMovesTheCenterOfAnAsymmetricShapeAlongTheTurnedOffset() = runTest {
+        // Треугольник 11…89 × 12…85 в рамке 100…300 × 200…500 под 90°: центр контура на 4,5 выше центра рамки, после поворота
+        // это сдвиг на 4,5 вправо; новая рамка 156 × 219 вокруг (204,5, 350).
+        val triangle = STAR_JSON.replace(""""kind":"star"""", """"kind":"triangle"""")
+            .replace(""""left":100.0,"top":200.5,"right":400.0,"bottom":500.25,"angle":30.0""", """"left":100.0,"top":200.0,"right":300.0,"bottom":500.0,"angle":90.0""")
+        val file = VALID_FILE_V2.replaceOnce(STAR_JSON, triangle)
+
+        val imported = repos.transfer.importDeck(asStream(file))
+
+        val card = repos.decks.loadDeckState(imported.id).cards.single { it.section == Section.EPOCH_2 }
+        val shape = repos.contents.loadContent(card.id).front.shapes.single()
+        assertEquals(126.5f, shape.left, 0.001f)
+        assertEquals(240.5f, shape.top, 0.001f)
+        assertEquals(282.5f, shape.right, 0.001f)
+        assertEquals(459.5f, shape.bottom, 0.001f)
+    }
+
+    @Test
+    fun versionThreeDeckImportsItsShapesExactly() = runTest {
+        val imported = repos.transfer.importDeck(asStream(VALID_FILE_V3))
+
+        val epochTwoCard = repos.decks.loadDeckState(imported.id).cards.single { it.section == Section.EPOCH_2 }
+        val content = repos.contents.loadContent(epochTwoCard.id)
+        assertEquals(listOf(Shape(Shape.Kind.STAR, 100f, 200.5f, 400f, 500.25f, 30f, 6.5f)), content.front.shapes)
+        assertEquals(listOf(Shape(Shape.Kind.LINE, 10f, 20f, 300f, 100f, -179.5f, 1f)), content.back.shapes)
     }
 
     @Test
@@ -359,7 +396,7 @@ class JsonDeckTransferTest {
         val text = exportToText(1)
         val imported = repos.transfer.importDeck(asStream(text))
 
-        assertTrue(text, text.startsWith("""{"format":"deckly-deck","version":2,"""))
+        assertTrue(text, text.startsWith("""{"format":"deckly-deck","version":3,"""))
         assertTrue(text, text.contains(""""frontShapes":[{"kind":"line","left":10.0,"top":20.0,"right":400.0,"bottom":300.0,"angle":-180.0,"width":1.0}"""))
         val importedCard = repos.decks.loadDeckState(imported.id).cards.single()
         val loaded = repos.contents.loadContent(importedCard.id)
@@ -379,7 +416,7 @@ class JsonDeckTransferTest {
 
     @Test
     fun newerVersionIsUnsupported() = runTest {
-        val newer = VALID_FILE_V2.replaceOnce(""""version":2""", """"version":3""")
+        val newer = VALID_FILE_V3.replaceOnce(""""version":3""", """"version":4""")
         val newerWithOtherShape = """{"format":"deckly-deck","version":7,"decks":[{"title":"x"}]}"""
 
         assertEquals("UNSUPPORTED_VERSION", importOutcome(newer))
@@ -425,6 +462,8 @@ class JsonDeckTransferTest {
             damage("number instead of name", """"name":"Тест"""", """"name":5"""),
             damage("missing version", """"version":1,""", ""),
             damage("version zero", """"version":1""", """"version":0"""),
+            damage("version 2 without shape lists", """"version":1""", """"version":2"""),
+            damage("version 3 without shape lists", """"version":1""", """"version":3"""),
             damage("shapes in a version 1 file", """"front":[{"width":6.0,"points":[[1.0,2.0,0.5],[3.0,4.0,1.0]]}],"back":[]""",
                 """"front":[{"width":6.0,"points":[[1.0,2.0,0.5],[3.0,4.0,1.0]]}],"back":[],"frontShapes":[$STAR_JSON]"""),
         ) + listOf(
@@ -569,7 +608,7 @@ class JsonDeckTransferTest {
         name to VALID_FILE.replaceOnce(old, new)
 
     private fun damageShape(name: String, old: String, new: String): Pair<String, String> =
-        "version 2: $name" to VALID_FILE_V2.replaceOnce(old, new)
+        "version 3: $name" to VALID_FILE_V3.replaceOnce(old, new)
 
     private fun String.replaceOnce(old: String, new: String): String {
         require(split(old).size == 2) { "«$old» должно встречаться в тексте ровно один раз" }
@@ -601,9 +640,12 @@ class JsonDeckTransferTest {
         const val LINE_JSON = """{"kind":"line","left":10.0,"top":20.0,"right":300.0,"bottom":100.0,""" +
             """"angle":-179.5,"width":1.0}"""
 
-        /** Файл версии 2: у первой карточки штрих и по фигуре на каждой стороне, у второй фигур нет. */
+        /** Файл версии 2: у первой карточки штрих и по фигуре на каждой стороне, у второй фигур нет; рамки по сетке значка. */
         val VALID_FILE_V2 = """{"format":"deckly-deck","version":2,""" + DECK + ""","cards":[""" +
             CARD_WITH_STROKE.removeSuffix("}") + ""","frontShapes":[""" + STAR_JSON + """],"backShapes":[""" + LINE_JSON +
             """]},""" + CARD_WITHOUT_STROKES.removeSuffix("}") + ""","frontShapes":[],"backShapes":[]}]}"""
+
+        /** То же в формате версии 3: рамки по контуру, фигуры читаются как записаны. */
+        val VALID_FILE_V3 = VALID_FILE_V2.replaceFirst(""""version":2""", """"version":3""")
     }
 }

@@ -122,8 +122,8 @@ class SheetInputTest {
 
     // --- фигуры -------------------------------------------------------------------------------------
 
-    // Рамка 200 × 300: контур от x = 128 до 272 и от y = 260 до 440.
-    private val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)
+    // Рамка идёт по контуру: от x = 128 до 272 и от y = 260 до 440.
+    private val rectangle = Shape(Shape.Kind.RECTANGLE, 128f, 260f, 272f, 440f, 0f, 6f)
 
     @Test
     fun shapeBoundsCoverTheOutlineAndHalfItsWidth() {
@@ -155,18 +155,18 @@ class SheetInputTest {
 
     @Test
     fun changedBoundsCoverAMovedShapeAtBothPlaces() {
-        val moved = rectangle.copy(left = 500f, right = 700f)
+        val moved = rectangle.copy(left = 500f, right = 644f)
 
         val bounds = computeChangedBounds(CardSide(shapes = listOf(rectangle)), CardSide(shapes = listOf(moved)), 1f)!!
 
-        // Старое место: левый край контура 128; новое: правый край контура 500 + 86 % · 200 = 672.
-        assertTrue(bounds.left <= 125 && bounds.right >= 672)
+        // Старое место: левый край контура 128; новое: правый край контура 644.
+        assertTrue(bounds.left <= 125 && bounds.right >= 644)
     }
 
     @Test
     fun changedBoundsIgnoreUnchangedShapes() {
         val other = Shape(Shape.Kind.OVAL, 800f, 800f, 900f, 900f, 0f, 3f)
-        val moved = rectangle.copy(left = 500f, right = 700f)
+        val moved = rectangle.copy(left = 500f, right = 644f)
 
         val bounds = computeChangedBounds(CardSide(shapes = listOf(other, rectangle)), CardSide(shapes = listOf(other, moved)), 1f)!!
 

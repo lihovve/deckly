@@ -36,8 +36,8 @@ class ShapeRendererTest {
 
     private val unit = CardUnits.PER_DESIGN_UNIT
 
-    // Рамка 200 × 300: левый край контура x = 128, верхний y = 260, правый 272, нижний 440.
-    private val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)
+    // Рамка идёт по контуру: левый край x = 128, верхний y = 260, правый 272, нижний 440.
+    private val rectangle = Shape(Shape.Kind.RECTANGLE, 128f, 260f, 272f, 440f, 0f, 6f)
 
     private fun drawSide(scale: Float, side: CardSide, size: Int = 1000): Bitmap {
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -82,13 +82,13 @@ class ShapeRendererTest {
     @Test
     fun stretchedFrameDoesNotThickenTheOutline() {
         // Одна фигура и та же рамка, растянутая по ширине в три раза: толщина контура прежняя, а не растянутая.
-        val wide = rectangle.copy(left = 100f, right = 700f)
-        val bitmap = drawShapes(1f, rectangle, wide.copy(top = 600f, bottom = 900f))
+        val wide = rectangle.copy(right = 128f + 3 * 144f)
+        val bitmap = drawShapes(1f, rectangle, wide.copy(top = 660f, bottom = 840f))
 
         assertEquals(6, bitmap.measureRun(200, 260, isVertical = true))
         assertEquals(6, bitmap.measureRun(400, 660, isVertical = true))
-        // Левый край растянутой рамки: x = 100 + 14 % · 600 = 184.
-        assertEquals(6, bitmap.measureRun(184, 750, isVertical = false))
+        // Левый край растянутой рамки: x = 128.
+        assertEquals(6, bitmap.measureRun(128, 750, isVertical = false))
     }
 
     @Test

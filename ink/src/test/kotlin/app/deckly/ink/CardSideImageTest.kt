@@ -91,7 +91,7 @@ class CardSideImageTest {
     @Test
     fun imageDrawsShapesNextToStrokesWithTheScaleOfItsSheet() {
         // Лист 500 px: масштаб 0,5. Левый край контура прямоугольника x = 128 единиц, то есть 64 px, толщина 6 единиц = 3 px.
-        val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)
+        val rectangle = Shape(Shape.Kind.RECTANGLE, 128f, 260f, 272f, 440f, 0f, 6f)
         val stroke = Stroke(12f, listOf(StrokePoint(800f, 800f, 1f)))
         composeRule.setContent {
             CardSideImage(CardSide(listOf(stroke), listOf(rectangle)), Modifier.size(SHEET_DP.dp, SHEET_HEIGHT_DP.dp), "Рисунок")

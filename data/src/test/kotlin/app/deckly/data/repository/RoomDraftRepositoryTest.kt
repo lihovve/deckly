@@ -28,6 +28,8 @@ import app.deckly.domain.model.createDeck
 import app.deckly.domain.port.StoredDraft
 import java.io.File
 import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -159,6 +161,46 @@ class RoomDraftRepositoryTest {
 
         assertEquals(listOf(shape), repos.contents.loadContent(cardId).front.shapes)
         assertEquals(content, repos.contents.loadContent(cardId))
+    }
+
+    /** Файл версии 2: те же байты, что у записанного сейчас, но заголовок говорит, что рамка фигуры по сетке значка. */
+    private fun markAsVersionTwo(file: File) {
+        file.writeBytes(file.readBytes().also { ByteBuffer.wrap(it).order(ByteOrder.LITTLE_ENDIAN).putInt(4, 2) })
+    }
+
+    private fun assertContourFrameOfRectangle(shape: Shape) {
+        // Прямоугольник 14…86 × 20…80 в сетке значка: рамка 100…300 × 200…500 по сетке стала 128…272 × 260…440 по контуру.
+        assertEquals(Shape.Kind.RECTANGLE, shape.kind)
+        assertEquals(128f, shape.left, 0.001f)
+        assertEquals(260f, shape.top, 0.001f)
+        assertEquals(272f, shape.right, 0.001f)
+        assertEquals(440f, shape.bottom, 0.001f)
+    }
+
+    @Test
+    fun draftWrittenBeforeTheContourFrameLoadsWithTheSameDrawing() = runTest {
+        seedDeck(repos, baseState)
+        val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 3f)
+        repos.drafts.storeDraft(StoredDraft(1, buildNewCardDraft().copy(front = CardSide(emptyList(), listOf(rectangle)))))
+        markAsVersionTwo(File(repos.storage.strokesDir, repos.database.draftDao().findDraft()!!.contentFile))
+        repos.reopen()
+
+        val loaded = repos.drafts.loadDraft()!!
+
+        assertContourFrameOfRectangle(loaded.draft.front.shapes.single())
+    }
+
+    @Test
+    fun cardFileWrittenBeforeTheContourFrameLoadsWithTheSameDrawing() = runTest {
+        seedDeck(repos, baseState)
+        val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 3f)
+        val draft = buildEditDraft(101).copy(front = CardSide(emptyList(), listOf(rectangle)))
+        val (after, content) = saveDraft(baseState, draft, newCardId = 0, today = SCENARIO_DAY, now = 1_000L)
+        repos.drafts.commitDraft(collectDeckChanges(baseState, after), content)
+        markAsVersionTwo(File(repos.storage.strokesDir, repos.database.cardDao().findCard(101)!!.contentFile))
+        repos.reopen()
+
+        assertContourFrameOfRectangle(repos.contents.loadContent(101).front.shapes.single())
     }
 
     @Test

@@ -132,7 +132,7 @@ class StrokeFileFormatTest {
     }
 
     @Test
-    fun layoutIsSignatureVersionTwoStrokesThenShapesPerSide() {
+    fun layoutIsSignatureVersionThreeStrokesThenShapesPerSide() {
         val front = CardSide(
             listOf(Stroke(6f, listOf(StrokePoint(1f, 2f, 0.5f), StrokePoint(3f, 4f, 1f)))),
             listOf(star),
@@ -140,9 +140,9 @@ class StrokeFileFormatTest {
 
         val bytes = writeToBytes(front, CardSide())
 
-        // DKS1, версия 2; лицо: 1 штрих (толщина, 2 точки), 1 фигура (код 9 и шесть float); оборот: 0 штрихов, 0 фигур.
+        // DKS1, версия 3; лицо: 1 штрих (толщина, 2 точки), 1 фигура (код 9 и шесть float); оборот: 0 штрихов, 0 фигур.
         val expected = ByteBuffer.allocate(8 + (4 + (4 + 4 + 2 * 12)) + (4 + 28) + 4 + 4).order(ByteOrder.LITTLE_ENDIAN)
-            .put("DKS1".toByteArray(Charsets.US_ASCII)).putInt(2)
+            .put("DKS1".toByteArray(Charsets.US_ASCII)).putInt(3)
             .putInt(1).putFloat(6f).putInt(2)
             .putFloat(1f).putFloat(2f).putFloat(0.5f).putFloat(3f).putFloat(4f).putFloat(1f)
             .putInt(1).putInt(9).putFloat(100f).putFloat(200.5f).putFloat(400f).putFloat(500.25f).putFloat(30f).putFloat(6.5f)
@@ -152,7 +152,7 @@ class StrokeFileFormatTest {
     }
 
     @Test
-    fun damagedVersionTwoFileIsReportedAtAnyLength() {
+    fun damagedFileOfTheCurrentVersionIsReportedAtAnyLength() {
         val valid = writeToBytes(
             CardSide(listOf(buildTestStroke(1), buildTestStroke(2)), listOf(star)),
             CardSide(listOf(buildTestStroke(3)), listOf(star.copy(kind = Shape.Kind.LINE))),
@@ -164,12 +164,70 @@ class StrokeFileFormatTest {
     }
 
     @Test
-    fun versionsOtherThanOneAndTwoAreRejected() {
+    fun versionsOtherThanOneTwoAndThreeAreRejected() {
         val valid = writeToBytes(CardSide(listOf(buildTestStroke(1))), CardSide())
 
-        for (version in listOf(0, 3, 4, -1, Int.MAX_VALUE)) {
+        for (version in listOf(0, 4, 5, -1, Int.MAX_VALUE)) {
             assertDamaged(replaceInt(valid, 4, version))
         }
+    }
+
+    // --- версия 2: рамка фигур по сетке значка ----------------------------------------------------------------
+
+    /** Файл с фигурами на лице, собранный вручную, в обход записи: так лежат файлы версии 2 на устройстве. */
+    private fun buildFileWithShapes(version: Int, vararg shapes: Shape): ByteArray {
+        val buffer = ByteBuffer.allocate(8 + 4 + (4 + shapes.size * 28) + 4 + 4).order(ByteOrder.LITTLE_ENDIAN)
+            .put("DKS1".toByteArray(Charsets.US_ASCII)).putInt(version)
+            .putInt(0).putInt(shapes.size)
+        for (shape in shapes) {
+            buffer.putInt(shape.kind.code)
+                .putFloat(shape.left).putFloat(shape.top).putFloat(shape.right).putFloat(shape.bottom)
+                .putFloat(shape.angle).putFloat(shape.width)
+        }
+        return buffer.putInt(0).putInt(0).array()
+    }
+
+    private fun assertShape(expected: Shape, actual: Shape) {
+        assertEquals(expected.kind, actual.kind)
+        assertEquals("left у ${expected.kind}", expected.left, actual.left, 0.001f)
+        assertEquals("top у ${expected.kind}", expected.top, actual.top, 0.001f)
+        assertEquals("right у ${expected.kind}", expected.right, actual.right, 0.001f)
+        assertEquals("bottom у ${expected.kind}", expected.bottom, actual.bottom, 0.001f)
+        assertEquals("angle у ${expected.kind}", expected.angle, actual.angle, 0f)
+        assertEquals("width у ${expected.kind}", expected.width, actual.width, 0f)
+    }
+
+    @Test
+    fun versionTwoShapesAreMovedToTheContourFrameWhileReading() {
+        // В версии 2 рамка обычного вида — сетка значка 100 × 100 с полями; прямоугольник занимал в ней 14…86 × 20…80, а
+        // треугольник 11…89 × 12…85 со смещением центра контура, которое поворачивается на угол фигуры.
+        val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 3f)
+        val triangle = Shape(Shape.Kind.TRIANGLE, 100f, 200f, 300f, 500f, 90f, 3f)
+        val arrow = Shape(Shape.Kind.ARROW, 10f, 20f, 300f, 100f, -179.5f, 1f)
+
+        val (front, back) = readFromBytes(buildFileWithShapes(2, rectangle, triangle, arrow))
+
+        assertEquals(3, front.shapes.size)
+        assertShape(Shape(Shape.Kind.RECTANGLE, 128f, 260f, 272f, 440f, 0f, 3f), front.shapes[0])
+        assertShape(Shape(Shape.Kind.TRIANGLE, 126.5f, 240.5f, 282.5f, 459.5f, 90f, 3f), front.shapes[1])
+        assertEquals("линия и стрелки не менялись", arrow, front.shapes[2])
+        assertEquals(CardSide(), back)
+    }
+
+    @Test
+    fun versionThreeShapesAreReadExactlyAsWritten() {
+        val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 3f)
+        val triangle = Shape(Shape.Kind.TRIANGLE, 100f, 200f, 300f, 500f, 90f, 3f)
+
+        val (front, _) = readFromBytes(buildFileWithShapes(3, rectangle, triangle))
+
+        assertEquals(listOf(rectangle, triangle), front.shapes)
+    }
+
+    @Test
+    fun shapeOfVersionTwoWithInvalidValuesIsDamagedToo() {
+        assertThrows(StrokeFileException::class.java) { readFromBytes(buildFileWithOneShape(version = 2, right = 100f)) }
+        assertThrows(StrokeFileException::class.java) { readFromBytes(buildFileWithOneShape(version = 2, code = 99)) }
     }
 
     // --- недопустимые значения -------------------------------------------------------------------------
@@ -213,8 +271,9 @@ class StrokeFileFormatTest {
         assertEquals(invalid.mapValues { "damaged" }, outcomes)
     }
 
-    /** Файл версии 2 из одной фигуры на лице; значения подставляются как есть, в обход модели. */
+    /** Файл из одной фигуры на лице; значения подставляются как есть, в обход модели. */
     private fun buildFileWithOneShape(
+        version: Int = 3,
         code: Int = 9,
         left: Float = 100f,
         top: Float = 200f,
@@ -224,7 +283,7 @@ class StrokeFileFormatTest {
         width: Float = 6f,
     ): ByteArray =
         ByteBuffer.allocate(8 + 4 + (4 + 28) + 4 + 4).order(ByteOrder.LITTLE_ENDIAN)
-            .put("DKS1".toByteArray(Charsets.US_ASCII)).putInt(2)
+            .put("DKS1".toByteArray(Charsets.US_ASCII)).putInt(version)
             .putInt(0).putInt(1)
             .putInt(code).putFloat(left).putFloat(top).putFloat(right).putFloat(bottom).putFloat(angle).putFloat(width)
             .putInt(0).putInt(0)

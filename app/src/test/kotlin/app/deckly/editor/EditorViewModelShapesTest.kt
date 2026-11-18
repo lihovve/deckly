@@ -70,9 +70,9 @@ class EditorViewModelShapesTest {
     private val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 100f, 300f, 250f, 0f, 3f * unit)
     private val oval = Shape(Shape.Kind.OVAL, 600f, 100f, 800f, 250f, 0f, 3f * unit)
 
-    // Левая кромка прямоугольника на середине высоты и левая точка овала: в ленте выбора своей фигуры.
-    private val onRectangle = 128f to 175f
-    private val onOval = 624f to 175f
+    // Левая кромка прямоугольника на середине высоты и левая точка овала: в ленте выбора своей фигуры (рамка идёт по контуру).
+    private val onRectangle = 100f to 175f
+    private val onOval = 600f to 175f
 
     // Точка листа, где нет ни одной фигуры.
     private val emptySpot = 900f to 900f
@@ -478,8 +478,8 @@ class EditorViewModelShapesTest {
         startNewCard()
         chooseShape(ShapeKind.RECTANGLE)
         val before = checkNotNull(shown.selectedShape).frame
-        // Левая кромка прямоугольника на середине высоты: `14 %` рамки от её левого края.
-        val edgeX = before.left + 0.14f * (before.right - before.left)
+        // Левая кромка прямоугольника на середине высоты: рамка идёт по контуру, кромка на её левой стороне.
+        val edgeX = before.left
         val middleY = (before.top + before.bottom) / 2
 
         viewModel.onAction(EditorAction.StartShapeGesture(null, edgeX, middleY))
@@ -860,7 +860,7 @@ class EditorViewModelShapesTest {
         startNewCard()
         chooseShape(ShapeKind.RECTANGLE)
         val first = checkNotNull(shown.selectedShape).frame
-        val edgeX = first.left + 0.14f * (first.right - first.left)
+        val edgeX = first.left
         val middleY = (first.top + first.bottom) / 2
         // Первый жест довёл фигуру до новой позиции и закончился.
         viewModel.onAction(EditorAction.StartShapeGesture(null, edgeX, middleY))
@@ -900,7 +900,7 @@ class EditorViewModelShapesTest {
         startNewCard()
         chooseShape(ShapeKind.RECTANGLE)
         val frame = checkNotNull(shown.selectedShape).frame
-        val edgeX = frame.left + 0.14f * (frame.right - frame.left)
+        val edgeX = frame.left
         val middleY = (frame.top + frame.bottom) / 2
         viewModel.onAction(EditorAction.StartShapeGesture(null, edgeX, middleY))
         viewModel.onAction(EditorAction.Back)
@@ -933,7 +933,7 @@ class EditorViewModelShapesTest {
         startNewCard()
         chooseShape(ShapeKind.RECTANGLE)
         val before = checkNotNull(shown.selectedShape).frame
-        val edgeX = before.left + 0.14f * (before.right - before.left)
+        val edgeX = before.left
         val middleY = (before.top + before.bottom) / 2
         viewModel.onAction(EditorAction.StartShapeGesture(null, edgeX, middleY))
         viewModel.onAction(EditorAction.CancelShapeGesture)
@@ -949,7 +949,7 @@ class EditorViewModelShapesTest {
         startNewCard()
         chooseShape(ShapeKind.RECTANGLE)
         val before = checkNotNull(shown.selectedShape).frame
-        val edgeX = before.left + 0.14f * (before.right - before.left)
+        val edgeX = before.left
         val middleY = (before.top + before.bottom) / 2
 
         viewModel.onAction(EditorAction.StartShapeGesture(null, edgeX, middleY))
@@ -1000,7 +1000,7 @@ class EditorViewModelShapesTest {
         startNewCard()
         chooseShape(ShapeKind.RECTANGLE)
         val before = checkNotNull(shown.selectedShape).frame
-        val edgeX = before.left + 0.14f * (before.right - before.left)
+        val edgeX = before.left
         val middleY = (before.top + before.bottom) / 2
         viewModel.onAction(EditorAction.StartShapeGesture(null, edgeX, middleY))
         viewModel.onAction(EditorAction.MoveShapeGesture(edgeX + 40f * unit, middleY))
@@ -1222,7 +1222,7 @@ class EditorViewModelShapesTest {
         startNewCard()
         chooseShape(ShapeKind.RECTANGLE)
         val before = checkNotNull(shown.selectedShape).frame
-        val edgeX = before.left + 0.14f * (before.right - before.left)
+        val edgeX = before.left
         val middleY = (before.top + before.bottom) / 2
         viewModel.onAction(EditorAction.StartShapeGesture(null, edgeX, middleY))
         viewModel.onAction(EditorAction.MoveShapeGesture(edgeX + 40f * unit, middleY))

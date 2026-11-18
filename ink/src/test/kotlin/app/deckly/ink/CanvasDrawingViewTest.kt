@@ -33,9 +33,9 @@ class CanvasDrawingViewTest {
     private val erasures = mutableListOf<Pair<List<StrokePoint>, Float>>()
     private val taps = mutableListOf<Int>()
 
-    // Рамка 200 × 300 единиц карточки: левый край контура x = 128 (234 px при масштабе 1,83), середина по высоте y = 350
+    // Рамка идёт по контуру 128…272 × 260…440 единиц карточки: левый край x = 128 (234 px при масштабе 1,83), середина по высоте y = 350
     // (640 px). Контур толщиной 6 единиц, лента выбора шире на 8 единиц макета с каждой стороны.
-    private val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)
+    private val rectangle = Shape(Shape.Kind.RECTANGLE, 128f, 260f, 272f, 440f, 0f, 6f)
 
     @Before
     fun createView() {
@@ -302,10 +302,10 @@ class CanvasDrawingViewTest {
 
     @Test
     fun tapAtTheSecondShapeReportsItsIndex() {
-        val far = Shape(Shape.Kind.OVAL, 600f, 100f, 900f, 300f, 0f, 3f)
+        val far = Shape(Shape.Kind.OVAL, 636f, 140f, 864f, 260f, 0f, 3f)
         bind(shapes = listOf(rectangle, far))
 
-        // Левая точка овала: x = 600 + 12 % · 300 = 636 единиц, y = 200: 1164 и 366 px.
+        // Левая точка овала: x = 636 единиц, y = 200: 1164 и 366 px.
         performGesture(MotionEvent.TOOL_TYPE_STYLUS, listOf(Sample(1165f, 366f, 0.5f)))
 
         assertEquals(listOf(1), taps)
@@ -449,11 +449,11 @@ class CanvasDrawingViewTest {
     fun shapeMovedByHostIsDrawnAtTheNewPlaceOnly() {
         bind(shapes = listOf(rectangle))
 
-        bind(shapes = listOf(rectangle.copy(left = 500f, right = 700f)))
+        bind(shapes = listOf(rectangle.copy(left = 528f, right = 672f)))
 
         val bitmap = drawView()
         assertFalse(bitmap.isInk(234, 640))
-        // Левый край нового контура: x = 500 + 14 % · 200 = 528 единиц, 966 px.
+        // Левый край нового контура: x = 528 единиц, 966 px.
         assertTrue(bitmap.isInk(966, 640))
     }
 

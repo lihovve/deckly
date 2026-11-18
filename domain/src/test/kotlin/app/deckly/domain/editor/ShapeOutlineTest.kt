@@ -133,20 +133,66 @@ class ShapeOutlineTest {
         assertTrue(grid(Shape.Kind.CLOUD) === grid(Shape.Kind.CLOUD))
     }
 
+    // --- границы контура ---------------------------------------------------------------------------
+
+    private fun assertGridBounds(expected: GridBounds, kind: Shape.Kind) {
+        val actual = kind.findGridBounds()
+        assertEquals(expected.minX, actual.minX, 0.001f, "${kind.key}: minX")
+        assertEquals(expected.minY, actual.minY, 0.001f, "${kind.key}: minY")
+        assertEquals(expected.maxX, actual.maxX, 0.001f, "${kind.key}: maxX")
+        assertEquals(expected.maxY, actual.maxY, 0.001f, "${kind.key}: maxY")
+    }
+
+    @Test
+    fun gridBoundsAreTheExtremesOfTheIconOutline() {
+        // Значок стоит в сетке с полями: у прямоугольника 14…86 × 20…80, у звезды 9…91 × 10…90, у треугольника 11…89 × 12…85.
+        assertGridBounds(GridBounds(14f, 20f, 86f, 80f), Shape.Kind.RECTANGLE)
+        assertGridBounds(GridBounds(9f, 10f, 91f, 90f), Shape.Kind.STAR)
+        assertGridBounds(GridBounds(11f, 12f, 89f, 85f), Shape.Kind.TRIANGLE)
+        for (kind in Shape.Kind.entries) {
+            val points = grid(kind).flatten()
+            assertGridBounds(GridBounds(points.minOf { it.x }, points.minOf { it.y }, points.maxOf { it.x }, points.maxOf { it.y }), kind)
+        }
+    }
+
+    @Test
+    fun gridBoundsAreCountedOncePerKind() {
+        assertTrue(Shape.Kind.CLOUD.findGridBounds() === Shape.Kind.CLOUD.findGridBounds())
+    }
+
+    @Test
+    fun contourOfEveryOrdinaryKindTouchesAllFourSidesOfItsFrame() {
+        val frames = listOf(
+            listOf(100f, 200f, 300f, 500f),
+            listOf(0f, 0f, 80f, 80f),
+            listOf(333.3f, 40.5f, 910f, 160.25f),
+        )
+        for (kind in Shape.Kind.entries.filterNot { it.isLinear }) {
+            for ((left, top, right, bottom) in frames) {
+                val points = shape(kind, left, top, right, bottom).listPolylines().flatten()
+
+                assertEquals(left, points.minOf { it.x }, 0.01f, "${kind.key} $left…$right: левая сторона")
+                assertEquals(right, points.maxOf { it.x }, 0.01f, "${kind.key} $left…$right: правая сторона")
+                assertEquals(top, points.minOf { it.y }, 0.01f, "${kind.key} $top…$bottom: верхняя сторона")
+                assertEquals(bottom, points.maxOf { it.y }, 0.01f, "${kind.key} $top…$bottom: нижняя сторона")
+            }
+        }
+    }
+
     // --- контуры на листе -------------------------------------------------------------------------
 
     @Test
-    fun gridIsStretchedOverTheFrameIndependentlyByAxes() {
+    fun contourIsStretchedOverTheFrameFromItsOwnBoundsIndependentlyByAxes() {
         val rectangle = shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f)
 
         val outline = rectangle.listPolylines()[0]
 
-        // Рамка 200 × 300: x = 100 + gx · 2, y = 200 + gy · 3.
-        assertPoint(128f, 260f, outline[0])
-        assertPoint(272f, 260f, outline[1])
-        assertPoint(272f, 440f, outline[2])
-        assertPoint(128f, 440f, outline[3])
-        assertPoint(128f, 260f, outline[4])
+        // Контур прямоугольника — сама рамка 200 × 300: ни полей значка (14 и 20 %), ни растяжения сетки 100 × 100.
+        assertPoint(100f, 200f, outline[0])
+        assertPoint(300f, 200f, outline[1])
+        assertPoint(300f, 500f, outline[2])
+        assertPoint(100f, 500f, outline[3])
+        assertPoint(100f, 200f, outline[4])
     }
 
     @Test
@@ -155,9 +201,9 @@ class ShapeOutlineTest {
 
         val outline = rectangle.listPolylines()[0]
 
-        // Центр (200, 350). Угол (128, 260) лежит в (−72, −90) от него; поворот по часовой на 90°: (x, y) → (−y, x).
-        assertPoint(200f + 90f, 350f - 72f, outline[0])
-        assertPoint(200f + 90f, 350f + 72f, outline[1])
+        // Центр (200, 350). Угол (100, 200) лежит в (−100, −150) от него; поворот по часовой на 90°: (x, y) → (−y, x).
+        assertPoint(200f + 150f, 350f - 100f, outline[0])
+        assertPoint(200f + 150f, 350f + 100f, outline[1])
     }
 
     @Test
@@ -268,8 +314,8 @@ class ShapeOutlineTest {
 
     private fun path(vararg xy: Pair<Float, Float>) = xy.map { StrokePoint(it.first, it.second, 0.5f) }
 
-    // Прямоугольник на рамке 200 × 300 с левым краем x = 128 (14 % от 200 = 28 от левого края 100).
-    private val frame = shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, width = 6f)
+    // Прямоугольник с левым краем x = 128: рамка по контуру 128…272 × 260…440 (по сетке 100 × 100 это была рамка 100…300 × 200…500).
+    private val frame = shape(Shape.Kind.RECTANGLE, 128f, 260f, 272f, 440f, width = 6f)
 
     private val ribbon = 3f + 8f * unit
 
@@ -294,8 +340,8 @@ class ShapeOutlineTest {
 
     @Test
     fun ofTwoTouchedShapesTheLastOneWins() {
-        val inner = shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, width = 6f)
-        val outer = shape(Shape.Kind.RECTANGLE, 110f, 210f, 310f, 510f, width = 6f)
+        val inner = shape(Shape.Kind.RECTANGLE, 128f, 260f, 272f, 440f, width = 6f)
+        val outer = shape(Shape.Kind.RECTANGLE, 138f, 270f, 282f, 450f, width = 6f)
 
         // x = 129 в одном пикселе от левого края внутренней (128) и в девяти от внешней (138): лента задевает обе,
         // выигрывает последняя в списке, а не ближайшая.

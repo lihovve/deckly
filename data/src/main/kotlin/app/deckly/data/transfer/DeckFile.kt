@@ -1,5 +1,6 @@
 package app.deckly.data.transfer
 
+import app.deckly.domain.editor.migrateGridFrameToContour
 import app.deckly.domain.model.Card
 import app.deckly.domain.model.CardContent
 import app.deckly.domain.model.CardSide
@@ -16,9 +17,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 internal const val DECK_FILE_FORMAT = "deckly-deck"
-/** Версия, которую пишет экспорт. Импорт читает версии 1 (без фигур) и 2: у файла версии 1 фигур быть не может. */
-internal const val DECK_FILE_VERSION = 2
+/**
+ * Версия, которую пишет экспорт. Импорт читает версии 1 (без фигур: у файла версии 1 фигур быть не может), 2 (рамка
+ * фигуры по сетке значка) и 3 (рамка по границам контура); фигуры версии 2 при чтении переводятся
+ * ([migrateGridFrameToContour]).
+ */
+internal const val DECK_FILE_VERSION = 3
 private const val FIRST_DECK_FILE_VERSION = 1
+private const val FIRST_SHAPES_DECK_FILE_VERSION = 2
 
 private const val EPOCH_COUNT = 4
 private const val POINT_VALUES = 3
@@ -67,7 +73,7 @@ internal class CardDto(
     val excludedFromPass: Boolean,
     val front: List<StrokeDto>,
     val back: List<StrokeDto>,
-    // Версия 2: оба списка обязательны; версия 1: их нет. Различает проверка файла, а не значение по умолчанию.
+    // Версии 2 и 3: оба списка обязательны; версия 1: их нет. Различает проверка файла, а не значение по умолчанию.
     val frontShapes: List<ShapeDto>? = null,
     val backShapes: List<ShapeDto>? = null,
 )
@@ -179,8 +185,10 @@ private fun validateDeckFile(file: DeckFile): ParsedDeck {
 private fun parseCard(dto: CardDto, version: Int): ParsedCard {
     requireValid(dto.position >= 0) { "Карточка ${dto.id}: position отрицательный" }
     val hasShapeLists = dto.frontShapes != null && dto.backShapes != null
-    requireValid(version < DECK_FILE_VERSION || hasShapeLists) { "Карточка ${dto.id}: в версии $version нужны frontShapes и backShapes" }
-    requireValid(version >= DECK_FILE_VERSION || (dto.frontShapes == null && dto.backShapes == null)) {
+    requireValid(version < FIRST_SHAPES_DECK_FILE_VERSION || hasShapeLists) {
+        "Карточка ${dto.id}: в версии $version нужны frontShapes и backShapes"
+    }
+    requireValid(version >= FIRST_SHAPES_DECK_FILE_VERSION || (dto.frontShapes == null && dto.backShapes == null)) {
         "Карточка ${dto.id}: в файле версии $version не бывает фигур"
     }
     requireValid(dto.successes >= 0) { "Карточка ${dto.id}: successes отрицательный" }
@@ -200,8 +208,8 @@ private fun parseCard(dto: CardDto, version: Int): ParsedCard {
     )
     return ParsedCard(
         card,
-        CardSide(dto.front.map { parseStroke(it, dto.id) }, dto.frontShapes.orEmpty().map { parseShape(it, dto.id) }),
-        CardSide(dto.back.map { parseStroke(it, dto.id) }, dto.backShapes.orEmpty().map { parseShape(it, dto.id) }),
+        CardSide(dto.front.map { parseStroke(it, dto.id) }, dto.frontShapes.orEmpty().map { parseShape(it, dto.id, version) }),
+        CardSide(dto.back.map { parseStroke(it, dto.id) }, dto.backShapes.orEmpty().map { parseShape(it, dto.id, version) }),
     )
 }
 
@@ -220,10 +228,11 @@ private fun parseStroke(dto: StrokeDto, cardId: Long): Stroke =
     }
 
 /** Вид по ключу и допустимость рамки и толщины решает модель: она не создаёт плохую фигуру. */
-private fun parseShape(dto: ShapeDto, cardId: Long): Shape {
+private fun parseShape(dto: ShapeDto, cardId: Long, version: Int): Shape {
     val kind = Shape.Kind.findByKey(dto.kind) ?: throw buildDamaged("Карточка $cardId: неизвестный вид фигуры ${dto.kind}")
     return try {
-        Shape(kind, dto.left, dto.top, dto.right, dto.bottom, dto.angle, dto.width)
+        val shape = Shape(kind, dto.left, dto.top, dto.right, dto.bottom, dto.angle, dto.width)
+        if (version < DECK_FILE_VERSION) shape.migrateGridFrameToContour() else shape
     } catch (invalid: IllegalArgumentException) {
         throw ImportException(ImportError.DAMAGED, IllegalArgumentException("Карточка $cardId: ${invalid.message}", invalid))
     }

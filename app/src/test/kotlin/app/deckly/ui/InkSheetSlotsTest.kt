@@ -101,8 +101,8 @@ class InkSheetSlotsTest {
 
     @Test
     fun editorSheetReportsTheShapeThatAShortTapAtItsOutlineHit() {
-        // Прямоугольник 100…400 × 100…300 единиц карточки на листе 500 dp (масштаб 0,5): левая кромка на 14 % ширины, то есть
-        // x = 142 единицы, 71 px; середина высоты y = 200 единиц, 100 px.
+        // Прямоугольник 100…400 × 100…300 единиц карточки на листе 500 dp (масштаб 0,5): рамка идёт по контуру, левая кромка
+        // x = 100 единиц, 50 px; середина высоты y = 200 единиц, 100 px.
         val shape = Shape(Shape.Kind.RECTANGLE, 100f, 100f, 400f, 300f, 0f, 3f)
         val tapped = mutableListOf<Int>()
         val strokes = mutableListOf<Stroke>()
@@ -117,7 +117,7 @@ class InkSheetSlotsTest {
         }
         composeRule.waitForIdle()
 
-        performStylusGesture(listOf(Triple(71f, 100f, 0.5f)))
+        performStylusGesture(listOf(Triple(50f, 100f, 0.5f)))
 
         assertEquals(listOf(0), tapped)
         assertEquals("касание у контура штрихом не стало", emptyList<Stroke>(), strokes)
@@ -158,8 +158,8 @@ class InkSheetSlotsTest {
 
         val image = composeRule.onNodeWithTag("sheet").captureToImage().asAndroidBitmap()
 
-        // Левая кромка прямоугольника на (71, 100) px чёрная, середина фигуры (125, 100) пустая.
-        assertTrue("контур нарисован", image.getPixel(71, 100) and 0xFF < 128)
+        // Левая кромка прямоугольника на (50, 100) px чёрная, середина фигуры (125, 100) пустая.
+        assertTrue("контур нарисован", image.getPixel(50, 100) and 0xFF < 128)
         assertTrue("внутри пусто", image.getPixel(125, 100) and 0xFF > 200)
     }
 

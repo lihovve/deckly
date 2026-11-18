@@ -11,8 +11,8 @@ import org.junit.Test
  * совпадают с единицами карточки; другие масштабы проверяются отдельно.
  */
 class ShapeTapTest {
-    // Рамка 200 × 300: левый край контура x = 100 + 14 % · 200 = 128, верхний y = 200 + 20 % · 300 = 260.
-    private val rectangle = Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)
+    // Рамка идёт по контуру: левый край x = 128, верхний y = 260 (по сетке значка это была рамка 100…300 × 200…500).
+    private val rectangle = Shape(Shape.Kind.RECTANGLE, 128f, 260f, 272f, 440f, 0f, 6f)
 
     private fun path(vararg xy: Pair<Float, Float>) = xy.map { RawPoint(it.first, it.second, 0.5f) }
 
@@ -75,7 +75,7 @@ class ShapeTapTest {
 
     @Test
     fun ofTwoTouchedShapesTheLastOneWins() {
-        val outer = Shape(Shape.Kind.RECTANGLE, 110f, 210f, 310f, 510f, 0f, 6f)
+        val outer = Shape(Shape.Kind.RECTANGLE, 138f, 270f, 282f, 450f, 0f, 6f)
 
         assertEquals(1, findTappedShape(path(129f to 350f), listOf(rectangle, outer), 1f))
     }

@@ -130,7 +130,7 @@ class DrawingSheetTest {
         onStroke = { reported += it }
         showSheet()
 
-        side = CardSide(shapes = listOf(Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)))
+        side = CardSide(shapes = listOf(Shape(Shape.Kind.RECTANGLE, 128f, 260f, 272f, 440f, 0f, 6f)))
         composeRule.waitForIdle()
         // Лист 500 px, масштаб 0,5: левый край контура x = 128 единиц лежит в 64 px, середина по высоте — 175 px.
         performStylusGesture(listOf(Triple(66f, 175f, 0.5f)))
@@ -144,7 +144,7 @@ class DrawingSheetTest {
     fun shapesFromComposeAreDrawn() {
         showSheet()
 
-        side = CardSide(shapes = listOf(Shape(Shape.Kind.RECTANGLE, 100f, 200f, 300f, 500f, 0f, 6f)))
+        side = CardSide(shapes = listOf(Shape(Shape.Kind.RECTANGLE, 128f, 260f, 272f, 440f, 0f, 6f)))
         composeRule.waitForIdle()
 
         val bitmap = drawSheet()

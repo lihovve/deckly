@@ -167,8 +167,8 @@ class EditorSessionShapesTest {
     fun eraserTakesStrokesAndShapesInOneStepAndUndoReturnsThemToTheirPlaces() {
         val session = session().addStroke(farStroke).addShape(rectangle).addStroke(stroke).addShape(oval)
 
-        // Ластик проходит по левому краю прямоугольника (x = 128), по штриху у начала координат и мимо овала.
-        val erased = session.eraseAlong(buildPath(0f to 0f, 5f to 0f), 5f).eraseAlong(buildPath(128f to 300f, 128f to 400f), 3f)
+        // Ластик проходит по левому краю прямоугольника (x = 100: рамка идёт по контуру), по штриху у начала координат и мимо овала.
+        val erased = session.eraseAlong(buildPath(0f to 0f, 5f to 0f), 5f).eraseAlong(buildPath(100f to 300f, 100f to 400f), 3f)
 
         assertEquals(CardSide(listOf(farStroke), listOf(oval)), erased.draft.front)
         assertEquals(2, erased.history.size - session.history.size)
@@ -186,7 +186,8 @@ class EditorSessionShapesTest {
         val crossing = buildStroke(100f to 300f, 140f to 300f)
         val session = session().addShape(rectangle).addStroke(crossing)
 
-        val erased = session.eraseAlong(buildPath(110f to 250f, 140f to 350f), 4f)
+        // Путь пересекает штрих в (110, 300) и левый край прямоугольника (x = 100) в (100, 266,7).
+        val erased = session.eraseAlong(buildPath(95f to 250f, 125f to 350f), 4f)
 
         assertEquals(CardSide(), erased.draft.front)
         assertEquals(1, erased.history.size - session.history.size)
