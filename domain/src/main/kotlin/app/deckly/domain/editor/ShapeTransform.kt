@@ -10,31 +10,29 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /*
- * Перенос чистых функций `design/editor-shapes.js` без своих решений: те же формулы, те же ограничения. Демо считает в
- * единицах макета на листе 928 × 963; здесь рамка переводится из единиц карточки в единицы макета, считается и
- * возвращается обратно. `ShapeTransformTest` сверяет результат с значениями, снятыми у самого демо.
+ * Перенос чистых функций `design/editor-shapes.js`: те же формулы движений. Демо считает в единицах макета на листе
+ * 928 × 963; здесь рамка переводится из единиц карточки в единицы макета, считается и возвращается обратно.
+ * `ShapeTransformTest` сверяет движения без упора с значениями, снятыми у самого демо. Одно отличие от демо — решение
+ * владельца 18 ноября: что считается «помещается на лист» (см. [canFitShape]); упор у края проверяют свои тесты.
  */
 
-/** Ручка выделенной фигуры: четыре угла рамки, два конца линии или стрелки и ручка поворота над рамкой. */
+/** Ручка выделенной фигуры: четыре угла рамки, два конца линии или стрелки и ручка поворота. */
 enum class ShapeHandle { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, START, END, ROTATE }
 
 private const val SHEET_WIDTH = 928.0
 private const val SHEET_HEIGHT = 963.0
 
-/** Поле: ни один угол рамки и ни ручка поворота не заходят ближе 32 к краю листа. */
-private const val FIELD = 32.0
 private const val MIN_FRAME = 80.0
 private const val MIN_AXIS = 64.0
 private const val AXIS_SHARE = 0.76
 private const val END_SHARE = 0.38
 private const val LINE_HEIGHT = 80.0
-private const val ROTATE_HANDLE = 48.0
 private const val LIMIT_STEPS = 20
 
 /**
  * Допуск в единицах макета на потерю точности при переводе рамки в `Float` и обратно: фигура, которую упор оставил
- * ровно у поля, после записи не должна вдруг «не помещаться». Только для проверки готовой фигуры ([canFitShape]); сами
- * движения считают строго, как демо, иначе упор уходил бы за поле на величину допуска.
+ * ровно у края листа, после записи не должна вдруг «не помещаться». Только для проверки готовой фигуры ([canFitShape]); сами
+ * движения считают строго, иначе упор уходил бы за край на величину допуска.
  */
 private const val TOLERANCE = 1e-3
 
@@ -45,8 +43,10 @@ private data class Frame(
     val w: Double,
     val h: Double,
     val angle: Double,
-    val isLinear: Boolean,
-)
+    val kind: Shape.Kind,
+) {
+    val isLinear: Boolean get() = kind.isLinear
+}
 
 private val UNIT = CardUnits.PER_DESIGN_UNIT.toDouble()
 
@@ -56,7 +56,7 @@ private fun Shape.toFrame() = Frame(
     (right.toDouble() - left) / UNIT,
     (bottom.toDouble() - top) / UNIT,
     angle.toDouble(),
-    kind.isLinear,
+    kind,
 )
 
 private fun Frame.toShape(template: Shape): Shape = template.copy(
@@ -76,15 +76,24 @@ private fun Frame.findPoint(offsetX: Double, offsetY: Double): Pair<Double, Doub
     )
 }
 
-/** `canFitShape` демо: четыре угла, а у обычных видов ещё и ручка поворота над рамкой, внутри поля листа. */
+/**
+ * Помещается ли фигура на лист. Обычные виды: четыре угла рамки на листе, ручка поворота в правило не входит. Линия и
+ * стрелки: на листе все точки контура (ось и острия, из того же кода, что и рисует фигуру), а рамка высотой 80 у них
+ * невидима и не считается.
+ */
 private fun Frame.canFit(tolerance: Double = 0.0): Boolean {
-    val points = listOf(-1, 1).flatMap { sx -> listOf(-1, 1).map { sy -> findPoint(sx * w / 2, sy * h / 2) } }
-    val all = if (isLinear) points else points + findPoint(0.0, -h / 2 - ROTATE_HANDLE)
-    return all.all { (px, py) ->
-        px >= FIELD - tolerance && px <= SHEET_WIDTH - FIELD + tolerance &&
-            py >= FIELD - tolerance && py <= SHEET_HEIGHT - FIELD + tolerance
+    val points = if (isLinear) listContourPoints() else listCorners()
+    return points.all { (px, py) ->
+        px >= -tolerance && px <= SHEET_WIDTH + tolerance && py >= -tolerance && py <= SHEET_HEIGHT + tolerance
     }
 }
+
+private fun Frame.listCorners(): List<Pair<Double, Double>> =
+    listOf(-1, 1).flatMap { sx -> listOf(-1, 1).map { sy -> findPoint(sx * w / 2, sy * h / 2) } }
+
+// Точки контура линии или стрелки в единицах макета; толщина контура на их положение не влияет.
+private fun Frame.listContourPoints(): List<Pair<Double, Double>> =
+    toShape(Shape(kind, 0f, 0f, 1f, 1f, 0f, 1f)).listPolylines().flatten().map { it.x / UNIT to it.y / UNIT }
 
 private fun Frame.interpolate(target: Frame, ratio: Double) = copy(
     x = x + (target.x - x) * ratio,
@@ -123,14 +132,18 @@ private fun limitTransform(start: Frame, candidate: Frame): Frame {
 fun insertShape(kind: Shape.Kind, width: Float, size: Float): Shape {
     val side = size.toDouble()
     val height = if (kind.isLinear) LINE_HEIGHT else side
-    val frame = Frame((SHEET_WIDTH - side) / 2, (SHEET_HEIGHT - height) / 2, side, height, 0.0, kind.isLinear)
+    val frame = Frame((SHEET_WIDTH - side) / 2, (SHEET_HEIGHT - height) / 2, side, height, 0.0, kind)
     return frame.toShape(Shape(kind, 0f, 0f, 1f, 1f, 0f, width))
 }
 
-/** Помещается ли фигура на лист: углы рамки и ручка поворота не ближе 32 к краю. */
+/**
+ * Помещается ли фигура на лист: у обычных видов четыре угла рамки на листе 928 × 963 единиц макета (поля нет, ручка
+ * поворота не считается), у линии и стрелок все точки контура. Это решение владельца 18 ноября; `canFitShape` демо
+ * макета держит угол и ручку не ближе 32 к краю.
+ */
 fun canFitShape(shape: Shape): Boolean = shape.toFrame().canFit(TOLERANCE)
 
-/** Перенос на [dx], [dy] единиц карточки; у поля упирается плавно. */
+/** Перенос на [dx], [dy] единиц карточки; у края листа упирается плавно. */
 fun moveShape(shape: Shape, dx: Float, dy: Float): Shape {
     val frame = shape.toFrame()
     val moved = frame.copy(x = frame.x + dx / UNIT, y = frame.y + dy / UNIT)
