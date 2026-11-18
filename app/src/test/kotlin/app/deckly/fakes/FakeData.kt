@@ -34,12 +34,13 @@ fun buildFakeData(
     onClose: () -> Unit = {},
     decks: DeckRepository = UnusedDeckRepository,
     contents: CardContentRepository = UnusedCardContentRepository,
+    transfer: DeckTransfer = UnusedDeckTransfer,
 ): DecklyData = DecklyData(
     decks = decks,
     contents = contents,
     drafts = drafts,
     appState = appState,
-    transfer = UnusedDeckTransfer,
+    transfer = transfer,
     mediaStore = MediaStoreNotifier(context, DecklyStorage(rootDir)),
     onClose = onClose,
 )

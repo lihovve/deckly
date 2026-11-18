@@ -5,6 +5,8 @@ import android.content.Context
 import android.os.Environment
 import app.deckly.data.DecklyData
 import app.deckly.data.openDecklyData
+import app.deckly.decks.ContentResolverDeckFiles
+import app.deckly.decks.DeckFiles
 import app.deckly.editor.EditorSettingsStore
 import app.deckly.editor.PreferencesEditorSettingsStore
 import app.deckly.startup.StartupLoader
@@ -30,6 +32,7 @@ class AppContainer(
     scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     val editorSettingsStore: EditorSettingsStore =
         PreferencesEditorSettingsStore(application.getSharedPreferences(SETTINGS_NAME, Context.MODE_PRIVATE)),
+    val deckFiles: DeckFiles = ContentResolverDeckFiles(application.contentResolver),
 ) {
     private val context: Context = application.applicationContext
     private val openLock = Mutex()

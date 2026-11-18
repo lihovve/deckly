@@ -1,5 +1,6 @@
 package app.deckly.ui
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.LocalIndication
@@ -110,6 +111,8 @@ internal object NoIndication : IndicationNodeFactory {
     override fun equals(other: Any?): Boolean = other === this
 }
 
+private const val LOG_TAG = "Deckly"
+
 private class EntryStoreOwner(override val viewModelStore: ViewModelStore) : ViewModelStoreOwner
 
 /**
@@ -159,7 +162,15 @@ private fun ScreenHost(entry: ScreenEntry, environment: ScreenEnvironment) {
 private fun DeckListHost(entry: ScreenEntry, environment: ScreenEnvironment) {
     val data = environment.container.requireData()
     val viewModel = rememberScreenViewModel {
-        DeckListViewModel(data.decks, data.appState, environment.container.writer, environment.app::navigate)
+        DeckListViewModel(
+            decks = data.decks,
+            appState = data.appState,
+            writer = environment.container.writer,
+            transfer = data.transfer,
+            files = environment.container.deckFiles,
+            report = { message, failure -> Log.w(LOG_TAG, message, failure) },
+            navigate = environment.app::navigate,
+        )
     }
     val state by viewModel.state.collectAsState()
     state?.let { shown ->

@@ -3,8 +3,12 @@ package app.deckly.decks
 import app.deckly.SerialWriter
 import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
+import app.deckly.domain.port.ImportError
+import app.deckly.domain.port.ImportException
 import app.deckly.fakes.FakeAppStateRepository
 import app.deckly.fakes.FakeDeckCatalog
+import app.deckly.fakes.FakeDeckFiles
+import app.deckly.fakes.FakeDeckTransfer
 import app.deckly.fakes.summarize
 import app.deckly.fixtures.buildCard
 import app.deckly.fixtures.buildDeck
@@ -16,10 +20,12 @@ import app.deckly.ui.contract.DeckListAction
 import app.deckly.ui.contract.DeckListState
 import app.deckly.ui.contract.DeckRow
 import app.deckly.ui.contract.DeleteDeckDialog
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.resetMain
@@ -31,6 +37,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeckListViewModelTest {
@@ -38,7 +45,12 @@ class DeckListViewModelTest {
     private val navigated = mutableListOf<AppScreen>()
     private val appState = FakeAppStateRepository()
     private lateinit var catalog: FakeDeckCatalog
+    private lateinit var transfer: FakeDeckTransfer
     private lateinit var viewModel: DeckListViewModel
+    private val files = FakeDeckFiles()
+    private val collector = CoroutineScope(SupervisorJob() + StandardTestDispatcher(scheduler))
+    private val requests = mutableListOf<FileRequest>()
+    private val reports = mutableListOf<Pair<String, Throwable>>()
 
     @Before
     fun setUp() {
@@ -441,6 +453,381 @@ class DeckListViewModelTest {
         assertTrue(catalog.deletedIds.isEmpty())
     }
 
+    // --- экспорт --------------------------------------------------------------------------------
+
+    @Test
+    fun exportAsksTheHostForAFileNamedAfterTheDeck() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.ExportDeck(2))
+        runUntilIdle()
+
+        assertEquals(FileRequest.CreateDeckFile("Английские времена.json"), requests.single())
+        assertTrue("до выбора файла ничего не пишется", transfer.exportedIds.isEmpty())
+    }
+
+    @Test
+    fun exportNameHasForbiddenCharactersReplaced() {
+        startWith(listOf(buildDeckState(buildDeck(id = 1, name = "A/B: 1?"))))
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.ExportDeck(1))
+        runUntilIdle()
+
+        assertEquals(FileRequest.CreateDeckFile("A_B_ 1_.json"), requests.single())
+    }
+
+    @Test
+    fun exportOfUnknownDeckAsksNothing() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.ExportDeck(99))
+        runUntilIdle()
+
+        assertTrue(requests.isEmpty())
+    }
+
+    @Test
+    fun chosenFileGetsTheExportOfTheAskedDeck() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        runUntilIdle()
+
+        viewModel.onExportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        assertEquals(listOf(3L), transfer.exportedIds)
+        assertEquals("deck:3", String(files.contents.getValue("content://picked/1")))
+        assertTrue(files.deleted.isEmpty())
+        assertEquals(4, readState().decks.size)
+        assertFalse(readState().isImportErrorShown)
+    }
+
+    @Test
+    fun declinedFileChoiceExportsNothing() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        runUntilIdle()
+
+        viewModel.onExportFileChosen(null)
+        runUntilIdle()
+
+        assertTrue(transfer.exportedIds.isEmpty())
+        assertTrue(files.written.isEmpty())
+        assertTrue(files.deleted.isEmpty())
+    }
+
+    @Test
+    fun fileChosenWithoutARequestIsNotWrittenAndTheEmptyFileIsRemoved() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onExportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        assertTrue(transfer.exportedIds.isEmpty())
+        assertTrue(files.written.isEmpty())
+        assertEquals(listOf("content://picked/1"), files.deleted)
+    }
+
+    @Test
+    fun exportFileChosenWhileAnImportRunsIsNotWrittenAndTheEmptyFileIsRemoved() {
+        startWith(buildTypicalDecks())
+        files.readGate = CompletableDeferred()
+        runUntilIdle()
+        files.contents["content://picked/1"] = "Первая".toByteArray()
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        runUntilIdle()
+        viewModel.onImportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        viewModel.onExportFileChosen("content://picked/2")
+        runUntilIdle()
+
+        assertTrue(transfer.exportedIds.isEmpty())
+        assertEquals(listOf("content://picked/2"), files.deleted)
+        files.readGate!!.complete(Unit)
+        runUntilIdle()
+    }
+
+    @Test
+    fun failedExportDeletesTheCreatedFileAndOnlyWritesTheLog() {
+        startWith(buildTypicalDecks())
+        transfer.exportFailure = IOException("диск полон")
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        runUntilIdle()
+
+        viewModel.onExportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        assertEquals(listOf("content://picked/1"), files.deleted)
+        assertFalse(files.contents.containsKey("content://picked/1"))
+        assertEquals(1, reports.size)
+        assertTrue(reports.single().second is IOException)
+        // Окна об ошибке экспорта нет: список и окна как были.
+        assertFalse(readState().isImportErrorShown)
+        assertNull(readState().deleteDialog)
+        assertEquals(4, readState().decks.size)
+    }
+
+    @Test
+    fun failedWriteOfTheFileAlsoDeletesIt() {
+        startWith(buildTypicalDecks())
+        files.writeFailure = IOException("нет доступа")
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        runUntilIdle()
+
+        viewModel.onExportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        assertEquals(listOf("content://picked/1"), files.deleted)
+        assertEquals(1, reports.size)
+    }
+
+    @Test
+    fun exportWorksAgainAfterAFailedOne() {
+        startWith(buildTypicalDecks())
+        transfer.exportFailure = IOException("сбой")
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        viewModel.onExportFileChosen("content://picked/1")
+        runUntilIdle()
+        transfer.exportFailure = null
+
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        runUntilIdle()
+        viewModel.onExportFileChosen("content://picked/2")
+        runUntilIdle()
+
+        assertEquals("deck:3", String(files.contents.getValue("content://picked/2")))
+    }
+
+    @Test
+    fun secondExportWhileTheFirstIsRunningDoesNothing() {
+        startWith(buildTypicalDecks())
+        files.writeGate = CompletableDeferred()
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        runUntilIdle()
+        viewModel.onExportFileChosen("content://picked/1")
+        runUntilIdle()
+        requests.clear()
+
+        viewModel.onAction(DeckListAction.ExportDeck(2))
+        viewModel.onExportFileChosen("content://picked/2")
+        runUntilIdle()
+        assertTrue("новое окно выбора не открывается", requests.isEmpty())
+        assertEquals(listOf("content://picked/1"), files.written)
+
+        files.writeGate!!.complete(Unit)
+        runUntilIdle()
+
+        assertEquals(listOf(3L), transfer.exportedIds)
+        assertEquals(listOf("content://picked/1"), files.written)
+    }
+
+    @Test
+    fun exportIsNotQueuedBehindTheWriter() {
+        // Медленный источник или приёмник файла не должен держать запись базы: экспорт только читает и идёт мимо писателя.
+        val writerScheduler = TestCoroutineScheduler()
+        startWith(buildTypicalDecks(), writerScheduler)
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        runUntilIdle()
+
+        viewModel.onExportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        assertEquals("deck:3", String(files.contents.getValue("content://picked/1")))
+    }
+
+    // --- импорт ---------------------------------------------------------------------------------
+
+    @Test
+    fun importButtonAsksTheHostToOpenAFile() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.ImportDeck)
+        runUntilIdle()
+
+        assertEquals(FileRequest.OpenDeckFile, requests.single())
+    }
+
+    @Test
+    fun chosenFileCreatesANewDeckThatIsNotCurrent() {
+        appState.currentDeckId = 1
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        files.contents["content://picked/1"] = "Новая".toByteArray()
+
+        viewModel.onImportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        assertEquals(listOf(1L, 2L, 3L, 4L, 5L), readState().decks.map { it.id })
+        val imported = readState().decks.last()
+        assertEquals("Новая", imported.name)
+        assertFalse("импортированная колода не становится текущей", imported.isCurrent)
+        assertEquals(1L, appState.currentDeckId)
+        assertTrue(readState().decks.first { it.id == 1L }.isCurrent)
+        assertTrue(readState().canGoBack)
+        assertFalse(readState().isImportErrorShown)
+        assertTrue("на колоду не переходим", navigated.isEmpty())
+    }
+
+    @Test
+    fun importIsWrittenThroughTheSerialWriter() {
+        val writerScheduler = TestCoroutineScheduler()
+        startWith(buildTypicalDecks(), writerScheduler)
+        runUntilIdle()
+        files.contents["content://picked/1"] = "Новая".toByteArray()
+
+        viewModel.onImportFileChosen("content://picked/1")
+        runUntilIdle()
+        // Писатель ещё не работал: колоды нет.
+        assertEquals(4, readState().decks.size)
+
+        writerScheduler.advanceUntilIdle()
+        runUntilIdle()
+
+        assertEquals(5, readState().decks.size)
+    }
+
+    @Test
+    fun declinedImportChoiceDoesNothing() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onImportFileChosen(null)
+        runUntilIdle()
+
+        assertEquals(4, readState().decks.size)
+        assertFalse(readState().isImportErrorShown)
+    }
+
+    @Test
+    fun everyKindOfImportExceptionShowsTheErrorAndChangesNothing() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        val before = readState().decks
+        files.contents["content://picked/1"] = "что-то".toByteArray()
+
+        for (error in ImportError.entries) {
+            transfer.importFailure = ImportException(error)
+
+            viewModel.onImportFileChosen("content://picked/1")
+            runUntilIdle()
+
+            assertTrue("$error: окно ошибки", readState().isImportErrorShown)
+            assertEquals("$error: список как был", before, readState().decks)
+            assertEquals("$error: каталог как был", 4, catalog.decks.size)
+            viewModel.onAction(DeckListAction.DismissImportError)
+            runUntilIdle()
+            assertFalse(readState().isImportErrorShown)
+        }
+    }
+
+    @Test
+    fun damagedFileThatImportRejectsShowsTheError() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        files.contents["content://picked/1"] = "BAD".toByteArray()
+
+        viewModel.onImportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        assertTrue(readState().isImportErrorShown)
+        assertEquals(4, readState().decks.size)
+        assertEquals(4, catalog.decks.size)
+    }
+
+    @Test
+    fun unreadableFileShowsTheErrorAndNeverReachesImport() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        files.readFailure = IOException("файл пропал")
+
+        viewModel.onImportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        assertTrue(readState().isImportErrorShown)
+        assertEquals(4, catalog.decks.size)
+    }
+
+    @Test
+    fun fileThatTheAppMayNotReadShowsTheError() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        files.readFailure = SecurityException("нет права")
+
+        viewModel.onImportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        assertTrue(readState().isImportErrorShown)
+    }
+
+    @Test
+    fun errorWindowClosesAndImportWorksAgain() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        files.contents["content://picked/1"] = "BAD".toByteArray()
+        viewModel.onImportFileChosen("content://picked/1")
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.DismissImportError)
+        files.contents["content://picked/2"] = "Хорошая".toByteArray()
+
+        viewModel.onImportFileChosen("content://picked/2")
+        runUntilIdle()
+
+        assertFalse(readState().isImportErrorShown)
+        assertEquals("Хорошая", readState().decks.last().name)
+        assertEquals(5, readState().decks.size)
+    }
+
+    @Test
+    fun secondImportWhileTheFirstIsRunningDoesNothing() {
+        startWith(buildTypicalDecks())
+        files.readGate = CompletableDeferred()
+        runUntilIdle()
+        files.contents["content://picked/1"] = "Первая".toByteArray()
+        files.contents["content://picked/2"] = "Вторая".toByteArray()
+
+        viewModel.onImportFileChosen("content://picked/1")
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.ImportDeck)
+        viewModel.onImportFileChosen("content://picked/2")
+        runUntilIdle()
+        assertTrue("новое окно выбора не открывается", requests.isEmpty())
+
+        files.readGate!!.complete(Unit)
+        runUntilIdle()
+
+        assertEquals(listOf("Первая"), readState().decks.drop(4).map { it.name })
+    }
+
+    @Test
+    fun importBlocksExportWhileItIsRunning() {
+        startWith(buildTypicalDecks())
+        files.readGate = CompletableDeferred()
+        runUntilIdle()
+        files.contents["content://picked/1"] = "Первая".toByteArray()
+        viewModel.onImportFileChosen("content://picked/1")
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.ExportDeck(2))
+        runUntilIdle()
+
+        assertTrue(requests.isEmpty())
+        files.readGate!!.complete(Unit)
+        runUntilIdle()
+    }
+
     // --- вспомогательное -----------------------------------------------------------------------
 
     /** Четыре колоды: текущая с обучением, с эпохой 2, полностью выученная и пустая. */
@@ -469,12 +856,18 @@ class DeckListViewModelTest {
         onDelete: (Long) -> Unit = {},
     ) {
         catalog = FakeDeckCatalog(decks, onDelete)
+        transfer = FakeDeckTransfer(catalog)
         viewModel = DeckListViewModel(
             decks = catalog,
             appState = appState,
             writer = SerialWriter(CoroutineScope(SupervisorJob() + StandardTestDispatcher(writerScheduler))),
+            transfer = transfer,
+            files = files,
+            report = { message, failure -> reports += message to failure },
             navigate = { navigated += it },
         )
+        // Просьбы хосту собираются с самого начала, как это делает хост списка.
+        collector.launch { viewModel.fileRequests.collect { requests += it } }
     }
 
     private fun runUntilIdle() = scheduler.advanceUntilIdle()
