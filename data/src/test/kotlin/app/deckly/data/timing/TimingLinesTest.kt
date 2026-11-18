@@ -81,10 +81,16 @@ class TimingLinesTest {
     }
 
     @Test
-    fun draftLineHasFileTransactionAndStrokeCountsOfBothSides() {
+    fun draftLineHasFileTransactionDeletionAndStrokeCountsOfBothSides() {
         assertEquals(
-            "draft file=3.2ms db=17.4ms strokes=12/0",
-            DecklyTiming.describeDraftStore(fileNanos = 3_200_000, transactionNanos = 17_400_000, frontStrokes = 12, backStrokes = 0),
+            "draft file=3.2ms db=17.4ms delete=0.4ms strokes=12/0",
+            DecklyTiming.describeDraftStore(
+                fileNanos = 3_200_000,
+                transactionNanos = 17_400_000,
+                deleteNanos = 400_000,
+                frontStrokes = 12,
+                backStrokes = 0,
+            ),
         )
     }
 
@@ -138,12 +144,38 @@ class TimingLinesTest {
             repos.drafts.storeDraft(StoredDraft(1, draft))
 
             val line = readLines().single { it.startsWith("draft ") }
-            assertTrue(line, Regex("draft file=\\d+\\.\\dms db=\\d+\\.\\dms strokes=2/1").matches(line))
+            assertTrue(line, Regex("draft file=\\d+\\.\\dms db=\\d+\\.\\dms delete=\\d+\\.\\dms strokes=2/1").matches(line))
             assertFalse(line.contains("Секретная"))
         } finally {
             repos.close()
         }
     }
+
+    @Test
+    fun secondDraftWriteDeletesThePreviousFileAndLogsItsTime() = runTest {
+        val repos = TestRepositories(createTestStorage())
+        try {
+            seedDeck(repos, DeckState(createDeck(1, "Колода"), listOf(buildPlainCard(101, 0))))
+            val draft = Draft(null, CardSide(listOf(buildTestStroke(1))), CardSide(), Side.FRONT, Section.NEW)
+            repos.drafts.storeDraft(StoredDraft(1, draft))
+            val firstFiles = listDraftFileNames(repos)
+            enableLog()
+
+            repos.drafts.storeDraft(StoredDraft(1, draft.copy(front = CardSide(listOf(buildTestStroke(5))))))
+
+            val lines = readLines().filter { it.startsWith("draft ") }
+            assertEquals(1, lines.size)
+            assertTrue(lines[0], Regex("draft file=\\d+\\.\\dms db=\\d+\\.\\dms delete=\\d+\\.\\dms strokes=1/0").matches(lines[0]))
+            val secondFiles = listDraftFileNames(repos)
+            assertEquals(1, secondFiles.size)
+            assertTrue("прежний файл удалён", secondFiles.intersect(firstFiles.toSet()).isEmpty())
+        } finally {
+            repos.close()
+        }
+    }
+
+    private fun listDraftFileNames(repos: TestRepositories): List<String> =
+        repos.storage.strokesDir.list().orEmpty().filter { it.startsWith("draft-") }
 
     @Test
     fun storingDraftWritesNothingWhenTheLogIsOff() = runTest {

@@ -104,15 +104,18 @@ class RoomDraftRepository(
             }
             throw failure
         }
+        val deleteStartNanos = System.nanoTime()
+        deleteFiles(listOfNotNull(previousFile))
+        val deleteEndNanos = System.nanoTime()
         DecklyTiming.logInfo {
             DecklyTiming.describeDraftStore(
                 fileNanos = transactionStartNanos - fileStartNanos,
                 transactionNanos = transactionEndNanos - transactionStartNanos,
+                deleteNanos = deleteEndNanos - deleteStartNanos,
                 frontStrokes = draft.front.strokes.size,
                 backStrokes = draft.back.strokes.size,
             )
         }
-        deleteFiles(listOfNotNull(previousFile))
     }
 
     override suspend fun discardDraft(): Unit = queue.withLock { discardDraftInQueue() }

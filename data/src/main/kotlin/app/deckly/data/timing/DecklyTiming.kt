@@ -63,9 +63,13 @@ object DecklyTiming {
     fun describeCleanup(referencesNanos: Long, filesNanos: Long): String =
         "cleanup references=${describeNanos(referencesNanos)}ms files=${describeNanos(filesNanos)}ms"
 
-    /** Строка о записи черновика: файл, транзакция базы и число штрихов на лице и обороте. Без имён и путей. */
-    fun describeDraftStore(fileNanos: Long, transactionNanos: Long, frontStrokes: Int, backStrokes: Int): String =
-        "draft file=${describeNanos(fileNanos)}ms db=${describeNanos(transactionNanos)}ms strokes=$frontStrokes/$backStrokes"
+    /**
+     * Строка о записи черновика: файл, транзакция базы, удаление прежнего файла и число штрихов на лице и обороте. Все три
+     * шага держат очередь репозитория. Без имён и путей.
+     */
+    fun describeDraftStore(fileNanos: Long, transactionNanos: Long, deleteNanos: Long, frontStrokes: Int, backStrokes: Int): String =
+        "draft file=${describeNanos(fileNanos)}ms db=${describeNanos(transactionNanos)}ms " +
+            "delete=${describeNanos(deleteNanos)}ms strokes=$frontStrokes/$backStrokes"
 
     private fun describeNanos(nanos: Long): String = describeMillis(nanos / NANOS_PER_MILLI)
 
