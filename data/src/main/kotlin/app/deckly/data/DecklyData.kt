@@ -65,7 +65,9 @@ suspend fun openDecklyData(context: Context, rootDir: File): DecklyData {
     }
     storage.ensureDirectories()
     val mediaStore = MediaStoreNotifier(context, storage)
+    val roomStartNanos = System.nanoTime()
     val database = openDecklyDatabase(context, storage)
+    val roomEndNanos = System.nanoTime()
     val files = StrokeFiles(storage.strokesDir, mediaStore::recordChanged)
     removeUnreferencedStrokeFiles(database, files)
     val drafts = RoomDraftRepository(database, files)
@@ -79,8 +81,12 @@ suspend fun openDecklyData(context: Context, rootDir: File): DecklyData {
         onClose = database::close,
     )
     DecklyTiming.logInfo {
-        "open total=${DecklyTiming.describeElapsed(openStartNanos)}ms " +
-            "quickCheck=${DecklyTiming.describeElapsed(quickCheckStartNanos, quickCheckEndNanos)}ms"
+        DecklyTiming.describeOpen(
+            processAgeMs = DecklyTiming.measureProcessAgeMs(openStartNanos),
+            quickCheckNanos = quickCheckEndNanos - quickCheckStartNanos,
+            roomNanos = roomEndNanos - roomStartNanos,
+            totalNanos = System.nanoTime() - openStartNanos,
+        )
     }
     return data
 }

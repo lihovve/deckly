@@ -4,6 +4,7 @@ import androidx.room3.withReadTransaction
 import app.deckly.data.db.DecklyDatabase
 import app.deckly.data.strokes.StrokeFiles
 import app.deckly.data.strokes.StrokeReferences
+import app.deckly.data.timing.DecklyTiming
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -14,6 +15,7 @@ import kotlinx.coroutines.withContext
  * между транзакцией и удалением старого файла. Звать только пока никто не пишет.
  */
 suspend fun removeUnreferencedStrokeFiles(database: DecklyDatabase, files: StrokeFiles) {
+    val referencesStartNanos = System.nanoTime()
     val references = database.withReadTransaction {
         StrokeReferences(
             cardFiles = database.cardDao().listCardFiles().associate { it.id to it.contentFile },
@@ -21,5 +23,8 @@ suspend fun removeUnreferencedStrokeFiles(database: DecklyDatabase, files: Strok
             nextCardId = checkNotNull(database.appStateDao().findAppState()) { "В базе нет строки app_state" }.nextCardId,
         )
     }
+    val filesStartNanos = System.nanoTime()
     withContext(Dispatchers.IO) { files.cleanUpStrokeFiles(references) }
+    val filesEndNanos = System.nanoTime()
+    DecklyTiming.logInfo { DecklyTiming.describeCleanup(filesStartNanos - referencesStartNanos, filesEndNanos - filesStartNanos) }
 }

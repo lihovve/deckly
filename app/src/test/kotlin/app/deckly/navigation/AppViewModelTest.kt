@@ -1,6 +1,8 @@
 package app.deckly.navigation
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -9,6 +11,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.core.app.ApplicationProvider
 import app.deckly.data.DecklyData
+import app.deckly.data.timing.DecklyTiming
 import app.deckly.data.db.DatabaseDamagedException
 import app.deckly.fakes.FakeAppStateRepository
 import app.deckly.fakes.buildFakeData
@@ -33,6 +36,7 @@ import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 import org.robolectric.shadows.ShadowMediaScannerConnection
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -70,6 +74,46 @@ class AppViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(AppScreen.Deck(3), viewModel.screen.value)
+    }
+
+    @Test
+    fun loadedScreenIsLoggedWithItsKindWhenTheLogIsOn() {
+        ShadowLog.setLoggable(DecklyTiming.TAG, Log.DEBUG)
+        DecklyTiming.enableIfRequested(context)
+        try {
+            ShadowLog.clear()
+            val viewModel = createViewModel(currentDeckId = 3)
+
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(AppScreen.Deck(3), viewModel.screen.value)
+            val lines = ShadowLog.getLogsForTag(DecklyTiming.TAG).map { it.msg }.filter { it.startsWith("start ") }
+            assertEquals(1, lines.size)
+            assertTrue(lines[0], Regex("start screen=deck sinceProcessStart=-?\\d+\\.\\dms").matches(lines[0]))
+        } finally {
+            ShadowLog.setLoggable(DecklyTiming.TAG, Log.INFO)
+            DecklyTiming.enableIfRequested(context)
+        }
+    }
+
+    @Test
+    fun loadedScreenIsNotLoggedWhenTheLogIsOff() {
+        val originalFlags = context.applicationInfo.flags
+        context.applicationInfo.flags = originalFlags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
+        ShadowLog.setLoggable(DecklyTiming.TAG, Log.INFO)
+        DecklyTiming.enableIfRequested(context)
+        try {
+            ShadowLog.clear()
+            val viewModel = createViewModel(currentDeckId = 3)
+
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(AppScreen.Deck(3), viewModel.screen.value)
+            assertTrue(ShadowLog.getLogsForTag(DecklyTiming.TAG).none { it.msg.startsWith("start ") })
+        } finally {
+            context.applicationInfo.flags = originalFlags
+            DecklyTiming.enableIfRequested(context)
+        }
     }
 
     @Test

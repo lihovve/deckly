@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewModelScope
 import app.deckly.data.DecklyData
+import app.deckly.startup.StartTrace
 import app.deckly.startup.StartupLoader
 import app.deckly.ui.contract.StartupState
 import kotlinx.coroutines.Job
@@ -81,6 +82,7 @@ class AppViewModel(private val loader: StartupLoader) : ViewModel() {
             val result = loader.loadStart()
             result.data?.let { data = it }
             show(result.screen)
+            StartTrace.logFirstScreen(result.screen)
         }
     }
 }

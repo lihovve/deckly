@@ -5,6 +5,7 @@ import app.deckly.data.db.DecklyDatabase
 import app.deckly.data.db.DraftEntity
 import app.deckly.data.strokes.StrokeFileException
 import app.deckly.data.strokes.StrokeFiles
+import app.deckly.data.timing.DecklyTiming
 import app.deckly.domain.editor.Draft
 import app.deckly.domain.model.CardContent
 import app.deckly.domain.model.CardSide
@@ -76,10 +77,14 @@ class RoomDraftRepository(
     override suspend fun storeDraft(stored: StoredDraft): Unit = queue.withLock {
         val draft = stored.draft
         var newFile: String? = null
+        val fileStartNanos = System.nanoTime()
+        var transactionStartNanos = 0L
+        var transactionEndNanos = 0L
         val previousFile = try {
             // Имя запоминается внутри блока: отмена может прийти, когда файл уже записан, а блок ещё не вернулся.
             withContext(Dispatchers.IO) { newFile = files.writeDraftFile(draft.front, draft.back) }
             val file = checkNotNull(newFile)
+            transactionStartNanos = System.nanoTime()
             database.withWriteTransaction<String?> {
                 val previous = database.draftDao().findDraft()?.contentFile
                 database.draftDao().insertDraft(
@@ -92,12 +97,20 @@ class RoomDraftRepository(
                     ),
                 )
                 previous
-            }
+            }.also { transactionEndNanos = System.nanoTime() }
         } catch (failure: Throwable) {
             newFile?.let { file ->
                 deleteFilesUnlessCommitted(files, listOf(file)) { database.draftDao().findDraft()?.contentFile == file }
             }
             throw failure
+        }
+        DecklyTiming.logInfo {
+            DecklyTiming.describeDraftStore(
+                fileNanos = transactionStartNanos - fileStartNanos,
+                transactionNanos = transactionEndNanos - transactionStartNanos,
+                frontStrokes = draft.front.strokes.size,
+                backStrokes = draft.back.strokes.size,
+            )
         }
         deleteFiles(listOfNotNull(previousFile))
     }
