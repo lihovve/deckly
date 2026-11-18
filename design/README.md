@@ -6,7 +6,7 @@ The current design uses Roman numerals, action icons and minimal explanatory tex
 
 ## Appearance
 
-- The deck name is on the left. On the right, matching metric blocks show **Learning / 14 / 40** and **Successes / 3 / 4**. In inactive sections, the first label is **Browse**. The first number is the current position, not the number of rated cards. Labels are centered over the slash; equal-width number columns keep this alignment even for values such as 41 / 100.
+- The deck name is on the left. On the right, matching metric blocks show **Learning / 14 / 40** and **Successes / 3 / 4**. In inactive sections, the first label is **Browse**. The first number is the current position, not the number of rated cards. Labels are centered over the full value, including asymmetric counts such as 41 / 100.
 - Sections: **New · I · II · III · IV · Learned**. An underline marks the open section; **▶** marks the scheduled active epoch. The marker sits beside the count without shifting it off center.
 - **⇄** flips a card; the arrow pointing to an end bar moves it to the end of the pass. Flip occupies the second footer slot in both learning and browsing.
 - Arrows page through cards. A plus creates a card. Undo uses an icon; line samples show pen widths. There is no pen/eraser switch: the pen tip draws and the stylus side button erases.

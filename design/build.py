@@ -371,7 +371,7 @@ def deck_row(name, info, number, current=False):
     # Secondary decks demonstrate list density, not a separate study session.
     destination = 'learn-front' if current else 'decks'
     menu = 'deck-menu' if current else 'deck-menu-' + str(number)
-    return '<div class="item ' + ('current' if current else '') + '"><span class="number">' + (icon('check') if current else f'{number:02}') + '</span><a class="fill" href="' + destination + '.html" title="' + ('Open deck' if current else 'Sample list row; this deck has no separate session in the mockup') + '"><h2>' + name + '</h2><p>' + info + '</p></a>' + btn('', menu, 'quiet square', 'more', attrs='aria-label="Deck menu: ' + name + '"') + '</div>'
+    return '<div class="item ' + ('current' if current else '') + '"><span class="number">' + (icon('check') if current else '') + '</span><a class="fill" href="' + destination + '.html" title="' + ('Open deck' if current else 'Sample list row; this deck has no separate session in the mockup') + '"><h2>' + name + '</h2><p>' + info + '</p></a>' + btn('', menu, 'quiet square', 'more', attrs='aria-label="Deck menu: ' + name + '"') + '</div>'
 
 
 deck_header = head(title='Decks', left=btn('', 'learn-front', 'quiet square', 'left', attrs='aria-label="Back to cards"'))
