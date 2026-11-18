@@ -155,7 +155,10 @@ private fun OutlineWidthSection(outlineWidth: Int, onChange: (Int) -> Unit) {
             BasicText(outlineWidth.toString(), style = buildTextStyle(Tokens.ShapeWidthText))
             WidthPreview(outlineWidth)
         }
-        OutlineWidthSlider(outlineWidth, onChange, Modifier.padding(top = Tokens.ShapeSliderMarginTop))
+        PaletteSlider(
+            outlineWidth, Tokens.OutlineWidthMin..Tokens.OutlineWidthMax, EditorTexts.OUTLINE_WIDTH, onChange,
+            Modifier.padding(top = Tokens.ShapeSliderMarginTop),
+        )
     }
 }
 
@@ -168,39 +171,35 @@ private fun WidthPreview(outlineWidth: Int) {
 }
 
 /**
- * Ползунок толщины контура (`input type=range`, 1…12 с шагом 1): высота 64, дорожка 2, бегунок 32 с рамкой 3 и белой
- * серединой. Меняется и пером, и пальцем: касание ставит бегунок под собой, движение ведёт его. Для диктора это
- * регулятор с границами и шагом ([setProgress]).
+ * Ползунок палитры (`input type=range`) по значениям [values] (границы и шаг), подпись для диктора [label]: высота 64,
+ * дорожка 2, бегунок 32 с рамкой 3 и белой серединой. Меняется и пером, и пальцем: касание ставит бегунок под собой,
+ * движение ведёт его. Для диктора это регулятор с границами и шагом ([setProgress]).
  */
 @Composable
-internal fun OutlineWidthSlider(value: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+internal fun PaletteSlider(value: Int, values: IntProgression, label: String, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
     val currentOnChange by rememberUpdatedState(onChange)
     Box(
         modifier
             .fillMaxWidth()
             .height(Tokens.ShapeSliderHeight)
-            .pointerInput(Unit) {
+            .pointerInput(values) {
                 awaitEachGesture {
                     val thumb = Tokens.ShapeSliderThumb.toPx()
                     val down = awaitFirstDown(requireUnconsumed = false)
-                    currentOnChange.invoke(chooseWidthAt(down.position.x, size.width.toFloat(), thumb))
+                    currentOnChange.invoke(chooseValueAt(down.position.x, size.width.toFloat(), thumb, values))
                     down.consume()
                     drag(down.id) { change ->
-                        currentOnChange.invoke(chooseWidthAt(change.position.x, size.width.toFloat(), thumb))
+                        currentOnChange.invoke(chooseValueAt(change.position.x, size.width.toFloat(), thumb, values))
                         change.consume()
                     }
                 }
             }
             .semantics {
-                contentDescription = EditorTexts.OUTLINE_WIDTH
+                contentDescription = label
                 role = Role.Button
-                progressBarRangeInfo = ProgressBarRangeInfo(
-                    value.toFloat(),
-                    Tokens.OutlineWidthMin.toFloat()..Tokens.OutlineWidthMax.toFloat(),
-                    Tokens.OutlineWidthMax - Tokens.OutlineWidthMin - 1,
-                )
+                progressBarRangeInfo = ProgressBarRangeInfo(value.toFloat(), values.first.toFloat()..values.last.toFloat(), countSteps(values) - 1)
                 setProgress { target ->
-                    currentOnChange.invoke(target.roundToInt().coerceIn(Tokens.OutlineWidthMin, Tokens.OutlineWidthMax))
+                    currentOnChange.invoke(snapValue(target, values))
                     true
                 }
             },
@@ -212,7 +211,7 @@ internal fun OutlineWidthSlider(value: Int, onChange: (Int) -> Unit, modifier: M
             val centerY = size.height / 2f
             drawLine(Tokens.Black, Offset(0f, centerY), Offset(size.width, centerY), strokeWidth = Tokens.ShapeSliderTrack.toPx())
             // Бегунок: белый круг 32 с чёрной рамкой 3; центр идёт от r до ширина − r пропорционально значению.
-            val fraction = (value - Tokens.OutlineWidthMin).toFloat() / (Tokens.OutlineWidthMax - Tokens.OutlineWidthMin)
+            val fraction = (value - values.first).toFloat() / (values.last - values.first)
             val center = Offset(thumb / 2f + (size.width - thumb) * fraction, centerY)
             drawCircle(Tokens.White, thumb / 2f, center)
             drawCircle(Tokens.Black, thumb / 2f - border / 2f, center, style = Stroke(border))
@@ -220,9 +219,18 @@ internal fun OutlineWidthSlider(value: Int, onChange: (Int) -> Unit, modifier: M
     }
 }
 
-/** Значение под пальцем или пером: центр бегунка ходит от r до ширина − r, шаг 1, границы 1 и 12. */
-internal fun chooseWidthAt(x: Float, width: Float, thumb: Float): Int {
+/** Значение под пальцем или пером: центр бегунка ходит от r до ширина − r, значения по шагу [values], границы его концы. */
+internal fun chooseValueAt(x: Float, width: Float, thumb: Float, values: IntProgression): Int {
     val usable = (width - thumb).coerceAtLeast(1f)
     val fraction = ((x - thumb / 2f) / usable).coerceIn(0f, 1f)
-    return Tokens.OutlineWidthMin + (fraction * (Tokens.OutlineWidthMax - Tokens.OutlineWidthMin)).roundToInt()
+    return values.first + (fraction * countSteps(values)).roundToInt() * values.step
 }
+
+/** Ближайшее значение [values] к [target] (действие диктора присылает любое число). */
+internal fun snapValue(target: Float, values: IntProgression): Int {
+    val index = ((target - values.first) / values.step).roundToInt().coerceIn(0, countSteps(values))
+    return values.first + index * values.step
+}
+
+// Сколько шагов между первым и последним значением: у 1..12 одиннадцать, у 100..440 по 10 тридцать четыре.
+private fun countSteps(values: IntProgression): Int = (values.last - values.first) / values.step
