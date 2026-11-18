@@ -60,6 +60,10 @@ private fun buildGlyphPath(points: List<GridPoint>, scaleX: Float, scaleY: Float
  * Штрих — цепочка отрезков с круглыми концами, толщина отрезка — среднее двух его точек
  * ([computePointWidthPx]). Штрих из одной точки — круг, штрих без точек не рисуется.
  *
+ * Штрих, чей прямоугольник ([computeStrokeBounds]) целиком вне области отсечения холста, не рисуется вовсе: перерисовка
+ * небольшой области стоит столько, сколько в ней штрихов, а не сколько их на карточке. Холст, который отсечения не знает,
+ * ничего не отбрасывает, и рисуется всё.
+ *
  * Состояния нет: кисть своя на каждый вызов, поэтому функцию можно вызывать из любого потока, в том числе
  * из потока колбэков пера, пока поток интерфейса рисует ту же поверхность.
  */
@@ -70,8 +74,14 @@ fun drawStrokes(canvas: Canvas, strokes: List<Stroke>, scale: Float) {
         strokeJoin = Paint.Join.ROUND
     }
     for (stroke in strokes) {
+        if (isOutsideClip(canvas, stroke, scale)) continue
         drawStroke(canvas, stroke, scale, paint)
     }
+}
+
+private fun isOutsideClip(canvas: Canvas, stroke: Stroke, scale: Float): Boolean {
+    val bounds = computeStrokeBounds(stroke, scale) ?: return false
+    return canvas.quickReject(bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.bottom.toFloat())
 }
 
 private fun drawStroke(canvas: Canvas, stroke: Stroke, scale: Float, paint: Paint) {

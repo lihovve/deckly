@@ -108,13 +108,20 @@ internal fun computeShapeBounds(shape: Shape, scale: Float): PixelBounds {
 /**
  * Где на листе стороны различаются: объединение прямоугольников штрихов и фигур, которые есть только в одной из них.
  * Порядок и повторы значения не имеют: одинаковые штрихи и фигуры закрашивают те же пиксели. Одинаковые стороны дают
- * `null`.
+ * `null`. Работа линейна по числу штрихов, а при переносе фигуры (список штрихов тот же объект) штрихи не читаются.
  */
 internal fun computeChangedBounds(before: CardSide, after: CardSide, scale: Float): PixelBounds? {
-    val strokeSet = (before.strokes + after.strokes).filter { (it in before.strokes) != (it in after.strokes) }
-    val shapeSet = (before.shapes + after.shapes).filter { (it in before.shapes) != (it in after.shapes) }
-    return (strokeSet.mapNotNull { computeStrokeBounds(it, scale) } + shapeSet.map { computeShapeBounds(it, scale) })
-        .reduceOrNull { first, second -> first.union(second) }
+    val strokeBounds = collectDifference(before.strokes, after.strokes).mapNotNull { computeStrokeBounds(it, scale) }
+    val shapeBounds = collectDifference(before.shapes, after.shapes).map { computeShapeBounds(it, scale) }
+    return (strokeBounds + shapeBounds).reduceOrNull { first, second -> first.union(second) }
+}
+
+// Равные списки сравниваются один раз (один и тот же объект — мгновенно), разные — через множества, а не поиском в списке.
+private fun <T> collectDifference(before: List<T>, after: List<T>): Set<T> {
+    if (before == after) return emptySet()
+    val beforeSet = before.toSet()
+    val afterSet = after.toSet()
+    return (beforeSet - afterSet) + (afterSet - beforeSet)
 }
 
 /**

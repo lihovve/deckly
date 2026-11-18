@@ -212,9 +212,102 @@ class SheetInputTest {
         assertNull(computeTraceBounds(emptyList(), 10f))
     }
 
+    // --- границы перерисовки не зависят от числа штрихов ----------------------------------------------
+
+    private val manyStrokes = List(300) {
+        val x = 20f + (it % 20) * 45f
+        val y = 20f + (it / 20) * 60f
+        Stroke(4f, listOf(StrokePoint(x, y, 0.5f), StrokePoint(x + 30f, y + 20f, 0.8f)))
+    }
+
+    @Test
+    fun changedShapeWithTheSameStrokeListGivesOnlyTheShapeBoundsAndDoesNotReadTheStrokes() {
+        val moved = rectangle.copy(left = 500f, right = 700f)
+        val strokes = CountingList(manyStrokes)
+
+        val bounds = computeChangedBounds(CardSide(strokes, listOf(rectangle)), CardSide(strokes, listOf(moved)), 1f)
+
+        assertEquals(computeShapeBounds(rectangle, 1f).union(computeShapeBounds(moved, 1f)), bounds)
+        assertEquals(0, strokes.reads)
+    }
+
+    @Test
+    fun equalStrokeListsAreComparedInLinearTime() {
+        val before = CountingList(manyStrokes)
+        val after = CountingList(manyStrokes.map { it.copy() })
+
+        assertNull(computeChangedBounds(CardSide(before), CardSide(after), 1f))
+
+        assertTrue("чтений ${before.reads + after.reads}", before.reads + after.reads <= 4 * manyStrokes.size)
+    }
+
+    @Test
+    fun differentStrokeListsAreComparedInLinearTime() {
+        val removed = Stroke(6f, listOf(StrokePoint(900f, 900f, 1f)))
+        val added = Stroke(6f, listOf(StrokePoint(950f, 940f, 1f)))
+        val before = CountingList(manyStrokes + removed)
+        val after = CountingList(manyStrokes + added)
+
+        val bounds = computeChangedBounds(CardSide(before), CardSide(after), 1f)
+
+        assertEquals(computeStrokeBounds(removed, 1f)!!.union(computeStrokeBounds(added, 1f)!!), bounds)
+        assertTrue("чтений ${before.reads + after.reads}", before.reads + after.reads <= 8 * manyStrokes.size)
+    }
+
+    @Test
+    fun removedAndAddedStrokeAmongManyUnchangedGiveExactlyTheirUnion() {
+        val removed = Stroke(8f, listOf(StrokePoint(100f, 700f, 1f), StrokePoint(180f, 760f, 0.5f)))
+        val added = Stroke(3f, listOf(StrokePoint(820f, 640f, 0.7f)))
+
+        val bounds = computeChangedBounds(CardSide(manyStrokes + removed), CardSide(manyStrokes + added), 1f)
+
+        assertEquals(computeStrokeBounds(removed, 1f)!!.union(computeStrokeBounds(added, 1f)!!), bounds)
+    }
+
+    @Test
+    fun strokeRepeatedInOnlyOneSideIsNotAChange() {
+        val repeated = Stroke(6f, listOf(StrokePoint(10f, 10f, 1f)))
+        val other = Stroke(6f, listOf(StrokePoint(300f, 200f, 1f)))
+
+        assertNull(computeChangedBounds(CardSide(listOf(repeated)), CardSide(listOf(repeated, repeated)), 1f))
+        assertNull(computeChangedBounds(CardSide(listOf(repeated, repeated)), CardSide(listOf(repeated)), 1f))
+        assertEquals(
+            computeStrokeBounds(other, 1f),
+            computeChangedBounds(CardSide(listOf(repeated)), CardSide(listOf(repeated, repeated, other)), 1f),
+        )
+    }
+
+    @Test
+    fun shapeRepeatedInOnlyOneSideIsNotAChange() {
+        assertNull(computeChangedBounds(CardSide(shapes = listOf(rectangle)), CardSide(shapes = listOf(rectangle, rectangle)), 1f))
+        assertNull(computeChangedBounds(CardSide(shapes = listOf(rectangle, rectangle)), CardSide(shapes = listOf(rectangle)), 1f))
+    }
+
+    @Test
+    fun listsOfEqualSizeWithDifferentStrokesAreStillCompared() {
+        val first = Stroke(6f, listOf(StrokePoint(10f, 10f, 1f)))
+        val second = Stroke(6f, listOf(StrokePoint(90f, 90f, 1f)))
+
+        assertEquals(computeStrokeBounds(first, 1f)!!.union(computeStrokeBounds(second, 1f)!!),
+            computeChangedBounds(CardSide(listOf(first)), CardSide(listOf(second)), 1f))
+    }
+
     private fun assertPoint(x: Float, y: Float, pressure: Float, actual: StrokePoint) {
         assertEquals(x, actual.x, 1e-3f)
         assertEquals(y, actual.y, 1e-3f)
         assertEquals(pressure, actual.pressure, 1e-6f)
+    }
+}
+
+/** Список, который считает чтения элементов: по их числу видно, сколько работы делает сравнение сторон. */
+private class CountingList<T>(private val items: List<T>) : AbstractList<T>() {
+    var reads = 0
+        private set
+
+    override val size: Int get() = items.size
+
+    override fun get(index: Int): T {
+        reads++
+        return items[index]
     }
 }
