@@ -74,7 +74,7 @@ private fun Shape.listLinearOutlines(): List<List<Pair<Double, Double>>> {
 
 /** Задета ли фигура траекторией: любой отрезок контура ближе [radius] к отрезку траектории. Внутренность не задета. */
 fun isShapeTouched(shape: Shape, path: List<StrokePoint>, radius: Float): Boolean =
-    isPolylineTouched(shape.listPolylines(), path, radius)
+    EraserTrace(path, radius).isTouchingShape(shape)
 
 /**
  * Верхняя из фигур, чья лента выбора задета точкой: расстояние от неё до контура не больше `width / 2 + 8` единиц

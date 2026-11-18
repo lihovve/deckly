@@ -104,11 +104,12 @@ fun EditorSession.listVisibleContent(held: HeldShape?): CardSide {
 fun EditorSession.eraseAlong(path: List<StrokePoint>, radius: Float): EditorSession {
     val side = draft.visibleSide
     val content = draft.selectSide(side)
+    val trace = EraserTrace(path, radius)
     val erasedStrokes = content.strokes.withIndex()
-        .filter { isStrokeTouched(it.value, path, radius) }
+        .filter { trace.isTouchingStroke(it.value) }
         .map { ErasedStroke(it.index, it.value) }
     val erasedShapes = content.shapes.withIndex()
-        .filter { isShapeTouched(it.value, path, radius) }
+        .filter { trace.isTouchingShape(it.value) }
         .map { ErasedShape(it.index, it.value) }
     if (erasedStrokes.isEmpty() && erasedShapes.isEmpty()) return this
     val strokeIndexes = erasedStrokes.map { it.index }.toSet()
