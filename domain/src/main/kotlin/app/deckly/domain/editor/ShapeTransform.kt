@@ -32,8 +32,9 @@ private const val LIMIT_STEPS = 20
 
 /**
  * Допуск в единицах макета на потерю точности при переводе рамки в `Float` и обратно: фигура, которую упор оставил
- * ровно у края листа, после записи не должна вдруг «не помещаться». Только для проверки готовой фигуры ([canFitShape]); сами
- * движения считают строго, иначе упор уходил бы за край на величину допуска.
+ * ровно у края листа, после записи не должна вдруг «не помещаться». Только для проверки готовой фигуры ([canFitShape]) и как
+ * запас, с которым возвращается на лист стартовая рамка жеста ([pullIntoSheet]); сами движения считают строго, иначе упор
+ * уходил бы за край на величину допуска.
  */
 private const val TOLERANCE = 1e-3
 
@@ -89,12 +90,35 @@ private fun Frame.findPoint(offsetX: Double, offsetY: Double): Pair<Double, Doub
  * круглые, поэтому ровно полтолщины выступает за точку, и без этого край холста срезал бы половину линии.
  */
 private fun Frame.canFit(tolerance: Double = 0.0): Boolean {
-    val points = if (isLinear) listContourPoints() else listCorners()
     val margin = outline / 2 - tolerance
-    return points.all { (px, py) ->
+    return listRulePoints().all { (px, py) ->
         px >= margin && px <= SHEET_WIDTH - margin && py >= margin && py <= SHEET_HEIGHT - margin
     }
 }
+
+// Точки правила «помещается»: углы рамки обычного вида или точки контура линии и стрелок.
+private fun Frame.listRulePoints(): List<Pair<Double, Double>> = if (isLinear) listContourPoints() else listCorners()
+
+/**
+ * Рамка, с которой начинается жест. Фигура из файла прежней версии могла стоять у края или за ним по прежнему правилу (без
+ * толщины контура, с рамкой по сетке значка): ни один кандидат от такой рамки не поместился бы, и у стрелки, прижатой концом
+ * к краю, второй конец не двигался бы совсем. Поэтому не помещающаяся рамка сдвигается внутрь на величину выступа по каждой
+ * оси (перенос, размер и угол прежние); помещающаяся возвращается как есть, без единого бита изменений.
+ */
+private fun Frame.pullIntoSheet(): Frame {
+    if (canFit()) return this
+    // Запас [TOLERANCE] сверх границы: контур линии считается через `Float`, и кандидат от рамки ровно на границе из-за шума
+    // округления (порядка 5e-5) не поместился бы, хотя конец не движется.
+    val margin = outline / 2 + TOLERANCE
+    val points = listRulePoints()
+    val shiftX = computeShift(points.minOf { it.first }, points.maxOf { it.first }, SHEET_WIDTH, margin)
+    val shiftY = computeShift(points.minOf { it.second }, points.maxOf { it.second }, SHEET_HEIGHT, margin)
+    return copy(x = x + shiftX, y = y + shiftY)
+}
+
+// Сдвиг вдоль оси длиной [size], чтобы точки от [lowest] до [highest] встали на лист с отступом [margin]: вправо за левый выступ, влево за правый.
+private fun computeShift(lowest: Double, highest: Double, size: Double, margin: Double): Double =
+    max(0.0, margin - lowest) - max(0.0, highest - (size - margin))
 
 private fun Frame.listCorners(): List<Pair<Double, Double>> =
     listOf(-1, 1).flatMap { sx -> listOf(-1, 1).map { sy -> findPoint(sx * w / 2, sy * h / 2) } }
@@ -165,7 +189,7 @@ fun canFitShape(shape: Shape): Boolean = shape.toFrame().canFit(TOLERANCE)
 
 /** Перенос на [dx], [dy] единиц карточки; у края листа упирается плавно. */
 fun moveShape(shape: Shape, dx: Float, dy: Float): Shape {
-    val frame = shape.toFrame()
+    val frame = shape.toFrame().pullIntoSheet()
     val moved = frame.copy(x = frame.x + dx / UNIT, y = frame.y + dy / UNIT)
     return limitTransform(frame, moved).toShape(shape)
 }
@@ -176,20 +200,24 @@ fun moveShape(shape: Shape, dx: Float, dy: Float): Shape {
  */
 fun resizeShape(shape: Shape, handle: ShapeHandle, dx: Float, dy: Float): Shape {
     require(handle in CORNERS) { "Растягивать можно только за угол, не за $handle" }
-    val frame = shape.toFrame()
+    val frame = shape.toFrame().pullIntoSheet()
     val radians = Math.toRadians(frame.angle)
     val worldX = dx / UNIT
     val worldY = dy / UNIT
     val localX = worldX * cos(radians) + worldY * sin(radians)
     val localY = -worldX * sin(radians) + worldY * cos(radians)
+    // Меньше 80 сторона не становится, но фигура из файла прежней версии бывает уже меньше: ей нижняя граница — её размер на
+    // начало жеста, иначе первое же касание угла рывком растило бы её до 80. Расти она может.
+    val minWidth = min(MIN_FRAME, frame.w)
+    val minHeight = min(MIN_FRAME, frame.h)
     var left = -frame.w / 2
     var right = frame.w / 2
     var top = -frame.h / 2
     var bottom = frame.h / 2
-    if (handle == ShapeHandle.TOP_LEFT || handle == ShapeHandle.BOTTOM_LEFT) left = min(left + localX, right - MIN_FRAME)
-    if (handle == ShapeHandle.TOP_RIGHT || handle == ShapeHandle.BOTTOM_RIGHT) right = max(right + localX, left + MIN_FRAME)
-    if (handle == ShapeHandle.TOP_LEFT || handle == ShapeHandle.TOP_RIGHT) top = min(top + localY, bottom - MIN_FRAME)
-    if (handle == ShapeHandle.BOTTOM_LEFT || handle == ShapeHandle.BOTTOM_RIGHT) bottom = max(bottom + localY, top + MIN_FRAME)
+    if (handle == ShapeHandle.TOP_LEFT || handle == ShapeHandle.BOTTOM_LEFT) left = min(left + localX, right - minWidth)
+    if (handle == ShapeHandle.TOP_RIGHT || handle == ShapeHandle.BOTTOM_RIGHT) right = max(right + localX, left + minWidth)
+    if (handle == ShapeHandle.TOP_LEFT || handle == ShapeHandle.TOP_RIGHT) top = min(top + localY, bottom - minHeight)
+    if (handle == ShapeHandle.BOTTOM_LEFT || handle == ShapeHandle.BOTTOM_RIGHT) bottom = max(bottom + localY, top + minHeight)
     val (centerX, centerY) = frame.findPoint((left + right) / 2, (top + bottom) / 2)
     val candidate = frame.copy(
         x = centerX - (right - left) / 2,
@@ -207,7 +235,7 @@ private val CORNERS = setOf(ShapeHandle.TOP_LEFT, ShapeHandle.TOP_RIGHT, ShapeHa
  * приводится к −180…180, поэтому поворот идёт короткой дорогой через границу.
  */
 fun rotateShape(shape: Shape, startX: Float, startY: Float, x: Float, y: Float): Shape {
-    val frame = shape.toFrame()
+    val frame = shape.toFrame().pullIntoSheet()
     val centerX = frame.x + frame.w / 2
     val centerY = frame.y + frame.h / 2
     val delta = atan2(y / UNIT - centerY, x / UNIT - centerX) - atan2(startY / UNIT - centerY, startX / UNIT - centerX)
@@ -222,7 +250,7 @@ fun rotateShape(shape: Shape, startX: Float, startY: Float, x: Float, y: Float):
  */
 fun moveShapeEndpoint(shape: Shape, handle: ShapeHandle, x: Float, y: Float): Shape {
     require(handle == ShapeHandle.START || handle == ShapeHandle.END) { "Двигать можно только конец, не $handle" }
-    val frame = shape.toFrame()
+    val frame = shape.toFrame().pullIntoSheet()
     val isStart = handle == ShapeHandle.START
     val moving = frame.findPoint((if (isStart) -END_SHARE else END_SHARE) * frame.w, 0.0)
     val fixed = frame.findPoint((if (isStart) END_SHARE else -END_SHARE) * frame.w, 0.0)
