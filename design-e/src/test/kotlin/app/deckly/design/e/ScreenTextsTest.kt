@@ -6,6 +6,7 @@ import app.deckly.ui.contract.ShapeHandleKind
 import java.io.File
 import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -35,8 +36,8 @@ class ScreenTextsTest {
         assertEquals("Medium line", EditorTexts.describeThickness(app.deckly.ui.contract.Thickness.MEDIUM))
         assertEquals("Thick line", EditorTexts.describeThickness(app.deckly.ui.contract.Thickness.THICK))
         assertTrue(buildScript.contains("aria-label=\"{name} line\""))
-        assertEquals(listOf("01", "02", "09", "10", "12"), listOf(1, 2, 9, 10, 12).map { DeckListTexts.formatDeckNumber(it) })
-        assertTrue(buildScript.contains("{number:02}"))
+        // Номеров строк в списке колод больше нет: в `deck_row` колонка номера пуста, кроме галочки текущей колоды.
+        assertFalse(buildScript.contains("{number:02}"))
     }
 
     @Test

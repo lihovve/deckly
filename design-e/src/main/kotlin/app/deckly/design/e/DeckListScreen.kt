@@ -76,12 +76,12 @@ private fun DeckList(decks: List<DeckRow>, onOpen: (Long) -> Unit, modifier: Mod
             .padding(top = Tokens.BorderThin)
             .verticalScroll(rememberScrollState()),
     ) {
-        decks.forEachIndexed { index, deck -> DeckListRow(index + 1, deck, onOpen) }
+        for (deck in decks) DeckListRow(deck, onOpen)
     }
 }
 
 @Composable
-private fun DeckListRow(number: Int, deck: DeckRow, onOpen: (Long) -> Unit) {
+private fun DeckListRow(deck: DeckRow, onOpen: (Long) -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -94,12 +94,10 @@ private fun DeckListRow(number: Int, deck: DeckRow, onOpen: (Long) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(Tokens.ItemGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Колонка номера: у текущей колоды галочка вместо номера.
+        // Колонка отметки: галочка у текущей колоды, у остальных пусто (номеров строк нет).
         Box(Modifier.width(Tokens.ItemNumberWidth)) {
             if (deck.isCurrent) {
                 Image(DecklyIcons.Check, contentDescription = null, modifier = Modifier.size(Tokens.ItemNumberIcon), colorFilter = ColorFilter.tint(Tokens.Black))
-            } else {
-                BasicText(DeckListTexts.formatDeckNumber(number), style = buildTextStyle(Tokens.ItemNumberText))
             }
         }
         // Нажимается название с подписью, а не вся строка (`a.fill` в макете).

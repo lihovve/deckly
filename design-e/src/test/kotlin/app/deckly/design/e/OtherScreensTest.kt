@@ -129,9 +129,19 @@ class OtherScreensTest {
         // Эпоха — римская цифра справа от значка ▶.
         composeRule.onNode(hasText("I") and hasClickAction()).assertExists()
         composeRule.onNode(hasText("II") and hasClickAction()).assertExists()
-        // Номера 02, 03, 04; у текущей колоды вместо номера галочка.
-        for (number in listOf("02", "03", "04")) composeRule.onNodeWithText(number).assertExists()
-        composeRule.onNodeWithText("01").assertDoesNotExist()
+        // Номеров строк нет совсем: колонка слева пуста, у текущей колоды в ней галочка.
+        for (number in listOf("01", "02", "03", "04")) composeRule.onNodeWithText(number).assertDoesNotExist()
+    }
+
+    @Test
+    fun numberColumnOfOtherDecksIsEmpty() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+
+        // Колонка номера 44 dp слева; вторая и третья строки (277…423 и 425…571, линии 424 и 572 не считаем) без единого штриха.
+        val bitmap = composeRule.onNodeWithTag("frame").captureToImage().asAndroidBitmap()
+        for (rows in listOf(277 until 424, 425 until 572)) {
+            assertTrue("в колонке номера чужой строки $rows чернила", (32 until 76).none { x -> rows.any { y -> bitmap.isInkAt(x, y) } })
+        }
     }
 
     @Test
@@ -163,7 +173,6 @@ class OtherScreensTest {
         assertEquals(FontWeight.Medium, other.fontWeight)
         assertEquals(30f, current.fontSize.value, 0.01f)
         assertEquals(36f, current.lineHeight.value, 0.01f)
-        assertEquals(20f, readTextStyle(composeRule.onNodeWithText("02", useUnmergedTree = true)).fontSize.value, 0.01f)
     }
 
     @Test
@@ -199,10 +208,9 @@ class OtherScreensTest {
         showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
 
         val bitmap = composeRule.onNodeWithTag("frame").captureToImage().asAndroidBitmap()
-        // Галочка во второй строке (277…424), у первой номер 01; номера 02 нет.
+        // Галочка во второй строке (277…424); у первой строки колонка номера пуста.
         assertIconShape("вторая строка", bitmap, 32 until 76, 277 until 277 + 147, IconId.CHECK, 24f, Tokens.IconStroke)
-        composeRule.onNodeWithText("01").assertExists()
-        composeRule.onNodeWithText("02").assertDoesNotExist()
+        assertTrue("у первой строки колонка номера пуста", (32 until 76).none { x -> (129 until 276).any { y -> bitmap.isInkAt(x, y) } })
     }
 
     @Test

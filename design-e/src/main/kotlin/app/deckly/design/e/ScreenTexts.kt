@@ -106,9 +106,6 @@ internal object DeckListTexts {
     const val LEARNED = "learned"
     const val SEPARATOR = "·"
 
-    /** Номер строки с нулём впереди: `{number:02}`. */
-    fun formatDeckNumber(number: Int): String = number.toString().padStart(2, '0')
-
     /** «245 cards ·»: подпись перед значком ▶ и эпохой. */
     fun formatCaptionBeforeEpoch(cardCount: Int): String = "${formatCardCount(cardCount)} $SEPARATOR"
 

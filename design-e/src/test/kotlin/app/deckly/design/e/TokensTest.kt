@@ -38,17 +38,16 @@ class TokensTest {
     @Test
     fun metricValueGridMatchesStyles() {
         assertDp(findCssNumber(".metric-value", "column-gap"), Tokens.MetricValueGap)
-        assertEquals("minmax(3ch,1fr) auto minmax(3ch,1fr)", findCssValue(".metric-value", "grid-template-columns"))
-        assertEquals(3, Tokens.MetricSideDigits)
+        // Три колонки по содержимому, блок значения по центру счётчика; подпись по центру над всем значением.
+        assertEquals("auto auto auto", findCssValue(".metric-value", "grid-template-columns"))
+        assertEquals("center", findCssValue(".metric-value", "align-self"))
         assertEquals("500", findCssValue(".metric-value", "font-weight"))
-        assertEquals("right", findCssValue(".metric-value>span:first-child", "text-align"))
-        assertEquals("left", findCssValue(".metric-value>span:last-child", "text-align"))
         assertEquals("center", findCssValue(".metric>span", "text-align"))
     }
 
     @Test
     fun nextEpochShiftAndLoadingBrandMatchStyles() {
-        assertEquals("translateX(-6px)", findCssValue(".card .next-epoch", "transform"))
+        assertEquals("translateX(-3px)", findCssValue(".card .next-epoch", "transform"))
         assertDp(findCssNumber(".card .next-epoch", "transform"), Tokens.NextEpochShift)
         assertSp(findCssNumber(".loading-brand h1", "font-size"), Tokens.LoadingBrandText)
         assertSp(findCssNumber(".loading-brand h1", "letter-spacing"), Tokens.LoadingBrandSpacing)
@@ -195,7 +194,6 @@ class TokensTest {
         assertSp(findCssNumber(".item p", "font-size"), Tokens.ItemInfoText)
         assertDp(findCssNumber(".item p", "gap"), Tokens.ItemInfoGap)
         assertDp(findCssNumber(".item p .icon", "width"), Tokens.IconSmall)
-        assertSp(findCssNumber(".item .number", "font-size"), Tokens.ItemNumberText)
         assertDp(findCssNumber(".item .number", "width"), Tokens.ItemNumberWidth)
         assertDp(findCssNumber(".item .number .icon", "width"), Tokens.ItemNumberIcon)
         assertDp(findCssNumber(".field", "gap"), Tokens.FieldGap)

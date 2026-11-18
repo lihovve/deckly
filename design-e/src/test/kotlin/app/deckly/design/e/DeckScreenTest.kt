@@ -474,8 +474,8 @@ class DeckScreenTest {
 
         val numeral = findNumeralBounds("Next pass: epoch II", "II")
         val hint = composeRule.onNodeWithText("23 cards", useUnmergedTree = true).getUnclippedBoundsInRoot()
-        // `.card .next-epoch`: translateX(-6px), на подпись под цифрой сдвиг не действует.
-        assertEquals(-6f, centerX(numeral) - centerX(hint), 1f)
+        // `.card .next-epoch`: translateX(-3px), на подпись под цифрой сдвиг не действует.
+        assertEquals(-3f, centerX(numeral) - centerX(hint), 1f)
     }
 
     @Test
