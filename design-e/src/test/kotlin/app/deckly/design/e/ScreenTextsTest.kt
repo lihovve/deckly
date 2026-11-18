@@ -46,6 +46,11 @@ class ScreenTextsTest {
         assertTrue(buildScript.contains("All {count} cards and their progress will be deleted. You can't undo this."))
         assertEquals("All 245 cards and their progress will be deleted. You can't undo this.", DeckListTexts.formatDeleteText(245))
         assertEquals("All 1 card and their progress will be deleted. You can't undo this.", DeckListTexts.formatDeleteText(1))
+        // Страницы списка: подпись «Page N of M» собирается из номера и числа страниц, как в `decks-pages` и `decks-page2`.
+        assertTrue(buildScript.contains("<span>Page 1 of 2</span>"))
+        assertTrue(buildScript.contains("<span>Page 2 of 2</span>"))
+        assertEquals("Page 1 of 2", DeckListTexts.formatPageLabel(1, 2))
+        assertEquals("Page 3 of 12", DeckListTexts.formatPageLabel(3, 12))
     }
 
     @Test

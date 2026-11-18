@@ -63,6 +63,13 @@ class OtherScreensTest {
     @get:Rule
     val composeRule = createComposeRule()
 
+    // Состояние списка для тестов, которым нужно, чтобы состояние экрана (страница, меню) пережило смену списка: лямбда
+    // `showFrame` каждый раз новая, и экран под ней собирался бы заново, а в приложении он тот же.
+    private var listState by mutableStateOf<DeckListState?>(null)
+    private var isListHosted = false
+
+    // Высота кадра: тесты страниц и меню ставят её до первого показа; по умолчанию кадр макета 1323.
+    private var frameHeight = Tokens.FrameHeight
     private val listActions = mutableListOf<DeckListAction>()
     private val nameActions = mutableListOf<DeckNameAction>()
     private val startupActions = mutableListOf<StartupAction>()
@@ -240,15 +247,145 @@ class OtherScreensTest {
         assertEquals(listOf<DeckListAction>(DeckListAction.OpenDeck(103), DeckListAction.OpenDeck(101)), listActions)
     }
 
-    @Test
-    fun listScrollsSoNoDeckIsLostBehindFooter() {
-        val decks = (1..20).map { DeckRow(it.toLong(), "Deck $it", it, null, false, it == 1) }
-        showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
+    // --- страницы вместо прокрутки (`decks-pages`, `decks-page2`) -------------------------------
 
-        composeRule.onNodeWithText("Deck 20").assertIsNotDisplayed()
-        composeRule.onNodeWithText("Deck 20").performScrollTo().assertIsDisplayed()
-        // Нижняя строка осталась на месте: список прокручивается над ней.
-        assertEquals(1323f - 32f - 112f, composeRule.onNodeWithText("New deck").getUnclippedBoundsInRoot().top.value, 0.5f)
+    private fun manyDecks(count: Int) = (1..count).map { DeckRow(it.toLong(), "Deck $it", it, null, false, it == 1) }
+
+    @Test
+    fun decksThatFitHaveNoPageNavigation() {
+        showFrame { DeckListScreen(buildListState(manyDecks(6)), { listActions += it }) }
+
+        composeRule.onNodeWithText("Deck 6").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Deck pages").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Previous page").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Next page").assertDoesNotExist()
+        composeRule.onNodeWithText("Page 1 of 1").assertDoesNotExist()
+    }
+
+    @Test
+    fun manyDecksAreSplitIntoPagesOfWholeRowsWithoutScrolling() {
+        showFrame { DeckListScreen(buildListState(manyDecks(7)), { listActions += it }) }
+
+        // Страница 1: шесть строк целиком, седьмой нет в дереве вовсе (прокрутки нет).
+        for (number in 1..6) composeRule.onNodeWithText("Deck $number").assertIsDisplayed()
+        composeRule.onNodeWithText("Deck 7").assertDoesNotExist()
+        composeRule.onNodeWithText("Page 1 of 2").assertExists()
+        composeRule.onNodeWithContentDescription("Previous page").assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription("Next page").assertIsEnabled().performClick()
+
+        composeRule.onNodeWithText("Deck 7").assertIsDisplayed()
+        composeRule.onNodeWithText("Deck 1").assertDoesNotExist()
+        composeRule.onNodeWithText("Page 2 of 2").assertExists()
+        composeRule.onNodeWithContentDescription("Next page").assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription("Previous page").assertIsEnabled().performClick()
+
+        composeRule.onNodeWithText("Page 1 of 2").assertExists()
+        composeRule.onNodeWithText("Deck 1").assertIsDisplayed()
+        assertTrue("кнопки страниц ничего не шлют модели", listActions.isEmpty())
+    }
+
+    @Test
+    fun pageNavigationStandsCenteredBetweenTheListAndTheFooter() {
+        showFrame { DeckListScreen(buildListState(manyDecks(7)), { listActions += it }) }
+
+        // `.page-nav`: высота 64, по центру, промежуток 20, текст 20; ниже промежуток кадра 16 и нижняя строка.
+        val nav = composeRule.onNodeWithContentDescription("Deck pages").getUnclippedBoundsInRoot()
+        val previous = composeRule.onNodeWithContentDescription("Previous page")
+        val next = composeRule.onNodeWithContentDescription("Next page")
+        val text = composeRule.onNodeWithText("Page 1 of 2", useUnmergedTree = true)
+        previous.assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(64.dp)
+        next.assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(64.dp)
+        assertEquals(64f, nav.bottom.value - nav.top.value, 0.5f)
+        assertEquals(1323f - 32f - 112f - 16f, nav.bottom.value, 0.5f)
+        val previousBounds = previous.getUnclippedBoundsInRoot()
+        val textBounds = text.getUnclippedBoundsInRoot()
+        val nextBounds = next.getUnclippedBoundsInRoot()
+        assertEquals(20f, textBounds.left.value - previousBounds.right.value, 0.5f)
+        assertEquals(20f, nextBounds.left.value - textBounds.right.value, 0.5f)
+        assertEquals(992f / 2f, (previousBounds.left.value + nextBounds.right.value) / 2f, 1f)
+        assertEquals(20f, readTextStyle(text).fontSize.value, 0.01f)
+        assertIconInButton("назад по страницам", next, IconId.RIGHT)
+    }
+
+    @Test
+    fun theDisabledPageButtonIsOffAndTheEnabledOneIsQuiet() {
+        showFrame { DeckListScreen(buildListState(manyDecks(7)), { listActions += it }) }
+
+        // Первая страница: «Previous page» серая без рамки (`off`), «Next page» тихая; значки на своих местах.
+        val previous = composeRule.onNodeWithContentDescription("Previous page")
+        assertEquals(0, measureBorder(previous))
+        assertEquals(0, measureBorder(composeRule.onNodeWithContentDescription("Next page")))
+        previous.assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription("Next page").performClick()
+        composeRule.onNodeWithContentDescription("Next page").assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription("Previous page").assertIsEnabled()
+    }
+
+    @Test
+    fun rowsOfASecondPageStartAtTheTopOfTheListAndAreOpened() {
+        showFrame { DeckListScreen(buildListState(manyDecks(7)), { listActions += it }) }
+        composeRule.onNodeWithContentDescription("Next page").performClick()
+
+        val row = composeRule.onNode(hasText("Deck 7") and hasClickAction()).getUnclippedBoundsInRoot()
+        composeRule.onNode(hasText("Deck 7") and hasClickAction()).performClick()
+
+        // Колонка названия стоит по центру строки: первая строка списка 129…276, как на первой странице.
+        assertEquals(129f + 147f / 2f, (row.top.value + row.bottom.value) / 2f, 1f)
+        assertEquals(listOf<DeckListAction>(DeckListAction.OpenDeck(7)), listActions)
+    }
+
+    @Test
+    fun pageHoldsAsManyRowsAsFitTheHeightOfTheScreen() {
+        frameHeight = 900.dp
+        showFrame { DeckListScreen(buildListState(manyDecks(7)), { listActions += it }) }
+
+        // Область списка 900 − 64 − 208 = 628: с навигацией в неё целиком лежат 3 строки (4 лежали бы без неё), страниц 3.
+        for (number in 1..3) composeRule.onNodeWithText("Deck $number").assertIsDisplayed()
+        composeRule.onNodeWithText("Deck 4").assertDoesNotExist()
+        composeRule.onNodeWithText("Page 1 of 3").assertExists()
+    }
+
+    @Test
+    fun theLastExistingPageIsShownWhenThePagesShrink() {
+        var decks = manyDecks(13)
+        showList(buildListState(decks))
+        composeRule.onNodeWithContentDescription("Next page").performClick()
+        composeRule.onNodeWithContentDescription("Next page").performClick()
+        composeRule.onNodeWithText("Page 3 of 3").assertExists()
+
+        decks = manyDecks(7)
+        showList(buildListState(decks))
+
+        composeRule.onNodeWithText("Page 2 of 2").assertExists()
+        composeRule.onNodeWithText("Deck 7").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Next page").assertIsNotEnabled()
+    }
+
+    @Test
+    fun theNavigationDisappearsWhenOnePageIsLeft() {
+        var decks = manyDecks(7)
+        showList(buildListState(decks))
+        composeRule.onNodeWithContentDescription("Next page").performClick()
+
+        decks = manyDecks(5)
+        showList(buildListState(decks))
+
+        composeRule.onNodeWithContentDescription("Deck pages").assertDoesNotExist()
+        for (number in 1..5) composeRule.onNodeWithText("Deck $number").assertIsDisplayed()
+    }
+
+    @Test
+    fun pageStaysWhereItWasWhileTheListStillHasIt() {
+        var decks = manyDecks(13)
+        showList(buildListState(decks))
+        composeRule.onNodeWithContentDescription("Next page").performClick()
+        composeRule.onNodeWithText("Page 2 of 3").assertExists()
+
+        decks = manyDecks(12)
+        showList(buildListState(decks))
+
+        composeRule.onNodeWithText("Page 2 of 2").assertExists()
+        composeRule.onNodeWithText("Deck 7").assertIsDisplayed()
     }
 
     @Test
@@ -397,33 +534,40 @@ class OtherScreensTest {
     }
 
     @Test
-    fun menuFollowsTheScrolledRow() {
-        val decks = (1..20).map { DeckRow(it.toLong(), "Deck $it", it, null, false, it == 1) }
-        showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
-        composeRule.onNodeWithText("Deck 5").performScrollTo()
-        val button = composeRule.onNodeWithContentDescription("Deck menu: Deck 5").getUnclippedBoundsInRoot()
+    fun menuOnAnotherPageStandsAtItsRowLikeOnTheFirst() {
+        showFrame { DeckListScreen(buildListState(manyDecks(7)), { listActions += it }) }
+        composeRule.onNodeWithContentDescription("Next page").performClick()
 
-        composeRule.onNodeWithContentDescription("Deck menu: Deck 5").performClick()
+        composeRule.onNodeWithContentDescription("Deck menu: Deck 7").performClick()
 
-        // Верх строки на экране = середина кнопки − 74 (строка 148, кнопка по центру); меню на 77 ниже.
-        val rowTop = (button.top.value + button.bottom.value) / 2f - 74f
-        assertEquals(rowTop + 77f, composeRule.onNodeWithContentDescription("Deck 5").getUnclippedBoundsInRoot().top.value, 1f)
+        // `deck-menu-4` макета: первая строка второй страницы, меню на 206.
+        assertEquals(206f, composeRule.onNodeWithContentDescription("Deck 7").getUnclippedBoundsInRoot().top.value, 1f)
     }
 
     @Test
     fun menuThatDoesNotFitMovesUpExactlyToTheBottomMargin() {
-        val decks = (1..20).map { DeckRow(it.toLong(), "Deck $it", it, null, false, it == 1) }
-        showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
-        composeRule.onNodeWithText("Deck 20").performScrollTo()
-        val button = composeRule.onNodeWithContentDescription("Deck menu: Deck 20").getUnclippedBoundsInRoot()
-        val naturalTop = (button.top.value + button.bottom.value) / 2f - 74f + 77f
+        // Кадр ниже штатного: четыре строки без навигации, у четвёртой верх на 573 и меню (три пункта) до низа не доходит.
+        frameHeight = 900.dp
+        showFrame { DeckListScreen(buildListState(manyDecks(4)), { listActions += it }) }
+        val naturalTop = 129f + 3f * 148f + 77f
 
-        composeRule.onNodeWithContentDescription("Deck menu: Deck 20").performClick()
+        composeRule.onNodeWithContentDescription("Deck menu: Deck 4").performClick()
 
-        // Последняя строка у низа списка: до поля кадра 1323 − 32 меню не доходит, и оно встаёт нижней кромкой на поле.
-        val menu = composeRule.onNodeWithContentDescription("Deck 20").getUnclippedBoundsInRoot()
+        val menu = composeRule.onNodeWithContentDescription("Deck 4").getUnclippedBoundsInRoot()
         assertTrue("меню выше естественного места: ${menu.top.value} против $naturalTop", menu.top.value < naturalTop - 20f)
-        assertEquals(1323f - 32f, menu.bottom.value, 1f)
+        assertEquals(900f - 32f, menu.bottom.value, 1f)
+    }
+
+    @Test
+    fun menuOfTheLastRowOfAFullPageStillFitsOnTheStandardFrame() {
+        showFrame { DeckListScreen(buildListState(manyDecks(6)), { listActions += it }) }
+        val naturalTop = 129f + 5f * 148f + 77f
+
+        composeRule.onNodeWithContentDescription("Deck menu: Deck 6").performClick()
+
+        val menu = composeRule.onNodeWithContentDescription("Deck 6").getUnclippedBoundsInRoot()
+        assertEquals(naturalTop, menu.top.value, 1f)
+        assertTrue(menu.bottom.value <= 1323f - 32f)
     }
 
     @Test
@@ -492,12 +636,12 @@ class OtherScreensTest {
     @Test
     fun menuClosesWhenItsDeckIsGone() {
         var decks = buildDecks()
-        showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
+        showList(buildListState(decks))
         composeRule.onNodeWithContentDescription("Deck menu: English tenses").performClick()
         composeRule.onNodeWithContentDescription("English tenses").assertExists()
 
         decks = decks.filter { it.id != 102L }
-        showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
+        showList(buildListState(decks))
 
         composeRule.onNodeWithContentDescription("English tenses").assertDoesNotExist()
         composeRule.onNodeWithText("Rename").assertDoesNotExist()
@@ -781,6 +925,16 @@ class OtherScreensTest {
     private var isHosted = false
 
     // Экран один на весь тест: повторный вызов подменяет содержимое, как это делает приложение при смене состояния.
+    private fun showList(state: DeckListState) {
+        listState = state
+        if (isListHosted) {
+            composeRule.waitForIdle()
+            return
+        }
+        isListHosted = true
+        showFrame { listState?.let { shown -> DeckListScreen(shown, { listActions += it }) } }
+    }
+
     private fun showFrame(screen: @androidx.compose.runtime.Composable () -> Unit) {
         content = screen
         if (isHosted) {
@@ -789,7 +943,7 @@ class OtherScreensTest {
         }
         isHosted = true
         composeRule.setContent {
-            Box(Modifier.size(Tokens.FrameWidth, Tokens.FrameHeight).background(Color.White).testTag("frame")) { content() }
+            Box(Modifier.size(Tokens.FrameWidth, frameHeight).background(Color.White).testTag("frame")) { content() }
         }
     }
 

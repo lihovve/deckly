@@ -156,6 +156,11 @@ object Tokens {
     val FieldGap = 16.dp
     val FieldMarginTop = 40.dp
     val InputHeight = 88.dp
+
+    // --- страницы списка колод: `.page-nav` ---
+    val PageNavHeight = 64.dp
+    val PageNavGap = 20.dp
+    val PageNavText = 20.sp
     val InputPadding = 16.dp
 
     // --- рамки и скругления ---

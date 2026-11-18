@@ -3,18 +3,20 @@ package app.deckly.design.e
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,6 +31,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -38,10 +42,11 @@ import app.deckly.ui.contract.DeckRow
 import app.deckly.ui.contract.DeleteDeckDialog
 
 /**
- * Список колод по макетам `decks`, `decks-empty`, `deck-menu*`, `dlg-delete-deck*` и `dlg-import-error`. У строки справа
- * кнопка «⋯» с меню «Rename», «Export to file» и «Delete deck»; открыто ли меню и у какой строки, знает только дизайн,
- * окна удаления и ошибки импорта приходят состоянием. В нижней строке «New deck» и «Import from file». Пока нет страниц,
- * список прокручивается, чтобы ни одна колода не потерялась за нижней строкой.
+ * Список колод по макетам `decks`, `decks-empty`, `decks-pages`, `decks-page2`, `deck-menu*`, `dlg-delete-deck*` и
+ * `dlg-import-error`. У строки справа кнопка «⋯» с меню «Rename», «Export to file» и «Delete deck»; открыто ли меню и у
+ * какой строки, знает только дизайн, окна удаления и ошибки импорта приходят состоянием. В нижней строке «New deck» и
+ * «Import from file». Колоды, которые не помещаются по высоте списка, листаются страницами: номер страницы — состояние
+ * дизайна, прокрутки нет.
  */
 @Composable
 fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) {
@@ -76,7 +81,7 @@ fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) {
                 SheetMessage(DecklyIcons.get(IconId.CARDS, Tokens.IconEmptyStroke)) { SheetTitle(DeckListTexts.NO_DECKS) }
             }
         } else {
-            DeckList(state.decks, { onAction(DeckListAction.OpenDeck(it)) }, { deckId, rowTop -> menu = DeckMenu(deckId, rowTop) }, Modifier.weight(1f))
+            DeckPager(state.decks, { onAction(DeckListAction.OpenDeck(it)) }, { deckId, rowTop -> menu = DeckMenu(deckId, rowTop) }, Modifier.weight(1f))
         }
         val newDeck: @Composable (Modifier) -> Unit = { cell ->
             DecklyButton(
@@ -94,7 +99,46 @@ fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) {
     }
 }
 
-// Линия над списком и под каждой строкой; список прокручивается внутри своей области, нижняя строка остаётся на месте.
+// Страницы списка: на странице столько строк, сколько целиком лежит в высоте области (число считается от высоты), навигация
+// под списком только при нескольких страницах. Открывается первая страница; если колод стало меньше и страницы не стало,
+// показывается последняя существующая.
+@Composable
+private fun DeckPager(decks: List<DeckRow>, onOpen: (Long) -> Unit, onMenu: (Long, Dp) -> Unit, modifier: Modifier) {
+    var requestedPage by remember { mutableIntStateOf(0) }
+    BoxWithConstraints(modifier) {
+        val pages = planDeckPages(decks.size, maxHeight)
+        val page = requestedPage.coerceIn(0, pages.pageCount - 1)
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(Tokens.FrameGap)) {
+            DeckList(decks.drop(page * pages.rowsPerPage).take(pages.rowsPerPage), onOpen, onMenu, Modifier.weight(1f))
+            if (pages.pageCount > 1) PageNavigation(page, pages.pageCount, { requestedPage = page - 1 }, { requestedPage = page + 1 })
+        }
+    }
+}
+
+// `nav.page-nav`: «Previous page», «Page N of M» и «Next page» по центру, промежуток 20; крайняя кнопка серая (`off`).
+@Composable
+private fun PageNavigation(page: Int, pageCount: Int, onPrevious: () -> Unit, onNext: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(Tokens.PageNavHeight)
+            .semantics { contentDescription = DeckListTexts.PAGES },
+        horizontalArrangement = Arrangement.spacedBy(Tokens.PageNavGap, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        DecklyButton(
+            null, DecklyIcons.Left, if (page > 0) ButtonKind.QUIET else ButtonKind.OFF, DeckListTexts.PREVIOUS_PAGE,
+            onPrevious, Modifier.size(Tokens.ControlMin), isSquare = true,
+        )
+        BasicText(DeckListTexts.formatPageLabel(page + 1, pageCount), style = buildTextStyle(Tokens.PageNavText))
+        DecklyButton(
+            null, DecklyIcons.Right, if (page < pageCount - 1) ButtonKind.QUIET else ButtonKind.OFF, DeckListTexts.NEXT_PAGE,
+            onNext, Modifier.size(Tokens.ControlMin), isSquare = true,
+        )
+    }
+}
+
+// Линия над списком и под каждой строкой; строки страницы лежат целиком, прокрутки нет.
 @Composable
 private fun DeckList(decks: List<DeckRow>, onOpen: (Long) -> Unit, onMenu: (Long, Dp) -> Unit, modifier: Modifier) {
     Column(
@@ -102,8 +146,7 @@ private fun DeckList(decks: List<DeckRow>, onOpen: (Long) -> Unit, onMenu: (Long
             .fillMaxWidth()
             .padding(top = Tokens.ListMarginTop)
             .drawBehind { drawRect(Tokens.Black, Offset.Zero, Size(size.width, Tokens.BorderThin.toPx())) }
-            .padding(top = Tokens.BorderThin)
-            .verticalScroll(rememberScrollState()),
+            .padding(top = Tokens.BorderThin),
     ) {
         for (deck in decks) DeckListRow(deck, onOpen, onMenu)
     }

@@ -311,6 +311,18 @@ class TokensTest {
     }
 
     @Test
+    fun pageNavigationMatchesStyles() {
+        assertDp(findCssNumber(".page-nav", "height"), Tokens.PageNavHeight)
+        assertDp(findCssNumber(".page-nav", "gap"), Tokens.PageNavGap)
+        assertSp(findCssNumber(".page-nav", "font-size"), Tokens.PageNavText)
+        assertEquals("center", findCssValue(".page-nav", "justify-content"))
+        assertEquals("center", findCssValue(".page-nav", "align-items"))
+        // Кнопки страниц той же «квадратной» меры 64, что и остальные: высота навигации равна кнопке.
+        assertEquals(Tokens.ControlMin, Tokens.PageNavHeight)
+        assertTrue(buildScript.contains("aria-label=\"Deck pages\""))
+    }
+
+    @Test
     fun deckMenuStandsSeventySevenBelowTheTopOfItsRow() {
         // В макете меню первой строки на `top` 206, следующих на 148 ниже; строка 1 начинается на 129 (поля 32, шапка 64,
         // зазор 16, отступ списка 16 и линия 1): 206 − 129 = 77.

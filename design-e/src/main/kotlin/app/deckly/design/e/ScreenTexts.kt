@@ -113,6 +113,12 @@ internal object DeckListTexts {
     const val IMPORT_ERROR_TITLE = "Couldn't open file"
     const val IMPORT_ERROR_TEXT = "This file is damaged or uses a format we can't open."
     const val CLOSE = "Close"
+    const val PAGES = "Deck pages"
+    const val PREVIOUS_PAGE = "Previous page"
+    const val NEXT_PAGE = "Next page"
+
+    /** «Page 1 of 2»: подпись между кнопками страниц. */
+    fun formatPageLabel(page: Int, pageCount: Int): String = "Page $page of $pageCount"
 
     /** «Deck menu: English A2»: подпись кнопки «⋯» у строки для диктора. */
     fun formatMenuLabel(name: String): String = "Deck menu: $name"
