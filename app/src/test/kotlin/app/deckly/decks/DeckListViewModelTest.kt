@@ -11,9 +11,11 @@ import app.deckly.fixtures.buildDeck
 import app.deckly.fixtures.buildDeckState
 import app.deckly.fixtures.buildEpochRange
 import app.deckly.navigation.AppScreen
+import app.deckly.navigation.DeckToRename
 import app.deckly.ui.contract.DeckListAction
 import app.deckly.ui.contract.DeckListState
 import app.deckly.ui.contract.DeckRow
+import app.deckly.ui.contract.DeleteDeckDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -251,6 +253,194 @@ class DeckListViewModelTest {
         assertEquals(listOf<AppScreen>(AppScreen.DeckName()), navigated)
     }
 
+    // --- переименование и удаление -------------------------------------------------------------
+
+    @Test
+    fun renameOpensTheFormWithThatDeck() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.RenameDeck(2))
+        runUntilIdle()
+
+        assertEquals(listOf<AppScreen>(AppScreen.DeckName(DeckToRename(2, "Английские времена"))), navigated)
+        assertTrue("форма пишет сама, список ничего не меняет", catalog.renames.isEmpty())
+    }
+
+    @Test
+    fun renameOfUnknownDeckIsIgnored() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.RenameDeck(99))
+        runUntilIdle()
+
+        assertTrue(navigated.isEmpty())
+    }
+
+    @Test
+    fun askingToDeleteShowsTheDialogWithTheNameAndTheCountOfCards() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.AskDeleteDeck(3))
+        runUntilIdle()
+
+        assertEquals(DeleteDeckDialog(3, "Формулы", cardCount = 4), readState().deleteDialog)
+        assertTrue("спросили, но ничего не удалили", catalog.deletedIds.isEmpty())
+        assertEquals(4, readState().decks.size)
+    }
+
+    @Test
+    fun askingAboutAnotherDeckReplacesTheDialog() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.AskDeleteDeck(3))
+        viewModel.onAction(DeckListAction.AskDeleteDeck(4))
+        runUntilIdle()
+
+        assertEquals(DeleteDeckDialog(4, "Пустая", cardCount = 0), readState().deleteDialog)
+    }
+
+    @Test
+    fun askingAboutUnknownDeckShowsNoDialog() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.AskDeleteDeck(99))
+        runUntilIdle()
+
+        assertNull(readState().deleteDialog)
+    }
+
+    @Test
+    fun keepingClosesTheDialogAndDeletesNothing() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.AskDeleteDeck(3))
+
+        viewModel.onAction(DeckListAction.DismissDeleteDialog)
+        runUntilIdle()
+
+        assertNull(readState().deleteDialog)
+        assertTrue(catalog.deletedIds.isEmpty())
+        assertEquals(4, readState().decks.size)
+    }
+
+    @Test
+    fun confirmDeletesTheDeckAndShowsTheListWithoutIt() {
+        appState.currentDeckId = 1
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.AskDeleteDeck(3))
+
+        viewModel.onAction(DeckListAction.ConfirmDeleteDeck)
+        runUntilIdle()
+
+        assertEquals(listOf(3L), catalog.deletedIds)
+        assertEquals(listOf(1L, 2L, 4L), readState().decks.map { it.id })
+        assertNull(readState().deleteDialog)
+        // Удалили не текущую: «Назад» по-прежнему ведёт к ней.
+        assertTrue(readState().canGoBack)
+        assertTrue(readState().decks.first { it.id == 1L }.isCurrent)
+    }
+
+    @Test
+    fun deletingTheCurrentDeckLeavesNoCurrentDeckAndNoWayBack() {
+        appState.currentDeckId = 1
+        startWith(buildTypicalDecks(), onDelete = { id -> if (appState.currentDeckId == id) appState.currentDeckId = null })
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.AskDeleteDeck(1))
+
+        viewModel.onAction(DeckListAction.ConfirmDeleteDeck)
+        runUntilIdle()
+
+        // Хранилище снимает пометку «текущая»: стрелки «назад» нет, следующий запуск откроет список.
+        assertNull(appState.currentDeckId)
+        assertFalse(readState().canGoBack)
+        assertTrue(readState().decks.none { it.isCurrent })
+        assertEquals(listOf(2L, 3L, 4L), readState().decks.map { it.id })
+        assertTrue("после удаления на колоду не переходим", navigated.isEmpty())
+    }
+
+    @Test
+    fun deletingTheLastDeckShowsAnEmptyList() {
+        startWith(listOf(buildTypicalDecks().first()))
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.AskDeleteDeck(1))
+
+        viewModel.onAction(DeckListAction.ConfirmDeleteDeck)
+        runUntilIdle()
+
+        assertEquals(DeckListState(emptyList(), canGoBack = false), readState())
+    }
+
+    @Test
+    fun deletionIsWrittenThroughSerialWriterAndTheDialogClosesAtOnce() {
+        val writerScheduler = TestCoroutineScheduler()
+        startWith(buildTypicalDecks(), writerScheduler)
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.AskDeleteDeck(3))
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.ConfirmDeleteDeck)
+        runUntilIdle()
+        // Писатель ещё не работал: колода на месте, окно уже закрыто.
+        assertTrue(catalog.deletedIds.isEmpty())
+        assertEquals(4, readState().decks.size)
+        assertNull(readState().deleteDialog)
+
+        writerScheduler.advanceUntilIdle()
+        runUntilIdle()
+
+        assertEquals(listOf(3L), catalog.deletedIds)
+        assertEquals(listOf(1L, 2L, 4L), readState().decks.map { it.id })
+    }
+
+    @Test
+    fun secondConfirmWhileTheDeletionIsRunningDoesNothing() {
+        val writerScheduler = TestCoroutineScheduler()
+        startWith(buildTypicalDecks(), writerScheduler)
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.AskDeleteDeck(3))
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.ConfirmDeleteDeck)
+        viewModel.onAction(DeckListAction.ConfirmDeleteDeck)
+        runUntilIdle()
+        writerScheduler.advanceUntilIdle()
+        runUntilIdle()
+
+        assertEquals(listOf(3L), catalog.deletedIds)
+        assertEquals(3, readState().decks.size)
+    }
+
+    @Test
+    fun confirmWithoutADialogDeletesNothing() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onAction(DeckListAction.ConfirmDeleteDeck)
+        runUntilIdle()
+
+        assertTrue(catalog.deletedIds.isEmpty())
+        assertEquals(4, readState().decks.size)
+    }
+
+    @Test
+    fun confirmAfterKeepDeletesNothing() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.AskDeleteDeck(3))
+        viewModel.onAction(DeckListAction.DismissDeleteDialog)
+
+        viewModel.onAction(DeckListAction.ConfirmDeleteDeck)
+        runUntilIdle()
+
+        assertTrue(catalog.deletedIds.isEmpty())
+    }
+
     // --- вспомогательное -----------------------------------------------------------------------
 
     /** Четыре колоды: текущая с обучением, с эпохой 2, полностью выученная и пустая. */
@@ -273,8 +463,12 @@ class DeckListViewModelTest {
         return buildDeckRow(summarize(buildDeckState(buildDeck(id = 9, name = "x"), cards)), isCurrent = false).isAllLearned
     }
 
-    private fun startWith(decks: List<DeckState>, writerScheduler: TestCoroutineScheduler = scheduler) {
-        catalog = FakeDeckCatalog(decks)
+    private fun startWith(
+        decks: List<DeckState>,
+        writerScheduler: TestCoroutineScheduler = scheduler,
+        onDelete: (Long) -> Unit = {},
+    ) {
+        catalog = FakeDeckCatalog(decks, onDelete)
         viewModel = DeckListViewModel(
             decks = catalog,
             appState = appState,

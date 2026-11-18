@@ -3,7 +3,10 @@ package app.deckly.decks
 import app.deckly.SerialWriter
 import app.deckly.fakes.FakeAppStateRepository
 import app.deckly.fakes.FakeDeckCatalog
+import app.deckly.fixtures.buildDeck
+import app.deckly.fixtures.buildDeckState
 import app.deckly.navigation.AppScreen
+import app.deckly.navigation.DeckToRename
 import app.deckly.ui.contract.DeckNameAction
 import app.deckly.ui.contract.DeckNameState
 import kotlinx.coroutines.CoroutineScope
@@ -178,12 +181,131 @@ class DeckNameViewModelTest {
         assertEquals(1, navigated.size)
     }
 
-    private fun startWith(writerScheduler: TestCoroutineScheduler = scheduler) {
+    // --- переименование ------------------------------------------------------------------------
+
+    @Test
+    fun renameFormStartsWithTheNameOfTheDeckAndCanBeSaved() {
+        startRename()
+
+        assertEquals(DeckNameState("Английские времена", canSave = true, isRename = true), viewModel.state.value)
+    }
+
+    @Test
+    fun renameSavesTheTrimmedNameAndReturnsToTheList() {
+        startRename()
+
+        viewModel.onAction(DeckNameAction.ChangeName("  Времена \n"))
+        viewModel.onAction(DeckNameAction.Save)
+        runUntilIdle()
+
+        assertEquals(listOf(2L to "Времена"), catalog.renames)
+        assertEquals(listOf<AppScreen>(AppScreen.DeckList), navigated)
+        assertTrue("новая колода не создаётся", catalog.createdNames.isEmpty())
+    }
+
+    @Test
+    fun renameKeepsTheFormAsARenameWhileTyping() {
+        startRename()
+
+        viewModel.onAction(DeckNameAction.ChangeName("Времена"))
+        assertEquals(DeckNameState("Времена", canSave = true, isRename = true), viewModel.state.value)
+
+        viewModel.onAction(DeckNameAction.ChangeName("   "))
+        assertEquals(DeckNameState("   ", canSave = false, isRename = true), viewModel.state.value)
+    }
+
+    @Test
+    fun renameDoesNotMakeTheDeckCurrent() {
+        appState.currentDeckId = 1
+        startRename()
+
+        viewModel.onAction(DeckNameAction.ChangeName("Времена"))
+        viewModel.onAction(DeckNameAction.Save)
+        runUntilIdle()
+
+        assertEquals(1L, appState.currentDeckId)
+        assertEquals(listOf<AppScreen>(AppScreen.DeckList), navigated)
+    }
+
+    @Test
+    fun blankNameCannotBeSavedWhenRenaming() {
+        startRename()
+
+        viewModel.onAction(DeckNameAction.ChangeName(" \t "))
+        viewModel.onAction(DeckNameAction.Save)
+        runUntilIdle()
+
+        assertTrue(catalog.renames.isEmpty())
+        assertTrue(navigated.isEmpty())
+    }
+
+    @Test
+    fun unchangedNameReturnsToTheListWithoutWriting() {
+        startRename()
+
+        viewModel.onAction(DeckNameAction.Save)
+        runUntilIdle()
+
+        assertTrue(catalog.renames.isEmpty())
+        assertEquals(listOf<AppScreen>(AppScreen.DeckList), navigated)
+    }
+
+    @Test
+    fun cancelOfRenameReturnsToTheListWithoutWriting() {
+        startRename()
+
+        viewModel.onAction(DeckNameAction.ChangeName("Времена"))
+        viewModel.onAction(DeckNameAction.Cancel)
+        runUntilIdle()
+
+        assertTrue(catalog.renames.isEmpty())
+        assertEquals(listOf<AppScreen>(AppScreen.DeckList), navigated)
+    }
+
+    @Test
+    fun doubleSaveOfARenameWritesOnce() {
+        startRename()
+
+        viewModel.onAction(DeckNameAction.ChangeName("Времена"))
+        viewModel.onAction(DeckNameAction.Save)
+        viewModel.onAction(DeckNameAction.Save)
+        runUntilIdle()
+
+        assertEquals(1, catalog.renames.size)
+        assertEquals(1, navigated.size)
+    }
+
+    @Test
+    fun renameIsWrittenThroughSerialWriter() {
+        val writerScheduler = TestCoroutineScheduler()
+        startRename(writerScheduler)
+
+        viewModel.onAction(DeckNameAction.ChangeName("Времена"))
+        viewModel.onAction(DeckNameAction.Save)
+        runUntilIdle()
+        // Пока писатель не работает, имя прежнее и экран не сменился.
+        assertTrue(catalog.renames.isEmpty())
+        assertTrue(navigated.isEmpty())
+
+        writerScheduler.advanceUntilIdle()
+        runUntilIdle()
+
+        assertEquals(listOf(2L to "Времена"), catalog.renames)
+        assertEquals(listOf<AppScreen>(AppScreen.DeckList), navigated)
+    }
+
+    private fun startRename(writerScheduler: TestCoroutineScheduler = scheduler) {
+        catalog.decks += buildDeckState(buildDeck(id = 2, name = "Английские времена"))
+        startWith(writerScheduler, DeckToRename(2, "Английские времена"))
+    }
+
+    private fun startWith(writerScheduler: TestCoroutineScheduler = scheduler, rename: DeckToRename? = null) {
         viewModel = DeckNameViewModel(
             decks = catalog,
             appState = appState,
             writer = SerialWriter(CoroutineScope(SupervisorJob() + StandardTestDispatcher(writerScheduler))),
             navigate = { navigated += it },
+            rename = rename,
         )
     }
 

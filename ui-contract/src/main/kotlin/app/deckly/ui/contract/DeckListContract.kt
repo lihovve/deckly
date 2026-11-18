@@ -13,8 +13,14 @@ data class DeckRow(
     val isCurrent: Boolean,
 )
 
-/** [canGoBack] — есть текущая колода, к которой можно вернуться. */
-data class DeckListState(val decks: List<DeckRow>, val canGoBack: Boolean)
+/**
+ * [canGoBack] — есть текущая колода, к которой можно вернуться. [deleteDialog] — открытое окно удаления колоды; меню
+ * строки открыто или нет, знает только дизайн.
+ */
+data class DeckListState(val decks: List<DeckRow>, val canGoBack: Boolean, val deleteDialog: DeleteDeckDialog? = null)
+
+/** Окно «Delete “[name]”?»: с колодой пропадут [cardCount] карточек. Название и число — как на строке, когда нажали «Delete deck». */
+data class DeleteDeckDialog(val id: Long, val name: String, val cardCount: Int)
 
 sealed interface DeckListAction {
     data class OpenDeck(val id: Long) : DeckListAction
@@ -22,10 +28,22 @@ sealed interface DeckListAction {
     data object CreateDeck : DeckListAction
 
     data object Back : DeckListAction
+
+    /** «Rename» в меню строки: форма с названием этой колоды. */
+    data class RenameDeck(val id: Long) : DeckListAction
+
+    /** «Delete deck» в меню строки: показать окно подтверждения. */
+    data class AskDeleteDeck(val id: Long) : DeckListAction
+
+    /** «Delete» в окне: колода удаляется вместе с карточками. */
+    data object ConfirmDeleteDeck : DeckListAction
+
+    /** «Keep» в окне и системная «Назад», пока оно открыто. */
+    data object DismissDeleteDialog : DeckListAction
 }
 
-/** Форма новой колоды: [canSave] — имя не пустое. */
-data class DeckNameState(val name: String, val canSave: Boolean)
+/** Форма названия колоды: [canSave] — имя не пустое, [isRename] — переименование существующей колоды, а не новая колода. */
+data class DeckNameState(val name: String, val canSave: Boolean, val isRename: Boolean = false)
 
 sealed interface DeckNameAction {
     data class ChangeName(val text: String) : DeckNameAction
