@@ -107,8 +107,8 @@ private fun Frame.listRulePoints(): List<Pair<Double, Double>> = if (isLinear) l
  */
 private fun Frame.pullIntoSheet(): Frame {
     if (canFit()) return this
-    // Запас [TOLERANCE] сверх границы: контур линии считается через `Float`, и кандидат от рамки ровно на границе из-за шума
-    // округления (порядка 5e-5) не поместился бы, хотя конец не движется.
+    // Запас [TOLERANCE] сверх границы: пересчёт точек от сдвинутой рамки даёт погрешность округления, и рамка, поставленная
+    // ровно на границу, могла бы из-за неё не поместиться; результат жеста к тому же записывается в `Float`.
     val margin = outline / 2 + TOLERANCE
     val points = listRulePoints()
     val shiftX = computeShift(points.minOf { it.first }, points.maxOf { it.first }, SHEET_WIDTH, margin)
@@ -123,9 +123,11 @@ private fun computeShift(lowest: Double, highest: Double, size: Double, margin: 
 private fun Frame.listCorners(): List<Pair<Double, Double>> =
     listOf(-1, 1).flatMap { sx -> listOf(-1, 1).map { sy -> findPoint(sx * w / 2, sy * h / 2) } }
 
-// Точки контура линии или стрелки в единицах макета; толщина контура на их положение не влияет (её учитывает [canFit]).
+// Точки контура линии или стрелки в единицах макета; толщина контура на их положение не влияет (её учитывает [canFit]). Та же
+// формула, что рисует фигуру (`listContourOutlines`), но от рамки напрямую в `Double`: через `Shape` рамка округлялась бы до
+// `Float`, шум порядка 5e-5 сравним с зазором у фигуры, стоящей у границы, и кандидат помещался бы случайно.
 private fun Frame.listContourPoints(): List<Pair<Double, Double>> =
-    toShape(Shape(kind, 0f, 0f, 1f, 1f, 0f, 1f)).listPolylines().flatten().map { it.x / UNIT to it.y / UNIT }
+    listContourOutlines(kind, x * UNIT, y * UNIT, (x + w) * UNIT, (y + h) * UNIT, angle).flatten().map { (px, py) -> px / UNIT to py / UNIT }
 
 private fun Frame.interpolate(target: Frame, ratio: Double) = copy(
     x = x + (target.x - x) * ratio,
