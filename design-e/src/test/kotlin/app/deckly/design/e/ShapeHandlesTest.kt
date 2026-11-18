@@ -173,4 +173,110 @@ class ShapeHandlesTest {
         assertNull(findHandleAt(line, 100f, 100f, scale, density))
         assertNull(findHandleAt(line, 200f, 52f, scale, density))
     }
+
+    // --- ручка поворота под рамкой ---------------------------------------------------------------
+
+    @Test
+    fun rotateHandleBelowStandsFortyEightUnderTheMiddleOfTheBottomSide() {
+        val local = listLocalHandlePlaces(plain, scale, density, RotateSide.BELOW).first { it.handle == ShapeHandleKind.ROTATE }
+        val world = listHandlePlaces(plain, scale, density, RotateSide.BELOW).first { it.handle == ShapeHandleKind.ROTATE }
+
+        // Рамка 200 × 100 с левым верхним углом (100, 100): низ на 200, центр ручки на 48 ниже.
+        assertEquals(100f to 148f, local.x to local.y)
+        assertEquals(200f to 248f, world.x to world.y)
+    }
+
+    @Test
+    fun rotateHandleBelowFollowsScaleDensityAndTurn() {
+        val scaled = listLocalHandlePlaces(plain, 2f, 3f, RotateSide.BELOW).first { it.handle == ShapeHandleKind.ROTATE }
+        assertEquals(200f to 200f + 48f * 3f, scaled.x to scaled.y)
+
+        // Под рамкой, повёрнутой на 90°, ручка уходит влево: центр (200, 150), вниз на 50 + 48 в осях фигуры.
+        val turned = listHandlePlaces(plain.copy(angle = 90f), scale, density, RotateSide.BELOW).first { it.handle == ShapeHandleKind.ROTATE }
+        assertEquals(102f, turned.x, 0.001f)
+        assertEquals(150f, turned.y, 0.001f)
+    }
+
+    @Test
+    fun otherHandlesDoNotDependOnTheSideOfTheRotateHandle() {
+        val above = listHandlePlaces(plain, scale, density, RotateSide.ABOVE).filter { it.handle != ShapeHandleKind.ROTATE }
+        val below = listHandlePlaces(plain, scale, density, RotateSide.BELOW).filter { it.handle != ShapeHandleKind.ROTATE }
+
+        assertEquals(above, below)
+    }
+
+    @Test
+    fun touchFindsTheRotateHandleOnTheSideItStandsOn() {
+        assertEquals(ShapeHandleKind.ROTATE, findHandleAt(plain, 200f, 248f, scale, density, RotateSide.BELOW))
+        assertNull("над рамкой её уже нет", findHandleAt(plain, 200f, 52f, scale, density, RotateSide.BELOW))
+        assertEquals(ShapeHandleKind.ROTATE, findHandleAt(plain, 200f, 52f, scale, density, RotateSide.ABOVE))
+        assertNull("под рамкой её ещё нет", findHandleAt(plain, 200f, 248f, scale, density, RotateSide.ABOVE))
+    }
+
+    // Лист 1000 × 1000 пикселей, 1 пиксель на dp и на единицу карточки; цель 64, центр ручки на 48 от рамки.
+    private fun choose(current: RotateSide, frame: ShapeFrame) = chooseRotateSide(current, frame, scale, density, 1000f, 1000f)
+
+    @Test
+    fun handleStaysAboveWhenItsTargetFitsThere() {
+        // Верх рамки на 90: центр цели на 42, цель 64 занимает 10…74: помещается.
+        val frame = ShapeFrame(left = 400f, top = 90f, right = 600f, bottom = 300f, angle = 0f, isLinear = false)
+
+        assertEquals(RotateSide.ABOVE, choose(RotateSide.ABOVE, frame))
+    }
+
+    @Test
+    fun handleGoesBelowWhenTheTargetDoesNotFitAboveButFitsBelow() {
+        val frame = ShapeFrame(left = 400f, top = 60f, right = 600f, bottom = 300f, angle = 0f, isLinear = false)
+
+        assertEquals(RotateSide.BELOW, choose(RotateSide.ABOVE, frame))
+    }
+
+    @Test
+    fun sideIsStickyAndChangesOnlyWhenTheCurrentOneDoesNotFit() {
+        // Рамка посередине: цель помещается и над, и под. Какая сторона была, та и остаётся.
+        val middle = ShapeFrame(left = 400f, top = 400f, right = 600f, bottom = 600f, angle = 0f, isLinear = false)
+        assertEquals(RotateSide.BELOW, choose(RotateSide.BELOW, middle))
+        assertEquals(RotateSide.ABOVE, choose(RotateSide.ABOVE, middle))
+        // Под рамкой не помещается (низ на 960: центр на 1008), а над помещается: возвращается наверх.
+        val low = ShapeFrame(left = 400f, top = 700f, right = 600f, bottom = 960f, angle = 0f, isLinear = false)
+        assertEquals(RotateSide.ABOVE, choose(RotateSide.BELOW, low))
+    }
+
+    @Test
+    fun sideStaysWhereItIsWhenItFitsNowhere() {
+        // Рамка во весь лист: ни над, ни под цель не помещается.
+        val whole = ShapeFrame(left = 0f, top = 0f, right = 1000f, bottom = 1000f, angle = 0f, isLinear = false)
+
+        assertEquals(RotateSide.ABOVE, choose(RotateSide.ABOVE, whole))
+        assertEquals(RotateSide.BELOW, choose(RotateSide.BELOW, whole))
+    }
+
+    @Test
+    fun rotatedTargetIsCheckedByItsRotatedCorners() {
+        // Рамка 200 × 100 по центру (500, 100): над ней на 0° цель с углами от y = 100 − 50 − 48 − 32 = −30: не помещается.
+        // Повёрнутая на 90° ручка уходит вправо, и цель по горизонтали помещается; повёрнутая на 45° её угол выходит за верх.
+        val top = ShapeFrame(left = 400f, top = 50f, right = 600f, bottom = 150f, angle = 0f, isLinear = false)
+        assertEquals(RotateSide.BELOW, choose(RotateSide.ABOVE, top))
+        assertEquals(RotateSide.ABOVE, choose(RotateSide.ABOVE, top.copy(angle = 90f)))
+        // Рамка по центру (500, 110), на 45°: центр ручки над ней в (569,3; 40,7), по осям цель 8,7…72,7 помещается, но её
+        // повёрнутый угол выше центра на 32·√2 = 45,3 и уходит за верх листа на 4,6.
+        val corner = ShapeFrame(left = 400f, top = 60f, right = 600f, bottom = 160f, angle = 45f, isLinear = false)
+        assertEquals(RotateSide.BELOW, choose(RotateSide.ABOVE, corner))
+    }
+
+    @Test
+    fun targetCannotStickOutAtTheSideOfTheSheetEither() {
+        // Рамка у правого края: на 90° ручка над рамкой уходит вправо и вылезает за край листа, под рамкой она слева.
+        val right = ShapeFrame(left = 850f, top = 450f, right = 950f, bottom = 550f, angle = 90f, isLinear = false)
+
+        assertEquals(RotateSide.BELOW, choose(RotateSide.ABOVE, right))
+    }
+
+    @Test
+    fun lineHasNoRotateHandleAndKeepsTheSide() {
+        val line = ShapeFrame(left = 100f, top = 10f, right = 300f, bottom = 90f, angle = 0f, isLinear = true)
+
+        assertEquals(RotateSide.ABOVE, choose(RotateSide.ABOVE, line))
+        assertEquals(RotateSide.BELOW, choose(RotateSide.BELOW, line))
+    }
 }

@@ -319,6 +319,110 @@ class ShapeEditorTest {
         }
     }
 
+    // --- ручка поворота под рамкой, когда над ней нет места -------------------------------------
+
+    // Рамка у верхнего края листа: над ней цель 64 с центром на 48 выше не помещается.
+    private val nearTop = rectangle.copy(frame = rectangle.frame.copy(top = 20f, bottom = 220f))
+    private val inTheMiddle = rectangle
+    private val nearBottom = rectangle.copy(frame = rectangle.frame.copy(top = 820f, bottom = 1020f))
+
+    private fun findRotateCenter(): Pair<Float, Float> = composeRule.onNodeWithContentDescription("Rotate shape").findBounds().let { findCenterX(it) to findCenterY(it) }
+
+    @Test
+    fun rotateHandleStandsUnderTheFrameWhenThereIsNoRoomAbove() {
+        host.show(buildEditorState(selectedShape = nearTop))
+
+        val points = listHandlePoints(nearTop, RotateSide.BELOW)
+        val rotate = points.getValue(ShapeHandleKind.ROTATE)
+        val bottomLeft = points.getValue(ShapeHandleKind.BOTTOM_LEFT)
+        val bottomRight = points.getValue(ShapeHandleKind.BOTTOM_RIGHT)
+        val topLeft = points.getValue(ShapeHandleKind.TOP_LEFT)
+        val bitmap = captureFrame()
+        val axis = (bottomLeft.x + bottomRight.x) / 2f
+        // Центр цели и значка на 48 ниже середины нижней стороны.
+        assertEquals("центр цели по x", axis, findRotateCenter().first, 1f)
+        assertEquals("центр цели по y", bottomLeft.y + 48f, findRotateCenter().second, 1f)
+        val icon = measureInkCenter(bitmap, rotate, angle = 0f, half = 14f)
+        assertNotNull("значка под рамкой нет", icon)
+        assertEquals("значок: центр по x", rotate.x, icon!!.x, 1.5f)
+        assertEquals("значок: центр по y", rotate.y, icon.y, 1.5f)
+        // Черта 1 × 16 от рамки вниз до цели: строки под нижней стороной тёмные на оси, над верхней стороной на оси пусто.
+        val lineRows = (bottomLeft.y.toInt() + 3)..(bottomLeft.y.toInt() + 13)
+        val columns = (axis.toInt() - 3)..(axis.toInt() + 3)
+        assertTrue("черта под рамкой", lineRows.all { row -> columns.sumOf { bitmap.measureDarkness(it, row).toDouble() } > 0.8 })
+        // Над верхней стороной в пределах листа на оси пусто: ни значка, ни черты.
+        val sheetTop = composeRule.onNodeWithTag("slot").fetchSemanticsNode().boundsInRoot.top.toInt()
+        assertTrue("над рамкой ручки нет", ((sheetTop + 2)..(topLeft.y.toInt() - 3)).none { row -> columns.any { bitmap.measureDarkness(it, row) > 0.2f } })
+    }
+
+    @Test
+    fun rotateHandleStaysUnderTheFrameUntilItDoesNotFitThereButFitsAbove() {
+        host.show(buildEditorState(selectedShape = nearTop))
+        assertEquals(listHandlePoints(nearTop, RotateSide.BELOW).getValue(ShapeHandleKind.ROTATE).y, findRotateCenter().second, 1f)
+
+        // Рамка спустилась: над ней место есть, но сторона липкая, ручка остаётся под рамкой.
+        host.show(buildEditorState(selectedShape = inTheMiddle))
+        assertEquals(listHandlePoints(inTheMiddle, RotateSide.BELOW).getValue(ShapeHandleKind.ROTATE).y, findRotateCenter().second, 1f)
+
+        // У нижнего края под рамкой места нет, а над ней есть: ручка возвращается наверх.
+        host.show(buildEditorState(selectedShape = nearBottom))
+        assertEquals(listHandlePoints(nearBottom, RotateSide.ABOVE).getValue(ShapeHandleKind.ROTATE).y, findRotateCenter().second, 1f)
+
+        // Снова посередине: теперь липнет к верхней.
+        host.show(buildEditorState(selectedShape = inTheMiddle))
+        assertEquals(listHandlePoints(inTheMiddle, RotateSide.ABOVE).getValue(ShapeHandleKind.ROTATE).y, findRotateCenter().second, 1f)
+    }
+
+    @Test
+    fun rotateHandleIsAboveAgainOnceTheSelectionWasTaken() {
+        host.show(buildEditorState(selectedShape = nearTop))
+        // Выделение снято, но касание мимо ещё собирается в линию: слой жестов остаётся, а сторона забывается.
+        host.show(buildEditorState(selectedShape = null, isCapturingStroke = true))
+        composeRule.onNodeWithContentDescription("Rotate shape").assertDoesNotExist()
+
+        host.show(buildEditorState(selectedShape = inTheMiddle))
+
+        assertEquals(listHandlePoints(inTheMiddle, RotateSide.ABOVE).getValue(ShapeHandleKind.ROTATE).y, findRotateCenter().second, 1f)
+    }
+
+    @Test
+    fun penOnTheRotateHandleUnderTheFrameStartsTheRotateGesture() {
+        // Ручка ушла под рамку у верхнего края и осталась там, когда рамку спустили и над ней место появилось (липкая сторона).
+        host.show(buildEditorState(selectedShape = nearTop))
+        host.show(buildEditorState(selectedShape = inTheMiddle))
+        val origin = findFrameOrigin()
+        val below = listHandlePoints(inTheMiddle, RotateSide.BELOW).getValue(ShapeHandleKind.ROTATE)
+        val above = listHandlePoints(inTheMiddle, RotateSide.ABOVE).getValue(ShapeHandleKind.ROTATE)
+
+        dispatchPen(listOf((origin.x + below.x) to (origin.y + below.y + 5f), (origin.x + below.x + 20f) to (origin.y + below.y + 25f)))
+
+        assertEquals(ShapeHandleKind.ROTATE, (actions.first() as EditorAction.StartShapeGesture).handle)
+        actions.clear()
+        // Над рамкой ручки нет, хотя там есть место: касание там не берёт ничего.
+        dispatchPen(listOf((origin.x + above.x) to (origin.y + above.y + 5f), (origin.x + above.x + 20f) to (origin.y + above.y + 25f)))
+
+        assertEquals(null, (actions.first() as EditorAction.StartShapeGesture).handle)
+    }
+
+    @Test
+    fun signsAtTheCornersOfTheSheetAreNotClipped() {
+        // Углы рамки точно на углах листа: знак выступает за лист на 10, лист и родитель его не обрезают.
+        val cornerFrame = rectangle.copy(frame = rectangle.frame.copy(left = 0f, top = 0f, right = 1000f, bottom = 300f))
+        host.show(buildEditorState(selectedShape = null))
+        val sheet = composeRule.onNodeWithTag("slot").fetchSemanticsNode().boundsInRoot
+        val before = captureFrame()
+        val outside = listOf(
+            (sheet.left - 9f) to (sheet.top + 4f), (sheet.left + 4f) to (sheet.top - 9f),
+            (sheet.right + 8f) to (sheet.top + 4f), (sheet.right - 5f) to (sheet.top - 9f),
+        )
+        for ((x, y) in outside) assertTrue("без фигуры в ($x, $y) пусто", before.measureDarkness(x.toInt(), y.toInt()) < 0.1f)
+
+        host.show(buildEditorState(selectedShape = cornerFrame))
+
+        val after = captureFrame()
+        for ((x, y) in outside) assertTrue("кольцо знака за краем листа в ($x, $y) не видно", after.measureDarkness(x.toInt(), y.toInt()) > 0.9f)
+    }
+
     @Test
     fun linearShapeHasTwoRoundMarksCenteredOnTheEndsOfTheAxisAndNoDashedFrame() {
         host.show(buildEditorState(selectedShape = line))
@@ -948,9 +1052,9 @@ class ShapeEditorTest {
     private fun findCenterY(box: DpRect) = (box.top.value + box.bottom.value) / 2f
 
     // Точки ручек в корне окна: лист занимает слот целиком, слой жестов лежит над ним; плотность mdpi, 1 dp = 1 пиксель.
-    private fun listHandlePoints(shape: SelectedShape): Map<ShapeHandleKind, Offset> {
+    private fun listHandlePoints(shape: SelectedShape, rotateSide: RotateSide = RotateSide.ABOVE): Map<ShapeHandleKind, Offset> {
         val sheet = composeRule.onNodeWithTag("slot").fetchSemanticsNode().boundsInRoot
-        return listHandlePlaces(shape.frame, sheet.width / 1000f, 1f).associate { it.handle to Offset(sheet.left + it.x, sheet.top + it.y) }
+        return listHandlePlaces(shape.frame, sheet.width / 1000f, 1f, rotateSide).associate { it.handle to Offset(sheet.left + it.x, sheet.top + it.y) }
     }
 
     // Тёмность пикселя от 0 (белый) до 1 (чёрный): у сглаженных краёв линии доля неполная, центры считаются по ней.

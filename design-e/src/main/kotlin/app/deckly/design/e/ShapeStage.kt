@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +45,7 @@ import kotlin.math.roundToInt
  * Слой жестов пера над листом и, пока фигура выделена, её рамка и ручки (`.shape-object.is-selected` с ручками в макете).
  * Сама фигура на листе: её контур рисует `ink`, здесь только то, что видно при выделении, и жесты. Рамка повёрнута вокруг
  * центра на угол фигуры. У обычного вида: пунктир в 1 dp по границе рамки, четыре квадрата в углах и ручка поворота над
- * рамкой со значком и чертой. У линии и стрелок: без пунктира, два круга на концах оси. Знак стоит центром в точке ручки. [selected] == `null`: рамки нет, слой остаётся ради
+ * рамкой (под ней, если над рамкой цель не помещается на листе, см. [chooseRotateSide]) со значком и чертой. У линии и стрелок: без пунктира, два круга на концах оси. Знак стоит центром в точке ручки. [selected] == `null`: рамки нет, слой остаётся ради
  * жеста, который начался при выделении и стал линией (касание мимо): он не должен оборваться, пока перо не оторвано.
  *
  * Жесты только пером (`PointerType.Stylus`) и без нажатой кнопки: палец и ладонь ничего не двигают и не ставят, перо с
@@ -61,6 +62,8 @@ import kotlin.math.roundToInt
 internal fun ShapeStage(selected: SelectedShape?, onAction: (EditorAction) -> Unit, modifier: Modifier = Modifier) {
     val currentFrame by rememberUpdatedState(selected?.frame)
     val currentOnAction by rememberUpdatedState(onAction)
+    val rotateSide = remember { RotateSideMemory() }
+    val density = LocalDensity.current.density
     BoxWithConstraints(
         modifier.pointerInput(Unit) {
             awaitEachGesture {
@@ -68,7 +71,7 @@ internal fun ShapeStage(selected: SelectedShape?, onAction: (EditorAction) -> Un
                 // Жест начинает только перо без нажатой кнопки; остальные касания не трогаем, их разбирает лист.
                 if (down.type != PointerType.Stylus || isStylusButtonPressed(currentEvent.motionEvent)) return@awaitEachGesture
                 val scale = size.width / CARD_WIDTH
-                val handle = currentFrame?.let { findHandleAt(it, down.position.x, down.position.y, scale, density) }
+                val handle = currentFrame?.let { findHandleAt(it, down.position.x, down.position.y, scale, density, rotateSide.side) }
                 down.consume()
                 val pressure = down.pressure.coerceIn(0f, 1f)
                 currentOnAction.invoke(EditorAction.StartShapeGesture(handle, down.position.x / scale, down.position.y / scale, pressure, scale))
@@ -77,8 +80,21 @@ internal fun ShapeStage(selected: SelectedShape?, onAction: (EditorAction) -> Un
             }
         },
     ) {
-        if (selected != null) ShapeFrameMarks(selected, constraints.maxWidth / CARD_WIDTH)
+        val scale = constraints.maxWidth / CARD_WIDTH
+        // Сторона ручки поворота выбирается при составлении кадра и тут же читается и рисунком, и жестом: знак и цель берут её из одного места.
+        rotateSide.side = if (selected == null) {
+            RotateSide.ABOVE
+        } else {
+            chooseRotateSide(rotateSide.side, selected.frame, scale, density, constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
+        }
+        if (selected != null) ShapeFrameMarks(selected, scale, rotateSide.side)
     }
+}
+
+// Сторона ручки поворота между кадрами: `chooseRotateSide` решает от прошлой стороны. Запись при составлении кадра безопасна,
+// потому что выбор идемпотентен: та же рамка при повторном составлении оставляет сторону, которую уже выбрала.
+private class RotateSideMemory {
+    var side = RotateSide.ABOVE
 }
 
 private const val CARD_WIDTH = 1000f
@@ -157,7 +173,7 @@ private fun isStylusButtonPressed(event: MotionEvent?): Boolean =
 
 // Рамка в пикселях листа: левый верхний угол и размер до поворота, оба в целых пикселях; поворот вокруг центра слоем.
 @Composable
-private fun ShapeFrameMarks(selected: SelectedShape, scale: Float) {
+private fun ShapeFrameMarks(selected: SelectedShape, scale: Float, rotateSide: RotateSide) {
     val frame = selected.frame
     val density = LocalDensity.current
     val width = with(density) { ((frame.right - frame.left) * scale).toDp() }
@@ -168,9 +184,9 @@ private fun ShapeFrameMarks(selected: SelectedShape, scale: Float) {
             .size(width, height)
             .graphicsLayer { rotationZ = frame.angle }
             .semantics { contentDescription = EditorTexts.describeShape(selected.kind) }
-            .drawBehind { if (!frame.isLinear) drawFrameOutline() },
+            .drawBehind { if (!frame.isLinear) drawFrameOutline(rotateSide) },
     ) {
-        for (place in listLocalHandlePlaces(frame, scale, density.density)) HandleMark(place)
+        for (place in listLocalHandlePlaces(frame, scale, density.density, rotateSide)) HandleMark(place)
     }
 }
 
@@ -179,15 +195,17 @@ private const val DASH_LINES = 3f
 private const val GAP_LINES = 2f
 
 // Пунктир одним прямоугольником по размеру слоя: линия 1 dp идёт по центру границы рамки. Над серединой верхней стороны
-// чёрная черта ручки поворота по оси рамки, от низа цели до рамки; её ширина и левый край в целых пикселях, иначе при чётной
-// ширине рамки ось падает на границу пикселей, и черта выходит серой в два (DU серое режет, см. HandleMark).
-private fun DrawScope.drawFrameOutline() {
+// (или под серединой нижней, если ручка поворота стоит под рамкой) чёрная черта по оси рамки между рамкой и целью; её ширина
+// и левый край в целых пикселях, иначе при чётной ширине рамки ось падает на границу пикселей, и черта выходит серой в два
+// (DU серое режет, см. HandleMark).
+private fun DrawScope.drawFrameOutline(rotateSide: RotateSide) {
     val line = Tokens.ShapeFrameDash.toPx()
     drawRect(Tokens.Black, style = Stroke(line, pathEffect = PathEffect.dashPathEffect(floatArrayOf(DASH_LINES * line, GAP_LINES * line))))
     val lineWidth = Tokens.ShapeRotateLineWidth.roundToPx().coerceAtLeast(1)
     val lineLeft = (size.width / 2f - lineWidth / 2f).roundToInt()
     val lineHeight = Tokens.ShapeRotateLineHeight.toPx()
-    drawRect(Tokens.Black, Offset(lineLeft.toFloat(), -lineHeight), Size(lineWidth.toFloat(), lineHeight))
+    val lineTop = if (rotateSide == RotateSide.ABOVE) -lineHeight else size.height
+    drawRect(Tokens.Black, Offset(lineLeft.toFloat(), lineTop), Size(lineWidth.toFloat(), lineHeight))
 }
 
 // Цель касания 64 dp с центром в точке ручки и знак по центру цели: центр знака там же, где центр цели. Положение цели
