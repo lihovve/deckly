@@ -10,22 +10,22 @@ const val MIN_OUTLINE_WIDTH = 1
 const val MAX_OUTLINE_WIDTH = 12
 
 /**
- * Запомненная толщина контура новых фигур. Это настройка приложения, а не данные карточек: в папку `Deckly` она не
- * входит. Значение вне [MIN_OUTLINE_WIDTH]…[MAX_OUTLINE_WIDTH] читается как [DEFAULT_OUTLINE_WIDTH].
+ * Запомненные настройки редактора (пока толщина контура новых фигур). Это настройки приложения, а не данные карточек: в
+ * папку `Deckly` они не входят. Значение вне [MIN_OUTLINE_WIDTH]…[MAX_OUTLINE_WIDTH] читается как [DEFAULT_OUTLINE_WIDTH].
  */
-interface OutlineWidthStore {
-    fun readWidth(): Int
+interface EditorSettingsStore {
+    fun readOutlineWidth(): Int
 
-    fun writeWidth(width: Int)
+    fun writeOutlineWidth(width: Int)
 }
 
 /** Хранит толщину в `SharedPreferences` приложения: переживает перезапуск. */
-class PreferencesOutlineWidthStore(private val preferences: SharedPreferences) : OutlineWidthStore {
+class PreferencesEditorSettingsStore(private val preferences: SharedPreferences) : EditorSettingsStore {
     // Значение под ключом может быть чужого типа (другая версия, ручная правка): это тоже «не записано».
-    override fun readWidth(): Int =
+    override fun readOutlineWidth(): Int =
         (preferences.all[KEY] as? Int)?.takeIf { it in MIN_OUTLINE_WIDTH..MAX_OUTLINE_WIDTH } ?: DEFAULT_OUTLINE_WIDTH
 
-    override fun writeWidth(width: Int) {
+    override fun writeOutlineWidth(width: Int) {
         preferences.edit().putInt(KEY, width).apply()
     }
 

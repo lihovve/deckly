@@ -14,7 +14,7 @@ import app.deckly.domain.port.StoredDraft
 import app.deckly.fakes.FakeCardContentRepository
 import app.deckly.fakes.FakeDeckRepository
 import app.deckly.fakes.FakeDraftRepository
-import app.deckly.fakes.FakeOutlineWidthStore
+import app.deckly.fakes.FakeEditorSettingsStore
 import app.deckly.fixtures.buildCard
 import app.deckly.fixtures.buildDeck
 import app.deckly.fixtures.buildDeckState
@@ -59,7 +59,7 @@ class EditorViewModelShapesTest {
     private val navigated = mutableListOf<AppScreen>()
     private val contents = FakeCardContentRepository()
     private val drafts = FakeDraftRepository()
-    private val outlineWidths = FakeOutlineWidthStore()
+    private val settings = FakeEditorSettingsStore()
     private lateinit var repository: FakeDeckRepository
     private lateinit var viewModel: EditorViewModel
 
@@ -105,7 +105,7 @@ class EditorViewModelShapesTest {
 
     @Test
     fun paletteShowsTheRememberedOutlineWidth() {
-        outlineWidths.width = 8
+        settings.width = 8
         startNewCard()
 
         assertEquals(8, shown.paletteOutlineWidth)
@@ -120,7 +120,7 @@ class EditorViewModelShapesTest {
         viewModel.onAction(EditorAction.SetOutlineWidth(5))
         runUntilIdle()
 
-        assertEquals(listOf(9, 5), outlineWidths.writes)
+        assertEquals(listOf(9, 5), settings.writes)
         assertEquals(5, shown.paletteOutlineWidth)
         assertTrue(shown.isShapePaletteOpen)
     }
@@ -134,7 +134,7 @@ class EditorViewModelShapesTest {
         viewModel.onAction(EditorAction.SetOutlineWidth(0))
         runUntilIdle()
 
-        assertEquals(listOf(12, 1), outlineWidths.writes)
+        assertEquals(listOf(12, 1), settings.writes)
     }
 
     @Test
@@ -151,7 +151,7 @@ class EditorViewModelShapesTest {
 
     @Test
     fun choosingShapeClosesPaletteAndHoldsNewShapeAtCenterWithRememberedOutline() {
-        outlineWidths.width = 7
+        settings.width = 7
         startNewCard()
 
         chooseShape(ShapeKind.OVAL)
@@ -797,7 +797,7 @@ class EditorViewModelShapesTest {
         viewModel.onAction(EditorAction.SetOutlineWidth(6))
         runUntilIdle()
 
-        assertEquals(listOf(6), outlineWidths.writes)
+        assertEquals(listOf(6), settings.writes)
         assertEquals(revision, viewModel.canvas.value.uiRevision)
     }
 
@@ -1253,7 +1253,7 @@ class EditorViewModelShapesTest {
 
     @Test
     fun appliedShapeWithOutline12StretchedAndRotatedSurvivesKill() {
-        outlineWidths.width = 12
+        settings.width = 12
         startNewCard()
         chooseShape(ShapeKind.RECTANGLE)
         val inserted = checkNotNull(shown.selectedShape).frame
@@ -1296,7 +1296,7 @@ class EditorViewModelShapesTest {
             clock = DayClock { now },
             random = Random(1),
             nowMillis = { NOW_MILLIS },
-            outlineWidths = outlineWidths,
+            settings = settings,
             navigate = { navigated += it },
         )
         runUntilIdle()
@@ -1366,7 +1366,7 @@ class EditorViewModelShapesTest {
             clock = DayClock { now },
             random = Random(1),
             nowMillis = { NOW_MILLIS },
-            outlineWidths = outlineWidths,
+            settings = settings,
             navigate = { navigated += it },
         )
     }

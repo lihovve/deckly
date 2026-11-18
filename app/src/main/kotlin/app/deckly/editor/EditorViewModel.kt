@@ -82,7 +82,7 @@ class EditorViewModel(
     private val clock: DayClock,
     private val random: Random,
     private val nowMillis: () -> Long,
-    private val outlineWidths: OutlineWidthStore,
+    private val settings: EditorSettingsStore,
     private val navigate: (AppScreen) -> Unit,
 ) : ViewModel() {
     private sealed interface Input {
@@ -106,7 +106,7 @@ class EditorViewModel(
     // Касание мимо фигуры в руках: фигура уже применена, а само касание собирается в линию, пока перо не оторвано.
     private var capture: CapturedLine? = null
     private var isPaletteOpen = false
-    private var outlineWidth = outlineWidths.readWidth().coerceIn(MIN_OUTLINE_WIDTH, MAX_OUTLINE_WIDTH)
+    private var outlineWidth = settings.readOutlineWidth().coerceIn(MIN_OUTLINE_WIDTH, MAX_OUTLINE_WIDTH)
 
     private data class UiSignature(
         val thickness: Thickness,
@@ -330,7 +330,7 @@ class EditorViewModel(
         val next = width.coerceIn(MIN_OUTLINE_WIDTH, MAX_OUTLINE_WIDTH)
         if (next == outlineWidth) return
         outlineWidth = next
-        outlineWidths.writeWidth(next)
+        settings.writeOutlineWidth(next)
         publish()
     }
 

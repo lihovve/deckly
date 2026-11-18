@@ -125,12 +125,12 @@ private object UnusedDeckTransfer : DeckTransfer {
 }
 
 /** Толщина контура в памяти: [writes] — все записи по порядку, [width] — что прочитает следующий редактор. */
-class FakeOutlineWidthStore(var width: Int = 3) : app.deckly.editor.OutlineWidthStore {
+class FakeEditorSettingsStore(var width: Int = 3) : app.deckly.editor.EditorSettingsStore {
     val writes = mutableListOf<Int>()
 
-    override fun readWidth(): Int = width
+    override fun readOutlineWidth(): Int = width
 
-    override fun writeWidth(width: Int) {
+    override fun writeOutlineWidth(width: Int) {
         writes += width
         this.width = width
     }

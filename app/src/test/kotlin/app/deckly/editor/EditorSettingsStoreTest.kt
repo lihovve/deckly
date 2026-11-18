@@ -13,7 +13,7 @@ import org.robolectric.annotation.Config
 /** Запомненная толщина контура: настройка приложения в `SharedPreferences`, переживает перезапуск. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-class OutlineWidthStoreTest {
+class EditorSettingsStoreTest {
     private lateinit var preferences: SharedPreferences
 
     @Before
@@ -25,33 +25,33 @@ class OutlineWidthStoreTest {
 
     @Test
     fun widthIsThreeUntilSomethingIsWritten() {
-        assertEquals(3, PreferencesOutlineWidthStore(preferences).readWidth())
+        assertEquals(3, PreferencesEditorSettingsStore(preferences).readOutlineWidth())
     }
 
     @Test
     fun writtenWidthSurvivesANewStoreOnTheSamePreferences() {
-        PreferencesOutlineWidthStore(preferences).writeWidth(9)
+        PreferencesEditorSettingsStore(preferences).writeOutlineWidth(9)
 
-        assertEquals(9, PreferencesOutlineWidthStore(preferences).readWidth())
+        assertEquals(9, PreferencesEditorSettingsStore(preferences).readOutlineWidth())
     }
 
     @Test
     fun lastWriteWins() {
-        val store = PreferencesOutlineWidthStore(preferences)
+        val store = PreferencesEditorSettingsStore(preferences)
 
-        store.writeWidth(4)
-        store.writeWidth(11)
+        store.writeOutlineWidth(4)
+        store.writeOutlineWidth(11)
 
-        assertEquals(11, store.readWidth())
+        assertEquals(11, store.readOutlineWidth())
     }
 
     @Test
     fun everyValueOfTheSliderIsKept() {
-        val store = PreferencesOutlineWidthStore(preferences)
+        val store = PreferencesEditorSettingsStore(preferences)
         for (width in 1..12) {
-            store.writeWidth(width)
+            store.writeOutlineWidth(width)
 
-            assertEquals(width, store.readWidth())
+            assertEquals(width, store.readOutlineWidth())
         }
     }
 
@@ -60,7 +60,7 @@ class OutlineWidthStoreTest {
         for (stored in listOf(0, -5, 13, 100, Int.MAX_VALUE)) {
             preferences.edit().putInt("outline_width", stored).commit()
 
-            assertEquals("записано $stored", 3, PreferencesOutlineWidthStore(preferences).readWidth())
+            assertEquals("записано $stored", 3, PreferencesEditorSettingsStore(preferences).readOutlineWidth())
         }
     }
 
@@ -68,6 +68,6 @@ class OutlineWidthStoreTest {
     fun valueOfAnotherTypeUnderTheKeyIsReadAsThree() {
         preferences.edit().putString("outline_width", "много").commit()
 
-        assertEquals(3, PreferencesOutlineWidthStore(preferences).readWidth())
+        assertEquals(3, PreferencesEditorSettingsStore(preferences).readOutlineWidth())
     }
 }

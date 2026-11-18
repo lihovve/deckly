@@ -13,7 +13,7 @@ import app.deckly.domain.port.StoredDraft
 import app.deckly.fakes.FakeCardContentRepository
 import app.deckly.fakes.FakeDeckRepository
 import app.deckly.fakes.FakeDraftRepository
-import app.deckly.fakes.FakeOutlineWidthStore
+import app.deckly.fakes.FakeEditorSettingsStore
 import app.deckly.fixtures.buildCard
 import app.deckly.fixtures.buildDeck
 import app.deckly.fixtures.buildDeckState
@@ -54,7 +54,7 @@ class EditorViewModelTest {
     private val navigated = mutableListOf<AppScreen>()
     private val contents = FakeCardContentRepository()
     private val drafts = FakeDraftRepository()
-    private val outlineWidths = FakeOutlineWidthStore()
+    private val settings = FakeEditorSettingsStore()
     private lateinit var repository: FakeDeckRepository
     private lateinit var viewModel: EditorViewModel
 
@@ -760,7 +760,7 @@ class EditorViewModelTest {
             clock = DayClock { now },
             random = Random(1),
             nowMillis = { NOW_MILLIS },
-            outlineWidths = outlineWidths,
+            settings = settings,
             navigate = { navigated += it },
         )
     }

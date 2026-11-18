@@ -230,7 +230,7 @@ private fun EditorHost(entry: ScreenEntry, screen: AppScreen.Editor, environment
             clock = container.clock,
             random = container.random,
             nowMillis = System::currentTimeMillis,
-            outlineWidths = container.outlineWidthStore,
+            settings = container.editorSettingsStore,
             navigate = environment.app::navigate,
         )
     }

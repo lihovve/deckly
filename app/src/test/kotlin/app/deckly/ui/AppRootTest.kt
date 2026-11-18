@@ -506,7 +506,7 @@ class AppRootTest {
     @Test
     fun rememberedOutlineWidthReachesTheNextEditorFromThePreferences() {
         val container = AppContainer(application, hasFileAccess = { true })
-        container.outlineWidthStore.writeWidth(10)
+        container.editorSettingsStore.writeOutlineWidth(10)
         val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
         startApp(buildData(drafts = drafts))
         composeRule.onNodeWithContentDescription("Shapes").performClick()
