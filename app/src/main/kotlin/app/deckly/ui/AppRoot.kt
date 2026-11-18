@@ -149,7 +149,7 @@ private fun ScreenHost(entry: ScreenEntry, environment: ScreenEnvironment) {
             }
         }
         AppScreen.DeckList -> DeckListHost(entry, environment)
-        is AppScreen.DeckName -> DeckNameHost(entry, environment)
+        is AppScreen.DeckName -> DeckNameHost(entry, screen, environment)
         is AppScreen.Deck -> DeckHost(entry, screen, environment)
         is AppScreen.Editor -> EditorHost(entry, screen, environment)
     }
@@ -163,18 +163,22 @@ private fun DeckListHost(entry: ScreenEntry, environment: ScreenEnvironment) {
     }
     val state by viewModel.state.collectAsState()
     state?.let { shown ->
-        // «Назад» ведёт к текущей колоде; если её нет, остаётся системное поведение.
-        BackHandler(enabled = shown.canGoBack) { viewModel.onAction(DeckListAction.Back) }
+        // Открытое окно удаления «Назад» закрывает; иначе она ведёт к текущей колоде, а если её нет, остаётся системное
+        // поведение. Открытое меню строки закрывает дизайн своим обработчиком, он регистрируется позже и главнее.
+        val hasDialog = shown.deleteDialog != null
+        BackHandler(enabled = hasDialog || shown.canGoBack) {
+            viewModel.onAction(if (hasDialog) DeckListAction.DismissDeleteDialog else DeckListAction.Back)
+        }
         RefreshEffect(environment, RefreshKey(entry.token, cardId = null, editorSide = null))
         environment.design.DeckListScreen(shown, viewModel::onAction)
     }
 }
 
 @Composable
-private fun DeckNameHost(entry: ScreenEntry, environment: ScreenEnvironment) {
+private fun DeckNameHost(entry: ScreenEntry, screen: AppScreen.DeckName, environment: ScreenEnvironment) {
     val data = environment.container.requireData()
     val viewModel = rememberScreenViewModel {
-        DeckNameViewModel(data.decks, data.appState, environment.container.writer, environment.app::navigate)
+        DeckNameViewModel(data.decks, data.appState, environment.container.writer, environment.app::navigate, screen.rename)
     }
     val state by viewModel.state.collectAsState()
     BackHandler { viewModel.onAction(DeckNameAction.Cancel) }

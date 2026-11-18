@@ -24,10 +24,12 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -95,6 +97,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -289,6 +292,142 @@ class AppRootTest {
         composeRule.onNodeWithText("Deck name").assertDoesNotExist()
         composeRule.onNodeWithText("Decks").assertExists()
         assertFalse(composeRule.activity.isFinishing)
+    }
+
+    @Test
+    fun renameFromTheDeckListSavesTheNewNameAndReturnsToTheList() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        startApp(buildData(decks = catalog))
+
+        composeRule.onNodeWithContentDescription("Deck menu: Немецкий A2").performClick()
+        composeRule.onNodeWithText("Rename").performClick()
+        composeRule.onNodeWithText("Deck name").assertExists()
+        composeRule.onNode(hasSetTextAction()).performTextReplacement("Немецкий B1")
+        composeRule.onNodeWithText("Save").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(DECK_ID to "Немецкий B1"), catalog.renames)
+        composeRule.onNodeWithText("Decks").assertExists()
+        composeRule.onNodeWithText("Немецкий B1").assertExists()
+        composeRule.onNodeWithText("Немецкий A2").assertDoesNotExist()
+    }
+
+    @Test
+    fun renameDoesNotMakeAnotherDeckCurrent() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        val appState = FakeAppStateRepository()
+        startApp(buildData(decks = catalog, appState = appState))
+
+        composeRule.onNodeWithContentDescription("Deck menu: Немецкий A2").performClick()
+        composeRule.onNodeWithText("Rename").performClick()
+        composeRule.onNode(hasSetTextAction()).performTextReplacement("Немецкий B1")
+        composeRule.onNodeWithText("Save").performClick()
+        composeRule.waitForIdle()
+
+        assertNull(appState.currentDeckId)
+        composeRule.onNodeWithContentDescription("Back to cards").assertDoesNotExist()
+    }
+
+    @Test
+    fun backInTheRenameFormReturnsToTheListWithoutRenaming() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        startApp(buildData(decks = catalog))
+        composeRule.onNodeWithContentDescription("Deck menu: Немецкий A2").performClick()
+        composeRule.onNodeWithText("Rename").performClick()
+        composeRule.onNode(hasSetTextAction()).performTextReplacement("Другое")
+
+        pressBack()
+
+        composeRule.onNodeWithText("Decks").assertExists()
+        composeRule.onNodeWithText("Немецкий A2").assertExists()
+        assertTrue(catalog.renames.isEmpty())
+        assertFalse(composeRule.activity.isFinishing)
+    }
+
+    @Test
+    fun deletingADeckAsksFirstAndThenShowsTheListWithoutIt() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        startApp(buildData(decks = catalog))
+
+        composeRule.onNodeWithContentDescription("Deck menu: Немецкий A2").performClick()
+        composeRule.onNodeWithText("Delete deck").performClick()
+        composeRule.onNodeWithText("Delete “Немецкий A2”?").assertExists()
+        composeRule.onNodeWithText("All 0 cards and their progress will be deleted. You can't undo this.").assertExists()
+        assertTrue("пока не подтвердили, ничего не удалено", catalog.deletedIds.isEmpty())
+        composeRule.onNodeWithText("Delete").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(DECK_ID), catalog.deletedIds)
+        composeRule.onNodeWithText("No decks").assertExists()
+        composeRule.onNodeWithText("Delete “Немецкий A2”?").assertDoesNotExist()
+    }
+
+    @Test
+    fun keepingTheDeckClosesTheDialogAndDeletesNothing() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        startApp(buildData(decks = catalog))
+        composeRule.onNodeWithContentDescription("Deck menu: Немецкий A2").performClick()
+        composeRule.onNodeWithText("Delete deck").performClick()
+
+        composeRule.onNodeWithText("Keep").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Delete “Немецкий A2”?").assertDoesNotExist()
+        composeRule.onNodeWithText("Немецкий A2").assertExists()
+        assertTrue(catalog.deletedIds.isEmpty())
+    }
+
+    @Test
+    fun backClosesTheDeleteDialogOnly() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        startApp(buildData(decks = catalog, appState = FakeAppStateRepository(DECK_ID)))
+        composeRule.onNodeWithContentDescription("Немецкий A2. Choose deck").performClick()
+        composeRule.onNodeWithContentDescription("Deck menu: Немецкий A2").performClick()
+        composeRule.onNodeWithText("Delete deck").performClick()
+        composeRule.onNodeWithText("Delete “Немецкий A2”?").assertExists()
+
+        pressBack()
+
+        composeRule.onNodeWithText("Delete “Немецкий A2”?").assertDoesNotExist()
+        composeRule.onNodeWithText("Decks").assertExists()
+        assertTrue(catalog.deletedIds.isEmpty())
+        assertFalse(composeRule.activity.isFinishing)
+    }
+
+    @Test
+    fun backClosesTheRowMenuOnly() {
+        startApp(buildData(appState = FakeAppStateRepository(DECK_ID)))
+        composeRule.onNodeWithContentDescription("Немецкий A2. Choose deck").performClick()
+        composeRule.onNodeWithContentDescription("Deck menu: Немецкий A2").performClick()
+        composeRule.onNodeWithText("Delete deck").assertExists()
+
+        pressBack()
+
+        composeRule.onNodeWithText("Delete deck").assertDoesNotExist()
+        composeRule.onNodeWithText("Decks").assertExists()
+        assertFalse(composeRule.activity.isFinishing)
+    }
+
+    @Test
+    fun deletingTheCurrentDeckLeavesNoWayBackAndTheNextBackLeavesTheApp() {
+        val appState = FakeAppStateRepository(DECK_ID)
+        val catalog = FakeDeckCatalog(
+            listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2")), buildDeckState(buildDeck(DECK_ID + 1, "Формулы"))),
+            onDelete = { id -> if (appState.currentDeckId == id) appState.currentDeckId = null },
+        )
+        startApp(buildData(decks = catalog, appState = appState))
+        composeRule.onNodeWithContentDescription("Немецкий A2. Choose deck").performClick()
+        composeRule.onNodeWithContentDescription("Back to cards").assertExists()
+
+        composeRule.onNodeWithContentDescription("Deck menu: Немецкий A2").performClick()
+        composeRule.onNodeWithText("Delete deck").performClick()
+        composeRule.onNodeWithText("Delete").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Формулы").assertExists()
+        composeRule.onNodeWithContentDescription("Back to cards").assertDoesNotExist()
+        pressBack()
+        assertTrue(composeRule.activity.isFinishing)
     }
 
     @Test

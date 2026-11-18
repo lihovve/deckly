@@ -2,6 +2,7 @@ package app.deckly.startup
 
 import app.deckly.domain.model.Section
 import app.deckly.navigation.AppScreen
+import app.deckly.navigation.DeckToRename
 import app.deckly.navigation.EditorStart
 import app.deckly.ui.contract.StartupState
 import org.junit.Assert.assertEquals
@@ -36,5 +37,6 @@ class StartTraceTest {
     fun screensThatAreNotFirstResultsStillHaveAKind() {
         assertEquals("start screen=loading sinceProcessStart=1.0ms", StartTrace.describeFirstScreen(AppScreen.Loading, 1.0))
         assertEquals("start screen=new-deck sinceProcessStart=1.0ms", StartTrace.describeFirstScreen(AppScreen.DeckName(), 1.0))
+        assertEquals("start screen=rename-deck sinceProcessStart=1.0ms", StartTrace.describeFirstScreen(AppScreen.DeckName(DeckToRename(2, "x")), 1.0))
     }
 }
