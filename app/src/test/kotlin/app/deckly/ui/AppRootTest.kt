@@ -1,7 +1,16 @@
 package app.deckly.ui
 
+import android.app.Activity
 import android.app.Application
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
+import androidx.activity.result.ActivityResultRegistry
+import androidx.activity.result.ActivityResultRegistryOwner
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityOptionsCompat
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.layout.Box
@@ -25,6 +34,7 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -52,6 +62,7 @@ import app.deckly.domain.model.StrokePoint
 import app.deckly.domain.port.AppStateRepository
 import app.deckly.domain.port.CardContentRepository
 import app.deckly.domain.port.DeckRepository
+import app.deckly.domain.port.DeckTransfer
 import app.deckly.domain.port.DraftRepository
 import app.deckly.domain.port.StoredDraft
 import app.deckly.design.e.DesignE
@@ -60,7 +71,9 @@ import app.deckly.fakes.FakeAppStateRepository
 import app.deckly.fakes.FakeCardContentRepository
 import app.deckly.fakes.FakeDeckCatalog
 import app.deckly.fakes.FakeDeckRepository
+import app.deckly.fakes.FakeDeckTransfer
 import app.deckly.fakes.FakeDraftRepository
+import app.deckly.fakes.UnusedDeckTransfer
 import app.deckly.fakes.buildEmptyDraft
 import app.deckly.fakes.buildFakeData
 import app.deckly.fixtures.buildCard
@@ -427,6 +440,114 @@ class AppRootTest {
         composeRule.onNodeWithText("Формулы").assertExists()
         composeRule.onNodeWithContentDescription("Back to cards").assertDoesNotExist()
         pressBack()
+        assertTrue(composeRule.activity.isFinishing)
+    }
+
+    // --- экспорт и импорт: системные окна выбора файла ----------------------------------------------
+
+    @Test
+    fun exportOpensTheCreateDocumentWindowWithTheNameOfTheDeckAndWritesTheChosenFile() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        val registry = RecordingResultRegistry()
+        startApp(buildData(decks = catalog, transfer = FakeDeckTransfer(catalog)), resultRegistry = registry)
+        composeRule.onNodeWithContentDescription("Deck menu: Немецкий A2").performClick()
+
+        composeRule.onNodeWithText("Export to file").performClick()
+        composeRule.waitForIdle()
+
+        val launch = registry.launches.single()
+        assertEquals("application/json", (launch.contract as ActivityResultContracts.CreateDocument).createIntent(application, "x").type)
+        assertEquals("Немецкий A2.json", launch.input)
+        val target = folder.newFile("picked.json")
+        registry.deliver(launch, Uri.fromFile(target))
+        composeRule.waitUntil(timeoutMillis = 5_000) { target.length() > 0 }
+
+        assertEquals("deck:$DECK_ID", target.readText())
+    }
+
+    @Test
+    fun declinedCreateDocumentWindowWritesNothing() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        val registry = RecordingResultRegistry()
+        val transfer = FakeDeckTransfer(catalog)
+        startApp(buildData(decks = catalog, transfer = transfer), resultRegistry = registry)
+        composeRule.onNodeWithContentDescription("Deck menu: Немецкий A2").performClick()
+        composeRule.onNodeWithText("Export to file").performClick()
+        composeRule.waitForIdle()
+
+        registry.deliver(registry.launches.single(), null)
+        composeRule.waitForIdle()
+
+        assertTrue(transfer.exportedIds.isEmpty())
+        composeRule.onNodeWithText("Couldn't open file").assertDoesNotExist()
+    }
+
+    @Test
+    fun importOpensTheOpenDocumentWindowForAnyFileAndShowsTheNewDeckWithoutMakingItCurrent() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        val appState = FakeAppStateRepository()
+        val registry = RecordingResultRegistry()
+        startApp(buildData(decks = catalog, appState = appState, transfer = FakeDeckTransfer(catalog)), resultRegistry = registry)
+
+        composeRule.onNodeWithText("Import from file").performClick()
+        composeRule.waitForIdle()
+
+        val launch = registry.launches.single()
+        assertTrue(launch.contract is ActivityResultContracts.OpenDocument)
+        assertEquals(listOf("*/*"), (launch.input as Array<*>).toList())
+        val source = folder.newFile("deck.json").also { it.writeText("Новая колода") }
+        registry.deliver(launch, Uri.fromFile(source))
+        composeRule.waitUntil(timeoutMillis = 5_000) { composeRule.onAllNodesWithText("Новая колода").fetchSemanticsNodes().isNotEmpty() }
+
+        composeRule.onNodeWithText("Немецкий A2").assertExists()
+        assertNull("импортированная колода не стала текущей", appState.currentDeckId)
+        composeRule.onNodeWithText("Couldn't open file").assertDoesNotExist()
+    }
+
+    @Test
+    fun damagedFileShowsTheImportErrorThatCloseAndBackDismiss() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        val registry = RecordingResultRegistry()
+        startApp(buildData(decks = catalog, transfer = FakeDeckTransfer(catalog)), resultRegistry = registry)
+        val damaged = folder.newFile("bad.json").also { it.writeText("BAD") }
+
+        for (dismiss in listOf({ composeRule.onNodeWithText("Close").performClick() }, { pressBack() })) {
+            composeRule.onNodeWithText("Import from file").performClick()
+            composeRule.waitForIdle()
+            registry.deliver(registry.launches.last(), Uri.fromFile(damaged))
+            composeRule.waitUntil(timeoutMillis = 5_000) { composeRule.onAllNodesWithText("Couldn't open file").fetchSemanticsNodes().isNotEmpty() }
+            composeRule.onNodeWithText("This file is damaged or uses a format we can't open.").assertExists()
+            assertEquals("в каталоге ничего нового", 1, catalog.decks.size)
+
+            dismiss()
+            composeRule.waitForIdle()
+
+            composeRule.onNodeWithText("Couldn't open file").assertDoesNotExist()
+            composeRule.onNodeWithText("Decks").assertExists()
+            assertFalse(composeRule.activity.isFinishing)
+        }
+    }
+
+    @Test
+    fun fileThatCannotBeOpenedShowsTheImportError() {
+        val catalog = FakeDeckCatalog(listOf(buildDeckState(buildDeck(DECK_ID, "Немецкий A2"))))
+        val registry = RecordingResultRegistry()
+        startApp(buildData(decks = catalog, transfer = FakeDeckTransfer(catalog)), resultRegistry = registry)
+        composeRule.onNodeWithText("Import from file").performClick()
+        composeRule.waitForIdle()
+
+        registry.deliver(registry.launches.single(), Uri.fromFile(File(folder.root, "нет-такого.json")))
+        composeRule.waitUntil(timeoutMillis = 5_000) { composeRule.onAllNodesWithText("Couldn't open file").fetchSemanticsNodes().isNotEmpty() }
+
+        assertEquals(1, catalog.decks.size)
+    }
+
+    @Test
+    fun backOnTheDeckListWithoutADialogStillLeavesTheApp() {
+        startApp(buildData())
+
+        pressBack()
+
         assertTrue(composeRule.activity.isFinishing)
     }
 
@@ -949,6 +1070,7 @@ class AppRootTest {
 
     private fun startApp(
         data: DecklyData,
+        resultRegistry: ActivityResultRegistry? = null,
         hasFileAccess: Boolean = true,
         openFailure: Exception? = null,
         openGate: CompletableDeferred<Unit>? = null,
@@ -972,7 +1094,12 @@ class AppRootTest {
             // Чтение состояния перекомпонует родителя корня, и ссылки на методы activity вычисляются заново, как в MainActivity.
             parentTick?.intValue
             val systemSettings = systemDensity?.let { LocalDensity provides it }
-            CompositionLocalProvider(*listOfNotNull(systemSettings).toTypedArray()) {
+            val registryOwner = resultRegistry?.let { registry ->
+                LocalActivityResultRegistryOwner provides object : ActivityResultRegistryOwner {
+                    override val activityResultRegistry = registry
+                }
+            }
+            CompositionLocalProvider(*listOfNotNull(systemSettings, registryOwner).toTypedArray()) {
                 AppRoot(
                     app = app,
                     container = container,
@@ -1041,6 +1168,7 @@ class AppRootTest {
         appState: AppStateRepository = FakeAppStateRepository(),
         drafts: DraftRepository = FakeDraftRepository(),
         contents: CardContentRepository = FakeCardContentRepository(),
+        transfer: DeckTransfer = UnusedDeckTransfer,
     ): DecklyData = buildFakeData(
         context = application,
         rootDir = folder.newFolder(),
@@ -1048,7 +1176,24 @@ class AppRootTest {
         drafts = drafts,
         decks = decks,
         contents = contents,
+        transfer = transfer,
     )
+
+    private class Launch(val requestCode: Int, val contract: ActivityResultContract<*, *>, val input: Any?)
+
+    // Системных окон выбора файла на JVM нет: реестр записывает, что хост пытался открыть, а тест отвечает за пользователя.
+    private inner class RecordingResultRegistry : ActivityResultRegistry() {
+        val launches = mutableListOf<Launch>()
+
+        override fun <I, O> onLaunch(requestCode: Int, contract: ActivityResultContract<I, O>, input: I, options: ActivityOptionsCompat?) {
+            launches += Launch(requestCode, contract, input)
+        }
+
+        fun deliver(launch: Launch, uri: Uri?) {
+            val result = if (uri == null) Activity.RESULT_CANCELED else Activity.RESULT_OK
+            composeRule.runOnUiThread { dispatchResult(launch.requestCode, result, Intent().setData(uri)) }
+        }
+    }
 
     // Читает колоду и считает чтения: возврат на равный экран должен читать заново.
     private class CountingCatalog(private val catalog: FakeDeckCatalog) : DeckRepository by catalog {

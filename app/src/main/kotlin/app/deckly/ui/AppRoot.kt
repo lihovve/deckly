@@ -2,6 +2,8 @@ package app.deckly.ui
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.LocalOverscrollFactory
@@ -38,6 +40,7 @@ import app.deckly.deck.DeckViewModel
 import app.deckly.deck.ShownCard
 import app.deckly.decks.DeckListViewModel
 import app.deckly.decks.DeckNameViewModel
+import app.deckly.decks.FileRequest
 import app.deckly.design.e.DesignE
 import app.deckly.editor.EditorViewModel
 import app.deckly.ink.ScreenRefresh
@@ -113,6 +116,9 @@ internal object NoIndication : IndicationNodeFactory {
 
 private const val LOG_TAG = "Deckly"
 
+// Тип файла экспорта: окно создания файла подставляет расширение по нему, а имя предлагает модель.
+private const val DECK_FILE_TYPE = "application/json"
+
 private class EntryStoreOwner(override val viewModelStore: ViewModelStore) : ViewModelStoreOwner
 
 /**
@@ -172,13 +178,35 @@ private fun DeckListHost(entry: ScreenEntry, environment: ScreenEnvironment) {
             navigate = environment.app::navigate,
         )
     }
+    // Системные окна выбора файла открывает хост: модель только просит их и получает выбор (`null` — пользователь отказался).
+    // Какую колоду просили выгрузить, помнит сама модель: результат окна создания файла несёт только адрес.
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(DECK_FILE_TYPE)) { uri ->
+        viewModel.onExportFileChosen(uri?.toString())
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        viewModel.onImportFileChosen(uri?.toString())
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.fileRequests.collect { request ->
+            when (request) {
+                is FileRequest.CreateDeckFile -> exportLauncher.launch(request.suggestedName)
+                // Любые файлы: тип у .json на планшете определяется по-разному, а чужой файл отсеет сам импорт.
+                FileRequest.OpenDeckFile -> importLauncher.launch(arrayOf("*/*"))
+            }
+        }
+    }
     val state by viewModel.state.collectAsState()
     state?.let { shown ->
-        // Открытое окно удаления «Назад» закрывает; иначе она ведёт к текущей колоде, а если её нет, остаётся системное
-        // поведение. Открытое меню строки закрывает дизайн своим обработчиком, он регистрируется позже и главнее.
-        val hasDialog = shown.deleteDialog != null
-        BackHandler(enabled = hasDialog || shown.canGoBack) {
-            viewModel.onAction(if (hasDialog) DeckListAction.DismissDeleteDialog else DeckListAction.Back)
+        // Открытое окно (удаления, ошибки импорта) «Назад» закрывает; иначе она ведёт к текущей колоде, а если её нет,
+        // остаётся системное поведение. Открытое меню строки закрывает дизайн своим обработчиком, он регистрируется позже
+        // и главнее.
+        val dismissal = when {
+            shown.deleteDialog != null -> DeckListAction.DismissDeleteDialog
+            shown.isImportErrorShown -> DeckListAction.DismissImportError
+            else -> null
+        }
+        BackHandler(enabled = dismissal != null || shown.canGoBack) {
+            viewModel.onAction(dismissal ?: DeckListAction.Back)
         }
         RefreshEffect(environment, RefreshKey(entry.token, cardId = null, editorSide = null))
         environment.design.DeckListScreen(shown, viewModel::onAction)

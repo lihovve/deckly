@@ -120,7 +120,7 @@ private object UnusedCardContentRepository : CardContentRepository {
     override suspend fun loadContent(cardId: Long): CardContent = error("Порт не нужен тесту")
 }
 
-private object UnusedDeckTransfer : DeckTransfer {
+object UnusedDeckTransfer : DeckTransfer {
     override suspend fun exportDeck(deckId: Long, output: OutputStream) = error("Порт не нужен тесту")
 
     override suspend fun importDeck(input: InputStream): Deck = error("Порт не нужен тесту")
