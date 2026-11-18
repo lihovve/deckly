@@ -38,6 +38,14 @@ class ScreenTextsTest {
         assertTrue(buildScript.contains("aria-label=\"{name} line\""))
         // Номеров строк в списке колод больше нет: в `deck_row` колонка номера пуста, кроме галочки текущей колоды.
         assertFalse(buildScript.contains("{number:02}"))
+        // Меню строки и окно удаления: подпись кнопки, заголовок с кавычками «ёлочками» нет, это «лапки», и текст с числом.
+        assertTrue(buildScript.contains("aria-label=\"Deck menu: ' + name + '\""))
+        assertEquals("Deck menu: English A2", DeckListTexts.formatMenuLabel("English A2"))
+        assertTrue(buildScript.contains("'Delete “' + name + '”?'"))
+        assertEquals("Delete “English A2”?", DeckListTexts.formatDeleteTitle("English A2"))
+        assertTrue(buildScript.contains("All {count} cards and their progress will be deleted. You can't undo this."))
+        assertEquals("All 245 cards and their progress will be deleted. You can't undo this.", DeckListTexts.formatDeleteText(245))
+        assertEquals("All 1 card and their progress will be deleted. You can't undo this.", DeckListTexts.formatDeleteText(1))
     }
 
     @Test

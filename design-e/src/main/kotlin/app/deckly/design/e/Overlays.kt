@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.isTraversalGroup
@@ -103,11 +104,19 @@ fun Dialog(title: String, text: String?, actions: List<DialogAction>, modifier: 
 }
 
 /**
- * Меню поверх экрана: справа сверху, [top] — отступ от верха кадра. Фон не затемняется; касание мимо закрывает меню
- * ([onDismiss]), касание внутри, но мимо пунктов, ничего не делает.
+ * Меню поверх экрана: справа сверху, [top] — отступ от верха кадра. Если задано [bottomMargin] и меню от [top] не
+ * помещается над ним, оно сдвигается вверх ровно настолько, чтобы нижняя кромка встала на это поле. Фон не затемняется;
+ * касание мимо закрывает меню ([onDismiss]), касание внутри, но мимо пунктов, ничего не делает.
  */
 @Composable
-fun Popup(title: String, items: List<PopupItem>, onDismiss: () -> Unit, modifier: Modifier = Modifier, top: Dp = Tokens.PopupTop) {
+fun Popup(
+    title: String,
+    items: List<PopupItem>,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    top: Dp = Tokens.PopupTop,
+    bottomMargin: Dp? = null,
+) {
     // Системная «Назад» закрывает меню, пока оно открыто; обработчик снимается вместе с ним.
     BackHandler(onBack = onDismiss)
     val shape = RoundedCornerShape(Tokens.RadiusSmall)
@@ -121,7 +130,8 @@ fun Popup(title: String, items: List<PopupItem>, onDismiss: () -> Unit, modifier
         Column(
             Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = top, end = Tokens.PopupEnd)
+                .padding(end = Tokens.PopupEnd)
+                .placeBelow(top, bottomMargin)
                 .width(Tokens.PopupWidth)
                 .semantics {
                     contentDescription = title
@@ -148,6 +158,14 @@ fun Popup(title: String, items: List<PopupItem>, onDismiss: () -> Unit, modifier
             for (item in items) PopupRow(item)
         }
     }
+}
+
+// Ставит содержимое на [top] от верха области, а при заданном [bottomMargin] не ниже, чем нижняя кромка у этого поля.
+private fun Modifier.placeBelow(top: Dp, bottomMargin: Dp?): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints.copy(minWidth = 0, minHeight = 0))
+    val lowest = bottomMargin?.let { constraints.maxHeight - it.roundToPx() - placeable.height }
+    val y = minOf(top.roundToPx(), lowest ?: Int.MAX_VALUE).coerceAtLeast(0)
+    layout(placeable.width, constraints.maxHeight) { placeable.place(0, y) }
 }
 
 @Composable

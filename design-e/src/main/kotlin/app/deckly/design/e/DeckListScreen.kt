@@ -14,26 +14,47 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import app.deckly.ui.contract.DeckListAction
 import app.deckly.ui.contract.DeckListState
 import app.deckly.ui.contract.DeckRow
+import app.deckly.ui.contract.DeleteDeckDialog
 
 /**
- * Список колод по макетам `decks` и `decks-empty`. Без меню колоды и импорта (план 5). Пока нет страниц, список
- * прокручивается, чтобы ни одна колода не потерялась за нижней строкой.
+ * Список колод по макетам `decks`, `decks-empty`, `deck-menu*` и `dlg-delete-deck*`. У строки справа кнопка «⋯» с меню
+ * «Rename» и «Delete deck»; открыто ли меню и у какой строки, знает только дизайн, окно удаления приходит состоянием.
+ * Пока нет страниц, список прокручивается, чтобы ни одна колода не потерялась за нижней строкой. Импорта здесь ещё нет.
  */
 @Composable
 fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) {
-    ScreenFrame {
+    // Колода с открытым меню и верх её строки на экране в момент нажатия «⋯»: список прокручивается. Меню закрывается
+    // само, когда колоды уже нет в списке.
+    var menu by remember { mutableStateOf<DeckMenu?>(null) }
+    ScreenFrame(
+        overlay = {
+            val open = menu
+            val deck = open?.let { opened -> state.decks.firstOrNull { it.id == opened.deckId } }
+            if (open != null && deck != null) DeckMenuPopup(deck, open.rowTop, { menu = null }, onAction)
+            state.deleteDialog?.let { DeleteDialogHost(it, onAction) }
+        },
+    ) {
         TitleBar(
             DeckListTexts.TITLE,
             left = if (state.canGoBack) {
@@ -53,7 +74,7 @@ fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) {
                 SheetMessage(DecklyIcons.get(IconId.CARDS, Tokens.IconEmptyStroke)) { SheetTitle(DeckListTexts.NO_DECKS) }
             }
         } else {
-            DeckList(state.decks, { onAction(DeckListAction.OpenDeck(it)) }, Modifier.weight(1f))
+            DeckList(state.decks, { onAction(DeckListAction.OpenDeck(it)) }, { deckId, rowTop -> menu = DeckMenu(deckId, rowTop) }, Modifier.weight(1f))
         }
         val newDeck: @Composable (Modifier) -> Unit = { cell ->
             DecklyButton(
@@ -67,7 +88,7 @@ fun DeckListScreen(state: DeckListState, onAction: (DeckListAction) -> Unit) {
 
 // Линия над списком и под каждой строкой; список прокручивается внутри своей области, нижняя строка остаётся на месте.
 @Composable
-private fun DeckList(decks: List<DeckRow>, onOpen: (Long) -> Unit, modifier: Modifier) {
+private fun DeckList(decks: List<DeckRow>, onOpen: (Long) -> Unit, onMenu: (Long, Dp) -> Unit, modifier: Modifier) {
     Column(
         modifier
             .fillMaxWidth()
@@ -76,14 +97,21 @@ private fun DeckList(decks: List<DeckRow>, onOpen: (Long) -> Unit, modifier: Mod
             .padding(top = Tokens.BorderThin)
             .verticalScroll(rememberScrollState()),
     ) {
-        for (deck in decks) DeckListRow(deck, onOpen)
+        for (deck in decks) DeckListRow(deck, onOpen, onMenu)
     }
 }
 
+// Меню строки: колода и верх её строки в кадре.
+private data class DeckMenu(val deckId: Long, val rowTop: Dp)
+
 @Composable
-private fun DeckListRow(deck: DeckRow, onOpen: (Long) -> Unit) {
+private fun DeckListRow(deck: DeckRow, onOpen: (Long) -> Unit, onMenu: (Long, Dp) -> Unit) {
+    // Положение строки читается в момент нажатия, а не хранится в состоянии: при прокрутке оно меняется каждый кадр.
+    val density = LocalDensity.current
+    val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
     Row(
         Modifier
+            .onGloballyPositioned { coordinates[0] = it }
             .fillMaxWidth()
             .heightIn(min = Tokens.ItemMinHeight)
             .drawBehind {
@@ -117,7 +145,50 @@ private fun DeckListRow(deck: DeckRow, onOpen: (Long) -> Unit) {
             )
             DeckCaption(deck)
         }
+        DecklyButton(
+            null, DecklyIcons.More, ButtonKind.QUIET, DeckListTexts.formatMenuLabel(deck.name),
+            {
+                val row = coordinates[0]?.takeIf { it.isAttached }
+                if (row != null) onMenu(deck.id, with(density) { row.positionInRoot().y.toDp() })
+            },
+            Modifier.size(Tokens.ControlMin), isSquare = true,
+        )
     }
+}
+
+// Меню строки по макету `deck-menu`: «Rename» и «Delete deck». Пункта «Export to file» нет: экспорта и импорта на экране ещё
+// нет, это отдельная работа, как и «Import from file» в нижней строке. Верх меню на 77 ниже верха строки, а если оно не
+// помещается до нижнего поля кадра, сдвигается вверх ровно настолько, чтобы поместиться.
+@Composable
+private fun DeckMenuPopup(deck: DeckRow, rowTop: Dp, onClose: () -> Unit, onAction: (DeckListAction) -> Unit) {
+    Popup(
+        title = deck.name,
+        items = listOf(
+            PopupItem(DeckListTexts.RENAME, DecklyIcons.Pen, isDanger = false) {
+                onClose()
+                onAction(DeckListAction.RenameDeck(deck.id))
+            },
+            PopupItem(DeckListTexts.DELETE_DECK, DecklyIcons.Trash, isDanger = true) {
+                onClose()
+                onAction(DeckListAction.AskDeleteDeck(deck.id))
+            },
+        ),
+        onDismiss = onClose,
+        top = rowTop + Tokens.DeckMenuOffset,
+        bottomMargin = Tokens.FrameMargin,
+    )
+}
+
+// Окно по макету `dlg-delete-deck`: «Keep» главная, «Delete» обычная.
+@Composable
+private fun DeleteDialogHost(dialog: DeleteDeckDialog, onAction: (DeckListAction) -> Unit) {
+    Dialog(
+        DeckListTexts.formatDeleteTitle(dialog.name), DeckListTexts.formatDeleteText(dialog.cardCount),
+        listOf(
+            DialogAction(DeckTexts.KEEP, isPrimary = true) { onAction(DeckListAction.DismissDeleteDialog) },
+            DialogAction(DeckTexts.DELETE, isPrimary = false) { onAction(DeckListAction.ConfirmDeleteDeck) },
+        ),
+    )
 }
 
 // «245 карточек · ▶ I», «18 карточек · выучены» или просто «N карточек».

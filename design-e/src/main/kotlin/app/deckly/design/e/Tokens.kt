@@ -150,6 +150,9 @@ object Tokens {
     val ItemNumberWidth = 44.dp
     val ItemNumberIcon = 24.dp
     val ItemInfoGap = 8.dp
+
+    /** Меню строки списка стоит на 77 ниже верха строки: в макете `top` 206 у строки, начинающейся на 129. */
+    val DeckMenuOffset = 77.dp
     val FieldGap = 16.dp
     val FieldMarginTop = 40.dp
     val InputHeight = 88.dp

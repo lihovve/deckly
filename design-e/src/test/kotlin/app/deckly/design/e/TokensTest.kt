@@ -311,6 +311,18 @@ class TokensTest {
     }
 
     @Test
+    fun deckMenuStandsSeventySevenBelowTheTopOfItsRow() {
+        // В макете меню первой строки на `top` 206, следующих на 148 ниже; строка 1 начинается на 129 (поля 32, шапка 64,
+        // зазор 16, отступ списка 16 и линия 1): 206 − 129 = 77.
+        assertTrue(buildScript.contains("'decks', 206)"))
+        assertTrue(buildScript.contains("206 + (number-1)*148"))
+        assertDp(findCssNumber(".item", "min-height"), Tokens.ItemMinHeight)
+        val firstRowTop = (Tokens.FrameMargin + Tokens.BarHeight + Tokens.FrameGap + Tokens.ListMarginTop + Tokens.BorderThin).value
+        assertDp(206f - firstRowTop, Tokens.DeckMenuOffset)
+        assertEquals(148f, Tokens.ItemMinHeight.value, 0f)
+    }
+
+    @Test
     fun controlsAndTextMeetDeviceMinimums() {
         // ТЗ: цель касания не меньше 64 dp, текст не меньше 18 sp.
         assertTrue(Tokens.ControlMin >= 64.dp)

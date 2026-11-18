@@ -106,6 +106,17 @@ internal object DeckListTexts {
     const val NO_DECKS = "No decks"
     const val LEARNED = "learned"
     const val SEPARATOR = "·"
+    const val RENAME = "Rename"
+    const val DELETE_DECK = "Delete deck"
+
+    /** «Deck menu: English A2»: подпись кнопки «⋯» у строки для диктора. */
+    fun formatMenuLabel(name: String): String = "Deck menu: $name"
+
+    /** «Delete “English A2”?»: заголовок окна удаления. */
+    fun formatDeleteTitle(name: String): String = "Delete “$name”?"
+
+    /** «All 245 cards and their progress will be deleted. You can't undo this.» */
+    fun formatDeleteText(cardCount: Int): String = "All ${formatCardCount(cardCount)} and their progress will be deleted. You can't undo this."
 
     /** «245 cards ·»: подпись перед значком ▶ и эпохой. */
     fun formatCaptionBeforeEpoch(cardCount: Int): String = "${formatCardCount(cardCount)} $SEPARATOR"
@@ -114,11 +125,13 @@ internal object DeckListTexts {
     fun formatLearnedCaption(cardCount: Int): String = "${formatCardCount(cardCount)} $SEPARATOR $LEARNED"
 }
 
-/** Тексты формы новой колоды из `design/build.py` (`deck-new`). */
+/** Тексты формы названия колоды из `design/build.py`: `deck-new` и `deck-rename`. */
 internal object DeckNameTexts {
     const val TITLE = "New deck"
+    const val RENAME_TITLE = "Rename"
     const val CANCEL = "Cancel"
     const val CREATE = "Create"
+    const val SAVE = "Save"
     const val FIELD_LABEL = "Deck name"
     const val PLACEHOLDER = "English A2"
 }

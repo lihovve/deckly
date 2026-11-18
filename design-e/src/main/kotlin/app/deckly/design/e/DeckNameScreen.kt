@@ -25,24 +25,26 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import app.deckly.ui.contract.DeckNameAction
 import app.deckly.ui.contract.DeckNameState
 
 /**
- * Форма новой колоды по макету `deck-new`: шапка «Отмена» / «Создать», подпись и поле. «Создать» серое, пока имя пустое.
+ * Форма названия колоды по макетам `deck-new` и `deck-rename`: шапка «Cancel» / «Create» (у переименования «Rename» и
+ * «Save»), подпись и поле. Кнопка серая, пока имя пустое. У переименования в поле название колоды и курсор в конце.
  * Фокус в поле при открытии, чтобы сразу вышла клавиатура; место под клавиатуру оставляет окно приложения.
  */
 @Composable
 fun DeckNameScreen(state: DeckNameState, onAction: (DeckNameAction) -> Unit) {
     ScreenFrame {
         TitleBar(
-            DeckNameTexts.TITLE,
+            if (state.isRename) DeckNameTexts.RENAME_TITLE else DeckNameTexts.TITLE,
             left = { DecklyButton(DeckNameTexts.CANCEL, null, ButtonKind.QUIET, null, { onAction(DeckNameAction.Cancel) }) },
             right = {
                 DecklyButton(
-                    DeckNameTexts.CREATE, null, if (state.canSave) ButtonKind.PRIMARY else ButtonKind.OFF, null,
+                    if (state.isRename) DeckNameTexts.SAVE else DeckNameTexts.CREATE, null, if (state.canSave) ButtonKind.PRIMARY else ButtonKind.OFF, null,
                     { onAction(DeckNameAction.Save) },
                 )
             },
@@ -56,7 +58,7 @@ private fun NameField(state: DeckNameState, onAction: (DeckNameAction) -> Unit) 
     // Буфер ввода принадлежит полю и обновляется синхронно в onValueChange. Состояние формы возвращается через поток
     // с отставанием на кадр, и поле, которое показывало бы его, на клавиатуре с подсказками теряло бы буквы, а курсор
     // прыгал бы. Состояние решает только canSave: правило «имя не пустое» остаётся в ViewModel.
-    var text by remember { mutableStateOf(TextFieldValue(state.name)) }
+    var text by remember { mutableStateOf(TextFieldValue(state.name, TextRange(state.name.length))) }
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) {

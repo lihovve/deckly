@@ -42,6 +42,7 @@ import app.deckly.ui.contract.DeckListState
 import app.deckly.ui.contract.DeckNameAction
 import app.deckly.ui.contract.DeckNameState
 import app.deckly.ui.contract.DeckRow
+import app.deckly.ui.contract.DeleteDeckDialog
 import app.deckly.ui.contract.StartupAction
 import app.deckly.ui.contract.StartupState
 import org.junit.Assert.assertEquals
@@ -183,7 +184,8 @@ class OtherScreensTest {
         val first = composeRule.onNode(hasText("English A2") and hasClickAction()).getUnclippedBoundsInRoot()
         val second = composeRule.onNode(hasText("English tenses") and hasClickAction()).getUnclippedBoundsInRoot()
         assertEquals(32f + 44f + 24f, first.left.value, 0.5f)
-        assertEquals(960f, first.right.value, 0.5f)
+        // Справа кнопка меню 64 через промежуток 24: колонка названия кончается на 960 − 64 − 24.
+        assertEquals(960f - 64f - 24f, first.right.value, 0.5f)
         assertEquals(112f, first.bottom.value - first.top.value, 1f)
         assertEquals(148f, second.top.value - first.top.value, 0.5f)
         assertEquals(129f + 147f / 2f, (first.top.value + first.bottom.value) / 2f, 1f)
@@ -224,7 +226,7 @@ class OtherScreensTest {
         val first = composeRule.onNode(hasText(name) and hasClickAction()).getUnclippedBoundsInRoot()
         // Одна строка, обрезанная многоточием: высота 36, ширина не шире колонки названия, строки остаются по 148.
         assertEquals(36f, bounds.bottom.value - bounds.top.value, 3f)
-        assertTrue(bounds.right.value <= 960f + 0.5f)
+        assertTrue(bounds.right.value <= 960f - 64f - 24f + 0.5f)
         assertEquals(148f, second.top.value - first.top.value, 0.5f)
     }
 
@@ -264,6 +266,203 @@ class OtherScreensTest {
         composeRule.assertIconBeforeLabel("New deck", IconId.PLUS, borderMargin = 8)
         button.performClick()
         assertEquals(listOf<DeckListAction>(DeckListAction.CreateDeck), listActions)
+    }
+
+    // --- меню и окно удаления у строки -----------------------------------------------------------
+
+    @Test
+    fun everyRowHasAMenuButtonAtTheRightEdgeCenteredInTheRow() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+
+        // Подпись для диктора с названием колоды, 64 × 64, у правого края (960), по центру строки 148 (129…276 и ниже).
+        for ((index, deck) in buildDecks().withIndex()) {
+            val button = composeRule.onNodeWithContentDescription("Deck menu: ${deck.name}")
+            button.assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(64.dp)
+            val bounds = button.getUnclippedBoundsInRoot()
+            assertEquals(960f, bounds.right.value, 0.5f)
+            assertEquals(129f + 148f * index + 147f / 2f, (bounds.top.value + bounds.bottom.value) / 2f, 1f)
+            assertIconInButton("меню ${deck.name}", button, IconId.MORE)
+        }
+    }
+
+    @Test
+    fun menuIsClosedUntilTheButtonIsPressed() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+
+        composeRule.onNodeWithContentDescription("English tenses").assertDoesNotExist()
+        composeRule.onNodeWithText("Rename").assertDoesNotExist()
+        composeRule.onNodeWithText("Delete deck").assertDoesNotExist()
+    }
+
+    @Test
+    fun buttonOpensTheMenuWithTheNameOfTheDeckAndOnlyRenameAndDelete() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+
+        composeRule.onNodeWithContentDescription("Deck menu: English tenses").performClick()
+
+        composeRule.onNodeWithContentDescription("English tenses").assertExists()
+        composeRule.onNodeWithText("Rename").assertExists()
+        composeRule.onNodeWithText("Delete deck").assertExists()
+        // Экспорта и импорта на экране ещё нет, поэтому «Export to file» из макета не показывается.
+        composeRule.onNodeWithText("Export to file").assertDoesNotExist()
+        assertTrue("кнопка только открывает меню", listActions.isEmpty())
+    }
+
+    @Test
+    fun menuTopIsTheTopOfItsRowPlusSeventySevenAndItStandsAtTheRightMargin() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+
+        // Макет: `top` = 206 + (номер строки − 1) · 148; строка 1 начинается на 129. Справа поле 32, ширина 432.
+        for ((index, deck) in buildDecks().withIndex()) {
+            composeRule.onNodeWithContentDescription("Deck menu: ${deck.name}").performClick()
+
+            val menu = composeRule.onNodeWithContentDescription(deck.name).getUnclippedBoundsInRoot()
+            assertEquals("строка ${index + 1}", 206f + 148f * index, menu.top.value, 1f)
+            assertEquals(992f - 32f, menu.right.value, 0.5f)
+            assertEquals(432f, menu.right.value - menu.left.value, 0.5f)
+            composeRule.onNodeWithContentDescription("Close menu").performClick()
+        }
+    }
+
+    @Test
+    fun menuFollowsTheScrolledRow() {
+        val decks = (1..20).map { DeckRow(it.toLong(), "Deck $it", it, null, false, it == 1) }
+        showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
+        composeRule.onNodeWithText("Deck 5").performScrollTo()
+        val button = composeRule.onNodeWithContentDescription("Deck menu: Deck 5").getUnclippedBoundsInRoot()
+
+        composeRule.onNodeWithContentDescription("Deck menu: Deck 5").performClick()
+
+        // Верх строки на экране = середина кнопки − 74 (строка 148, кнопка по центру); меню на 77 ниже.
+        val rowTop = (button.top.value + button.bottom.value) / 2f - 74f
+        assertEquals(rowTop + 77f, composeRule.onNodeWithContentDescription("Deck 5").getUnclippedBoundsInRoot().top.value, 1f)
+    }
+
+    @Test
+    fun menuThatDoesNotFitMovesUpExactlyToTheBottomMargin() {
+        val decks = (1..20).map { DeckRow(it.toLong(), "Deck $it", it, null, false, it == 1) }
+        showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
+        composeRule.onNodeWithText("Deck 20").performScrollTo()
+        val button = composeRule.onNodeWithContentDescription("Deck menu: Deck 20").getUnclippedBoundsInRoot()
+        val naturalTop = (button.top.value + button.bottom.value) / 2f - 74f + 77f
+
+        composeRule.onNodeWithContentDescription("Deck menu: Deck 20").performClick()
+
+        // Последняя строка у низа списка: до поля кадра 1323 − 32 меню не доходит, и оно встаёт нижней кромкой на поле.
+        val menu = composeRule.onNodeWithContentDescription("Deck 20").getUnclippedBoundsInRoot()
+        assertTrue("меню выше естественного места: ${menu.top.value} против $naturalTop", menu.top.value < naturalTop - 20f)
+        assertEquals(1323f - 32f, menu.bottom.value, 1f)
+    }
+
+    @Test
+    fun menuThatFitsIsNotMoved() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+
+        composeRule.onNodeWithContentDescription("Deck menu: English A2").performClick()
+
+        val menu = composeRule.onNodeWithContentDescription("English A2").getUnclippedBoundsInRoot()
+        assertEquals(206f, menu.top.value, 1f)
+        assertTrue(menu.bottom.value < 1323f - 32f - 200f)
+    }
+
+    @Test
+    fun renameItemSendsTheDeckAndClosesTheMenu() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+        composeRule.onNodeWithContentDescription("Deck menu: English tenses").performClick()
+
+        composeRule.onNodeWithText("Rename").performClick()
+
+        assertEquals(listOf<DeckListAction>(DeckListAction.RenameDeck(102)), listActions)
+        composeRule.onNodeWithContentDescription("English tenses").assertDoesNotExist()
+    }
+
+    @Test
+    fun deleteItemAsksAboutTheDeckAndClosesTheMenu() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+        composeRule.onNodeWithContentDescription("Deck menu: Formulas").performClick()
+
+        composeRule.onNodeWithText("Delete deck").performClick()
+
+        assertEquals(listOf<DeckListAction>(DeckListAction.AskDeleteDeck(103)), listActions)
+        composeRule.onNodeWithContentDescription("Formulas").assertDoesNotExist()
+    }
+
+    @Test
+    fun deleteItemIsSeparatedByALineAndHasAnIconLikeTheCardMenu() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+        composeRule.onNodeWithContentDescription("Deck menu: English A2").performClick()
+
+        val rename = composeRule.onNodeWithText("Rename", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val delete = composeRule.onNodeWithText("Delete deck", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val frame = composeRule.onNodeWithTag("frame").captureToImage().asAndroidBitmap()
+        // Пункты по 80, у удаления линия 1 сверху: между текстами «Rename» и «Delete deck» на черте строки есть чернила.
+        val middle = ((rename.bottom.value + delete.top.value) / 2f).toInt()
+        assertTrue((600..800).any { x -> (middle - 40..middle + 40).any { y -> frame.isInkAt(x, y) } })
+        assertEquals(80f, delete.top.value - rename.top.value, 2f)
+    }
+
+    @Test
+    fun touchOutsideTheMenuClosesItWithoutActions() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+        composeRule.onNodeWithContentDescription("Deck menu: English tenses").performClick()
+
+        composeRule.onNodeWithContentDescription("Close menu").performClick()
+
+        composeRule.onNodeWithContentDescription("English tenses").assertDoesNotExist()
+        assertTrue(listActions.isEmpty())
+    }
+
+    @Test
+    fun menuClosesWhenItsDeckIsGone() {
+        var decks = buildDecks()
+        showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
+        composeRule.onNodeWithContentDescription("Deck menu: English tenses").performClick()
+        composeRule.onNodeWithContentDescription("English tenses").assertExists()
+
+        decks = decks.filter { it.id != 102L }
+        showFrame { DeckListScreen(buildListState(decks), { listActions += it }) }
+
+        composeRule.onNodeWithContentDescription("English tenses").assertDoesNotExist()
+        composeRule.onNodeWithText("Rename").assertDoesNotExist()
+    }
+
+    @Test
+    fun deleteDialogShowsTheNameAndTheNumberOfCardsWithKeepAndDelete() {
+        val dialog = DeleteDeckDialog(102, "English tenses", 86)
+        showFrame { DeckListScreen(buildListState(buildDecks(), deleteDialog = dialog), { listActions += it }) }
+
+        composeRule.onNodeWithText("Delete “English tenses”?").assertExists()
+        composeRule.onNodeWithText("All 86 cards and their progress will be deleted. You can't undo this.").assertExists()
+        // «Keep» главная (рамка 3), «Delete» обычная (рамка 2).
+        assertEquals(3, measureBorder(composeRule.onNodeWithText("Keep")))
+        assertEquals(2, measureBorder(composeRule.onNodeWithText("Delete")))
+        composeRule.onNodeWithText("Keep").performClick()
+        composeRule.onNodeWithText("Delete").performClick()
+        assertEquals(listOf<DeckListAction>(DeckListAction.DismissDeleteDialog, DeckListAction.ConfirmDeleteDeck), listActions)
+    }
+
+    @Test
+    fun deleteDialogCountsOneCardInTheSingular() {
+        showFrame { DeckListScreen(buildListState(buildDecks(), deleteDialog = DeleteDeckDialog(103, "Formulas", 1)), { listActions += it }) }
+
+        composeRule.onNodeWithText("All 1 card and their progress will be deleted. You can't undo this.").assertExists()
+    }
+
+    @Test
+    fun noDialogUntilTheStateHasOne() {
+        showFrame { DeckListScreen(buildListState(buildDecks()), { listActions += it }) }
+
+        composeRule.onNodeWithText("Keep").assertDoesNotExist()
+        composeRule.onNodeWithText("Delete").assertDoesNotExist()
+    }
+
+    @Test
+    fun rowsBehindTheDeleteDialogDoNotGetTouches() {
+        showFrame { DeckListScreen(buildListState(buildDecks(), deleteDialog = DeleteDeckDialog(102, "English tenses", 86)), { listActions += it }) }
+
+        composeRule.onNodeWithText("Formulas").performClick()
+
+        assertTrue(listActions.isEmpty())
     }
 
     // --- новая колода --------------------------------------------------------------------------
@@ -408,6 +607,51 @@ class OtherScreensTest {
         assertEquals(28f, readTextStyle(composeRule.onNodeWithText("Physics", useUnmergedTree = true)).fontSize.value, 0.01f)
     }
 
+    // --- переименование ------------------------------------------------------------------------
+
+    @Test
+    fun renameFormHasRenameTitleCancelAndSaveWithTheCurrentName() {
+        showFrame { DeckNameScreen(buildNameState("English tenses", isRename = true), { nameActions += it }) }
+
+        composeRule.onNodeWithText("Rename").assertExists()
+        composeRule.onNodeWithText("New deck").assertDoesNotExist()
+        composeRule.onNodeWithText("Create").assertDoesNotExist()
+        composeRule.onNodeWithText("English tenses").assertExists()
+        composeRule.onNodeWithText("Save").assertIsEnabled()
+        assertEquals(3, measureBorder(composeRule.onNodeWithText("Save")))
+        assertEquals(960f, composeRule.onNodeWithText("Save").getUnclippedBoundsInRoot().right.value, 0.5f)
+        assertEquals(0, measureBorder(composeRule.onNodeWithText("Cancel")))
+        composeRule.onNodeWithText("Save").performClick()
+        composeRule.onNodeWithText("Cancel").performClick()
+        assertEquals(listOf<DeckNameAction>(DeckNameAction.Save, DeckNameAction.Cancel), nameActions)
+    }
+
+    @Test
+    fun renameCursorStandsAtTheEndOfTheName() {
+        showFrame { DeckNameScreen(buildNameState("English tenses", isRename = true), { nameActions += it }) }
+
+        val selection = composeRule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange]
+        assertEquals(androidx.compose.ui.text.TextRange("English tenses".length), selection)
+    }
+
+    @Test
+    fun renameSaveIsGreyWhileTheNameIsBlank() {
+        showFrame { DeckNameScreen(buildNameState("", isRename = true), { nameActions += it }) }
+
+        composeRule.onNodeWithText("Save").assertIsNotEnabled().performClick()
+        assertTrue(nameActions.isEmpty())
+        assertEquals(0, measureBorder(composeRule.onNodeWithText("Save")))
+    }
+
+    @Test
+    fun renameDoneOnTheKeyboardSavesOnlyWhenPossible() {
+        showFrame { DeckNameScreen(buildNameState("Formulas", isRename = true), { nameActions += it }) }
+
+        composeRule.onNode(hasSetTextAction()).performImeAction()
+
+        assertEquals(listOf<DeckNameAction>(DeckNameAction.Save), nameActions)
+    }
+
     // --- запуск --------------------------------------------------------------------------------
 
     @Test
@@ -488,7 +732,8 @@ class OtherScreensTest {
         DeckRow(103, "Formulas", 18, activeEpoch = null, isAllLearned = true, isCurrent = false),
     )
 
-    private fun buildListState(decks: List<DeckRow>, canGoBack: Boolean = decks.isNotEmpty()) = DeckListState(decks, canGoBack)
+    private fun buildListState(decks: List<DeckRow>, canGoBack: Boolean = decks.isNotEmpty(), deleteDialog: DeleteDeckDialog? = null) =
+        DeckListState(decks, canGoBack, deleteDialog)
 
-    private fun buildNameState(name: String) = DeckNameState(name, canSave = name.isNotBlank())
+    private fun buildNameState(name: String, isRename: Boolean = false) = DeckNameState(name, canSave = name.isNotBlank(), isRename = isRename)
 }
