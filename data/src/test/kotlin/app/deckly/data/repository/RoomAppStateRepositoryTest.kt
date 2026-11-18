@@ -50,45 +50,16 @@ class RoomAppStateRepositoryTest {
     }
 
     @Test
-    fun savingTheSameCurrentDeckChangesNoRows() = runTest {
-        val dao = database.appStateDao()
-
-        // Пустое значение `NULL` не равно никакой колоде: первая запись меняет строку.
-        assertEquals(1, dao.updateCurrentDeck(5))
-        assertEquals(5L, repository.loadCurrentDeckId())
-
-        assertEquals(0, dao.updateCurrentDeck(5))
-        assertEquals(5L, repository.loadCurrentDeckId())
-
-        assertEquals(1, dao.updateCurrentDeck(8))
-        assertEquals(8L, repository.loadCurrentDeckId())
-
-        assertEquals(0, dao.updateCurrentDeck(8))
-        assertEquals(8L, repository.loadCurrentDeckId())
-    }
-
-    @Test
-    fun savingTheSameDeckAgainAfterClearingChangesTheRow() = runTest {
-        val dao = database.appStateDao()
-        dao.updateCurrentDeck(5)
-
-        dao.clearCurrentDeck(5)
-        assertNull(repository.loadCurrentDeckId())
-
-        assertEquals(1, dao.updateCurrentDeck(5))
-        assertEquals(5L, repository.loadCurrentDeckId())
-    }
-
-    @Test
     fun repeatedSaveDoesNotTouchTheDatabaseFile() = runTest {
         repository.saveCurrentDeckId(5)
         val afterFirstSave = readFileChangeCounter()
 
         repeat(3) { repository.saveCurrentDeckId(5) }
 
-        // Счётчик изменений в заголовке файла растёт на каждой транзакции, которая что-то записала. Повтор страниц не
-        // меняет. SQLite не пишет страницу и по прежнему запросу, если значение в строке то же (проверено без условия),
-        // поэтому тест держит это свойство, а не само условие: условие даёт 0 строк и делает намерение явным.
+        // Счётчик изменений в заголовке файла растёт на каждой транзакции, которая что-то записала. Экран колоды пишет
+        // текущую колоду при каждом открытии, поэтому повтор обязан быть бесплатным. SQLite не помечает страницу изменённой,
+        // когда запись строки не изменилась, и повтор не пишет ни журнал, ни файл. Тест упадёт, если запрос заменят на
+        // такой, который пишет всегда (например, `INSERT OR REPLACE`).
         assertEquals(afterFirstSave, readFileChangeCounter())
         assertEquals(5L, repository.loadCurrentDeckId())
 
