@@ -56,11 +56,13 @@ fun EditorScreen(
     ) {
         EditorHeader(state.isNewCard, onAction)
         SideTabs(state.side) { onAction(EditorAction.SelectSide(it)) }
-        Sheet(Modifier.weight(1f).fillMaxWidth()) {
+        Sheet(
+            Modifier.weight(1f).fillMaxWidth(),
+            // Слой жестов лежит над листом и его метками, пока фигура выделена или касание мимо собирается в линию (иначе жест
+            // оборвался бы, пока перо не оторвано); рамка и ручки только при выделении. Знак ручки в углу листа выше метки листа.
+            overlay = { if (state.selectedShape != null || state.isCapturingStroke) ShapeStage(state.selectedShape, onAction, Modifier.fillMaxSize()) },
+        ) {
             sheet(Modifier.fillMaxSize().semantics { contentDescription = EditorTexts.CANVAS })
-            // Слой жестов лежит над листом, пока фигура выделена или касание мимо собирается в линию (иначе жест оборвался
-            // бы, пока перо не оторвано); рамка и ручки только при выделении.
-            if (state.selectedShape != null || state.isCapturingStroke) ShapeStage(state.selectedShape, onAction, Modifier.fillMaxSize())
         }
         val selected = state.selectedShape
         if (selected != null) ShapeEditTools(selected, onAction, shapeGlyph) else EditorTools(state, onAction)

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -250,31 +252,35 @@ private fun CountWithActiveMark(count: String, isActive: Boolean, weight: FontWe
 
 /**
  * Лист карточки: четыре угловые метки (две линии по 18 dp толщиной 2 dp) обозначают границу без рамки. Содержимое лежит
- * в центре, полей нет: холст рисования занимает лист целиком.
+ * в центре, полей нет: холст рисования занимает лист целиком. Порядок слоёв как в макете (`.corner` стоят в `.card` первыми,
+ * `.shape-stage` после них): [content], поверх него метки, поверх меток [overlay]. У листа без слоя фигур [overlay] пуст, и
+ * метки лежат поверх всего содержимого.
  */
 @Composable
-fun Sheet(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit = {}) {
-    Box(
-        modifier.drawWithContent {
-            drawContent()
-            val length = Tokens.SheetCorner.toPx()
-            val thickness = Tokens.BorderMedium.toPx()
-            val right = size.width
-            val bottom = size.height
-            val black = Tokens.Black
-            fun mark(x: Float, y: Float, width: Float, height: Float) = drawRect(black, Offset(x, y), Size(width, height))
-            mark(0f, 0f, length, thickness)
-            mark(0f, 0f, thickness, length)
-            mark(right - length, 0f, length, thickness)
-            mark(right - thickness, 0f, thickness, length)
-            mark(0f, bottom - thickness, length, thickness)
-            mark(0f, bottom - length, thickness, length)
-            mark(right - length, bottom - thickness, length, thickness)
-            mark(right - thickness, bottom - length, thickness, length)
-        },
-        contentAlignment = Alignment.Center,
-        content = content,
-    )
+fun Sheet(modifier: Modifier = Modifier, overlay: @Composable BoxScope.() -> Unit = {}, content: @Composable BoxScope.() -> Unit = {}) {
+    Box(modifier, contentAlignment = Alignment.Center) {
+        content()
+        // Метки отдельным узлом между слоями: `drawWithContent` на самом листе рисовал бы их выше всего, в том числе выше знаков ручек.
+        Spacer(
+            Modifier.matchParentSize().drawBehind {
+                val length = Tokens.SheetCorner.toPx()
+                val thickness = Tokens.BorderMedium.toPx()
+                val right = size.width
+                val bottom = size.height
+                val black = Tokens.Black
+                fun mark(x: Float, y: Float, width: Float, height: Float) = drawRect(black, Offset(x, y), Size(width, height))
+                mark(0f, 0f, length, thickness)
+                mark(0f, 0f, thickness, length)
+                mark(right - length, 0f, length, thickness)
+                mark(right - thickness, 0f, thickness, length)
+                mark(0f, bottom - thickness, length, thickness)
+                mark(0f, bottom - length, thickness, length)
+                mark(right - length, bottom - thickness, length, thickness)
+                mark(right - thickness, bottom - length, thickness, length)
+            },
+        )
+        overlay()
+    }
 }
 
 internal sealed interface FooterColumn {

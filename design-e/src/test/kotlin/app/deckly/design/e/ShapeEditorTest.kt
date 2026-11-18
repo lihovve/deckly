@@ -423,6 +423,38 @@ class ShapeEditorTest {
         for ((x, y) in outside) assertTrue("кольцо знака за краем листа в ($x, $y) не видно", after.measureDarkness(x.toInt(), y.toInt()) > 0.9f)
     }
 
+    // Метка листа в левом верхнем углу: полоса 18 × 2 вдоль верха и 2 × 18 вдоль левой стороны, от угла. Знак ручки с центром в
+    // углу (белая середина 16 в поперечнике) лежит выше неё, как в макете: `.corner` в `.card` первыми, `.shape-stage` после них.
+    // Метка за знаком должна быть видна, иначе тест ничего не доказывает (без меток белое вышло бы и так).
+    private fun assertSignIsAboveTheCornerMarkOfTheSheet(label: String) {
+        val sheet = composeRule.onNodeWithTag("slot").fetchSemanticsNode().boundsInRoot
+        val bitmap = captureFrame()
+        val x = sheet.left.toInt()
+        val y = sheet.top.toInt()
+        for (offset in 2..6) {
+            assertTrue("$label: под знаком полоса вдоль верха ($offset, 1) не чёрная", bitmap.measureDarkness(x + offset, y + 1) < 0.1f)
+            assertTrue("$label: под знаком полоса вдоль левой стороны (1, $offset) не чёрная", bitmap.measureDarkness(x + 1, y + offset) < 0.1f)
+        }
+        assertTrue("$label: за знаком метка вдоль верха видна", bitmap.measureDarkness(x + 14, y + 1) > 0.9f)
+        assertTrue("$label: за знаком метка вдоль левой стороны видна", bitmap.measureDarkness(x + 1, y + 14) > 0.9f)
+    }
+
+    @Test
+    fun squareSignAtTheCornerOfTheSheetIsAboveTheCornerMark() {
+        host.show(buildEditorState(selectedShape = rectangle.copy(frame = rectangle.frame.copy(left = 0f, top = 0f, right = 400f, bottom = 300f))))
+
+        assertSignIsAboveTheCornerMarkOfTheSheet("квадрат")
+    }
+
+    @Test
+    fun roundSignAtTheEndOfAnArrowAtTheCornerOfTheSheetIsAboveTheCornerMark() {
+        // Начало оси на 12 % ширины рамки: рамка 800 × 80 с левым краем −96 ставит его точно в угол листа.
+        val arrow = line.copy(frame = ShapeFrame(left = -96f, top = -40f, right = 704f, bottom = 40f, angle = 0f, isLinear = true))
+        host.show(buildEditorState(selectedShape = arrow))
+
+        assertSignIsAboveTheCornerMarkOfTheSheet("круг")
+    }
+
     @Test
     fun linearShapeHasTwoRoundMarksCenteredOnTheEndsOfTheAxisAndNoDashedFrame() {
         host.show(buildEditorState(selectedShape = line))

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.LocalIndication
@@ -15,9 +16,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -568,6 +571,27 @@ class ComponentsTest {
         // По краям посередине рамки нет: метки только в углах.
         assertFalse(bitmap.isInk(bitmap.width / 2, 0))
         assertFalse(bitmap.isInk(0, bitmap.height / 2))
+    }
+
+    @Test
+    fun sheetCornerMarksLieAboveItsContentAndBelowItsOverlay() {
+        // Содержимое серое, поверх него метки листа (чёрные), поверх меток слой `overlay` (белый квадрат 10 × 10 в углу).
+        showOnWhite {
+            Sheet(
+                Modifier.size(300.dp, 400.dp).testTag("sheet"),
+                overlay = { Box(Modifier.align(Alignment.TopStart).size(10.dp).background(Color.White)) },
+            ) { Box(Modifier.fillMaxSize().background(Color.Gray)) }
+        }
+
+        val bitmap = capture("sheet")
+        // Серое содержимое под меткой не видно: метка черна на всей длине, и сразу за ней серый.
+        assertTrue("метка выше содержимого: (14, 1)", AndroidColor.red(bitmap.getPixel(14, 1)) < 20)
+        assertTrue("метка выше содержимого: (1, 14)", AndroidColor.red(bitmap.getPixel(1, 14)) < 20)
+        assertEquals("содержимое рядом с меткой серое", Color.Gray.toArgb() and 0xFF, AndroidColor.red(bitmap.getPixel(14, 4)))
+        // Слой выше меток: под белым квадратом метки не видно, за его краем метка продолжается.
+        assertTrue("слой выше метки: (5, 1)", AndroidColor.red(bitmap.getPixel(5, 1)) > 235)
+        assertTrue("слой выше метки: (1, 5)", AndroidColor.red(bitmap.getPixel(1, 5)) > 235)
+        assertTrue("метка за краем слоя: (11, 1)", AndroidColor.red(bitmap.getPixel(11, 1)) < 20)
     }
 
     @Test
