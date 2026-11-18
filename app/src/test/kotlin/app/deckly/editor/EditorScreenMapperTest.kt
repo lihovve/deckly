@@ -144,11 +144,13 @@ class EditorScreenMapperTest {
         val state = buildEditorScreenState(
             session, Thickness.THIN, null,
             held = HeldShape(shape, editedIndex = null, original = null), isShapePaletteOpen = true, paletteOutlineWidth = 8,
+            paletteShapeSize = 300,
         )
 
         assertEquals(shape.toSelectedShape(), state.selectedShape)
         assertEquals(true, state.isShapePaletteOpen)
         assertEquals(8, state.paletteOutlineWidth)
+        assertEquals(300, state.paletteShapeSize)
     }
 
     @Test
@@ -158,5 +160,6 @@ class EditorScreenMapperTest {
         assertEquals(null, state.selectedShape)
         assertEquals(false, state.isShapePaletteOpen)
         assertEquals(DEFAULT_OUTLINE_WIDTH, state.paletteOutlineWidth)
+        assertEquals(DEFAULT_SHAPE_SIZE, state.paletteShapeSize)
     }
 }

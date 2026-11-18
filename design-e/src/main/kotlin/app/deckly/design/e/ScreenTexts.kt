@@ -39,6 +39,7 @@ internal object EditorTexts {
     const val SHAPES = "Shapes"
     const val CLOSE_SHAPES = "Close shape menu"
     const val OUTLINE_WIDTH = "Outline width"
+    const val SHAPE_SIZE = "Default shape size"
     const val CANCEL_SHAPE = "Cancel shape insertion or changes"
     const val SHAPE_AND_OUTLINE = "Shape and outline width"
     const val APPLY_SHAPE = "Apply shape"

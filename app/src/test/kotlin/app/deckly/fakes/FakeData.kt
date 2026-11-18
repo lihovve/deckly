@@ -127,11 +127,16 @@ private object UnusedDeckTransfer : DeckTransfer {
 
 /**
  * Настройки редактора в памяти: [writes] — все записи толщины контура по порядку, [width] — что прочитает следующий
- * редактор; так же [penWrites] и [penThickness] для толщины пера.
+ * редактор; так же [penWrites] и [penThickness] для толщины пера, [sizeWrites] и [shapeSize] для размера новой фигуры.
  */
-class FakeEditorSettingsStore(var width: Int = 3, var penThickness: Thickness = Thickness.MEDIUM) : app.deckly.editor.EditorSettingsStore {
+class FakeEditorSettingsStore(
+    var width: Int = 3,
+    var penThickness: Thickness = Thickness.MEDIUM,
+    var shapeSize: Int = 220,
+) : app.deckly.editor.EditorSettingsStore {
     val writes = mutableListOf<Int>()
     val penWrites = mutableListOf<Thickness>()
+    val sizeWrites = mutableListOf<Int>()
 
     override fun readOutlineWidth(): Int = width
 
@@ -145,5 +150,12 @@ class FakeEditorSettingsStore(var width: Int = 3, var penThickness: Thickness = 
     override fun writePenThickness(thickness: Thickness) {
         penWrites += thickness
         penThickness = thickness
+    }
+
+    override fun readShapeSize(): Int = shapeSize
+
+    override fun writeShapeSize(size: Int) {
+        sizeWrites += size
+        shapeSize = size
     }
 }

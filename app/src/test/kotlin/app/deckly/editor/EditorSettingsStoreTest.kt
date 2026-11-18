@@ -124,4 +124,68 @@ class EditorSettingsStoreTest {
         assertEquals(Thickness.THIN, store.readPenThickness())
         assertEquals(11, store.readOutlineWidth())
     }
+
+    @Test
+    fun shapeSizeIsTwoHundredTwentyUntilSomethingIsWritten() {
+        assertEquals(220, PreferencesEditorSettingsStore(preferences).readShapeSize())
+    }
+
+    @Test
+    fun writtenShapeSizeSurvivesANewStoreOnTheSamePreferences() {
+        PreferencesEditorSettingsStore(preferences).writeShapeSize(340)
+
+        assertEquals(340, PreferencesEditorSettingsStore(preferences).readShapeSize())
+    }
+
+    @Test
+    fun everySizeOfTheSliderIsKept() {
+        val store = PreferencesEditorSettingsStore(preferences)
+        for (size in 100..440 step 10) {
+            store.writeShapeSize(size)
+
+            assertEquals(size, store.readShapeSize())
+        }
+    }
+
+    @Test
+    fun sizeOutsideTheSliderOrOffItsStepIsReadAsTwoHundredTwenty() {
+        for (stored in listOf(0, -10, 90, 95, 105, 225, 441, 450, 10_000, Int.MAX_VALUE)) {
+            preferences.edit().putInt("shape_size", stored).commit()
+
+            assertEquals("записано $stored", 220, PreferencesEditorSettingsStore(preferences).readShapeSize())
+        }
+    }
+
+    @Test
+    fun valueOfAnotherTypeUnderTheSizeKeyIsReadAsTwoHundredTwenty() {
+        preferences.edit().putString("shape_size", "300").commit()
+
+        assertEquals(220, PreferencesEditorSettingsStore(preferences).readShapeSize())
+    }
+
+    @Test
+    fun shapeSizeDoesNotTouchTheOtherSettings() {
+        val store = PreferencesEditorSettingsStore(preferences)
+
+        store.writeShapeSize(400)
+
+        assertEquals(3, store.readOutlineWidth())
+        assertEquals(Thickness.MEDIUM, store.readPenThickness())
+        store.writePenThickness(Thickness.THICK)
+        store.writeOutlineWidth(8)
+        assertEquals(400, store.readShapeSize())
+    }
+
+    @Test
+    fun valuesAreKeptUnderTheKeysOfTheSettingsFile() {
+        // Имена ключей — формат файла настроек: переименование потеряло бы запомненное у уже работающего приложения.
+        val store = PreferencesEditorSettingsStore(preferences)
+        store.writeOutlineWidth(7)
+        store.writePenThickness(Thickness.THIN)
+        store.writeShapeSize(340)
+
+        assertEquals(7, preferences.getInt("outline_width", -1))
+        assertEquals("THIN", preferences.getString("pen_thickness", null))
+        assertEquals(340, preferences.getInt("shape_size", -1))
+    }
 }

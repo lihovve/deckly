@@ -120,6 +120,9 @@ object Tokens {
     val ShapeSliderThumbBorder = 3.dp
     const val OutlineWidthMin = 1
     const val OutlineWidthMax = 12
+    const val ShapeSizeMin = 100
+    const val ShapeSizeMax = 440
+    const val ShapeSizeStep = 10
 
     // --- фигуры: рамка и ручки выделенной фигуры, образец на панели ---
     val ShapeHandleTarget = 64.dp

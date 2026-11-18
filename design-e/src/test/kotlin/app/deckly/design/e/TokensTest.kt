@@ -262,6 +262,10 @@ class TokensTest {
         assertDp(findCssNumber(".shape-width input::-webkit-slider-thumb", "border"), Tokens.ShapeSliderThumbBorder)
         assertEquals("#fff", findCssValue(".shape-width input::-webkit-slider-thumb", "background"))
         assertTrue(buildScript.contains("type=\"range\" min=\"${Tokens.OutlineWidthMin}\" max=\"${Tokens.OutlineWidthMax}\" step=\"1\""))
+        // Второй блок: подпись и число в две колонки `1fr auto` (образца линии нет), ползунок 100…440 с шагом 10.
+        assertEquals("1fr auto", findCssValue(".shape-size", "grid-template-columns"))
+        assertTrue(buildScript.contains("type=\"range\" min=\"${Tokens.ShapeSizeMin}\" max=\"${Tokens.ShapeSizeMax}\" step=\"${Tokens.ShapeSizeStep}\""))
+        assertTrue(buildScript.contains("class=\"shape-width shape-size\""))
     }
 
     @Test

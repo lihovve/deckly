@@ -44,13 +44,14 @@ import kotlin.math.roundToInt
 
 /**
  * Палитра фигур поверх экрана (`.shape-overlay` и `.shape-palette` в макете): окно слева над панелью инструментов,
- * заголовок и крест, сетка 5 × 3 из 15 видов (ни один не выделен), толщина контура с образцом и ползунком 1…12. Фон
- * прозрачный и не принимает касаний: касание мимо окна, крест и системная «Назад» закрывают палитру. Значки видов приходят
- * слотом [shapeGlyph].
+ * заголовок и крест, сетка 5 × 3 из 15 видов (ни один не выделен), толщина контура с образцом и ползунком 1…12 и размер
+ * новой фигуры с ползунком 100…440 по 10. Фон прозрачный и не принимает касаний: касание мимо окна, крест и системная
+ * «Назад» закрывают палитру. Значки видов приходят слотом [shapeGlyph].
  */
 @Composable
 internal fun ShapePalette(
     outlineWidth: Int,
+    shapeSize: Int,
     onAction: (EditorAction) -> Unit,
     shapeGlyph: @Composable (ShapeKind, Int, Modifier) -> Unit,
 ) {
@@ -84,7 +85,10 @@ internal fun ShapePalette(
         ) {
             PaletteHeader(onAction)
             ShapeGrid(shapeGlyph, outlineWidth, onAction)
-            OutlineWidthSection(outlineWidth) { onAction(EditorAction.SetOutlineWidth(it)) }
+            SliderSection(EditorTexts.OUTLINE_WIDTH, outlineWidth, Tokens.OutlineWidthMin..Tokens.OutlineWidthMax, { onAction(EditorAction.SetOutlineWidth(it)) }) {
+                WidthPreview(outlineWidth)
+            }
+            SliderSection(EditorTexts.SHAPE_SIZE, shapeSize, Tokens.ShapeSizeMin..Tokens.ShapeSizeMax step Tokens.ShapeSizeStep, { onAction(EditorAction.SetShapeSize(it)) })
         }
     }
 }
@@ -140,9 +144,16 @@ private fun ShapeChoice(
     }
 }
 
-// Подпись, число и образец линии в одной строке сетки `1fr auto 80px` с промежутком 20, ползунок на всю ширину под ними.
+// Блок палитры: подпись, число и (если есть) образец в одной строке сетки `1fr auto 80px` или `1fr auto` с промежутком 20,
+// ползунок на всю ширину под ней.
 @Composable
-private fun OutlineWidthSection(outlineWidth: Int, onChange: (Int) -> Unit) {
+private fun SliderSection(
+    label: String,
+    value: Int,
+    values: IntProgression,
+    onChange: (Int) -> Unit,
+    sample: (@Composable () -> Unit)? = null,
+) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -151,14 +162,11 @@ private fun OutlineWidthSection(outlineWidth: Int, onChange: (Int) -> Unit) {
             .padding(top = Tokens.BorderThin + Tokens.ShapeWidthPaddingTop),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Tokens.ShapeWidthColumnGap), verticalAlignment = Alignment.CenterVertically) {
-            BasicText(EditorTexts.OUTLINE_WIDTH, modifier = Modifier.weight(1f), style = buildTextStyle(Tokens.ShapeWidthText))
-            BasicText(outlineWidth.toString(), style = buildTextStyle(Tokens.ShapeWidthText))
-            WidthPreview(outlineWidth)
+            BasicText(label, modifier = Modifier.weight(1f), style = buildTextStyle(Tokens.ShapeWidthText))
+            BasicText(value.toString(), style = buildTextStyle(Tokens.ShapeWidthText))
+            sample?.invoke()
         }
-        PaletteSlider(
-            outlineWidth, Tokens.OutlineWidthMin..Tokens.OutlineWidthMax, EditorTexts.OUTLINE_WIDTH, onChange,
-            Modifier.padding(top = Tokens.ShapeSliderMarginTop),
-        )
+        PaletteSlider(value, values, label, onChange, Modifier.padding(top = Tokens.ShapeSliderMarginTop))
     }
 }
 

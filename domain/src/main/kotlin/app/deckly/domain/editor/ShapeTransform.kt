@@ -29,7 +29,6 @@ private const val AXIS_SHARE = 0.76
 private const val END_SHARE = 0.38
 private const val LINE_HEIGHT = 80.0
 private const val ROTATE_HANDLE = 48.0
-private const val INSERTED_SIZE = 220.0
 private const val LIMIT_STEPS = 20
 
 /**
@@ -117,10 +116,14 @@ private fun limitTransform(start: Frame, candidate: Frame): Frame {
     return result
 }
 
-/** Новая фигура на листе: рамка 220 × 220 (у линии и стрелок 220 × 80) по центру, без поворота. */
-fun insertShape(kind: Shape.Kind, width: Float): Shape {
-    val height = if (kind.isLinear) LINE_HEIGHT else INSERTED_SIZE
-    val frame = Frame((SHEET_WIDTH - INSERTED_SIZE) / 2, (SHEET_HEIGHT - height) / 2, INSERTED_SIZE, height, 0.0, kind.isLinear)
+/**
+ * Новая фигура на листе: рамка [size] × [size] единиц макета (у линии и стрелок [size] × 80) по центру, без поворота.
+ * [size] держится в границах ползунка палитры, их следит вызывающий.
+ */
+fun insertShape(kind: Shape.Kind, width: Float, size: Float): Shape {
+    val side = size.toDouble()
+    val height = if (kind.isLinear) LINE_HEIGHT else side
+    val frame = Frame((SHEET_WIDTH - side) / 2, (SHEET_HEIGHT - height) / 2, side, height, 0.0, kind.isLinear)
     return frame.toShape(Shape(kind, 0f, 0f, 1f, 1f, 0f, width))
 }
 

@@ -96,7 +96,7 @@ class ShapeTransformTest {
     fun numbersAreTheOnesOfTheDemoFile() {
         val script = DesignSources.shapesScript
 
-        // Поле 32, рамка не меньше 80, кратчайшая ось 64, ось 0,76 рамки, концы по 0,38, ручка на 48, 20 делений, вставка 220.
+        // Поле 32, рамка не меньше 80, кратчайшая ось 64, ось 0,76 рамки, концы по 0,38, ручка на 48, 20 делений, вставка размера ползунка.
         assertTrue(script.contains("point.x >= 32 && point.x <= width - 32 && point.y >= 32 && point.y <= height - 32"))
         assertTrue(script.contains("left = Math.min(left + localX, right - 80)"))
         assertTrue(script.contains("right = Math.max(right + localX, left + 80)"))
@@ -109,8 +109,9 @@ class ShapeTransformTest {
         assertTrue(script.contains("(endpoint === 'start' ? 0.38 : -0.38) * box.w"))
         assertTrue(script.contains("-box.h / 2 - 48"))
         assertTrue(script.contains("for (let i = 0; i < 20; i++)"))
-        assertTrue(script.contains("w: 220, h: height"))
-        assertTrue(script.contains("const height = isLinearShape(kind) ? 80 : 220;"))
+        assertTrue(script.contains("const size = Number(sizeSlider.value);"))
+        assertTrue(script.contains("const height = isLinearShape(kind) ? 80 : size;"))
+        assertTrue(script.contains("x: (stage.clientWidth - size) / 2, y: (stage.clientHeight - height) / 2, w: size, h: height"))
         assertTrue(script.contains("y: fixed.y + dy / 2 - 40, w, h: 80"))
     }
 
@@ -119,7 +120,7 @@ class ShapeTransformTest {
     @Test
     fun insertedShapeIsAtTheCenterOfTheSheet() {
         for (kind in Shape.Kind.entries) {
-            val shape = insertShape(kind, 3f)
+            val shape = insertShape(kind, 3f, 220f)
 
             val height = if (kind.isLinear) 80.0 else 220.0
             // Лист макета 928 × 963: рамка 220 × 220 (у линий 220 × 80) по центру, без поворота.
@@ -134,8 +135,24 @@ class ShapeTransformTest {
     }
 
     @Test
+    fun insertedShapeHasTheGivenSizeAtTheCenterOfTheSheet() {
+        // Ползунок размера идёт от 100 до 440 с шагом 10; рамка size × size, у линий и стрелок size × 80, по центру.
+        for (size in listOf(100f, 220f, 330f, 440f)) {
+            for (kind in Shape.Kind.entries) {
+                val shape = insertShape(kind, 3f, size)
+
+                val height = if (kind.isLinear) 80.0 else size.toDouble()
+                assertBox(DemoBox((928.0 - size) / 2, (963.0 - height) / 2, size.toDouble(), height, 0.0), boxOf(shape), "${kind.key} $size")
+                assertEquals(CardUnits.WIDTH / 2, (shape.left + shape.right) / 2, 0.01f, "${kind.key} $size: центр по x")
+                assertEquals(CardUnits.HEIGHT / 2, (shape.top + shape.bottom) / 2, 0.01f, "${kind.key} $size: центр по y")
+                assertTrue(canFitShape(shape), "${kind.key} $size")
+            }
+        }
+    }
+
+    @Test
     fun insertedShapeKeepsTheGivenOutlineWidth() {
-        assertEquals(12f * unit, insertShape(Shape.Kind.HEART, 12f * unit).width, 0.0001f)
+        assertEquals(12f * unit, insertShape(Shape.Kind.HEART, 12f * unit, 220f).width, 0.0001f)
     }
 
     @Test
@@ -345,7 +362,7 @@ class ShapeTransformTest {
         val random = Random(20261105)
         repeat(60) { run ->
             val kind = Shape.Kind.entries[random.nextInt(Shape.Kind.entries.size)]
-            var shape = insertShape(kind, (1 + random.nextInt(12)) * unit)
+            var shape = insertShape(kind, (1 + random.nextInt(12)) * unit, 220f)
             val width = shape.width
             repeat(25) { step ->
                 fun point() = random.nextFloat() * 1600f - 300f

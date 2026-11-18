@@ -24,8 +24,8 @@ data class SelectedShape(val kind: ShapeKind, val frame: ShapeFrame, val outline
 /**
  * Состояние редактора. [isNewCard] определяет левое действие шапки: «Отменить» у новой карточки,
  * «Удалить» у правки. [selectedShape] — фигура в руках: пока она есть, вместо обычной панели панель фигуры, а над листом
- * рамка и ручки. [isShapePaletteOpen] — открыта палитра видов и толщины контура, [paletteOutlineWidth] — толщина,
- * которую получит новая фигура. [isCapturingStroke] — касание мимо фигуры собирается в штрих: выделения уже нет, панель
+ * рамка и ручки. [isShapePaletteOpen] — открыта палитра видов, толщины контура и размера, [paletteOutlineWidth] — толщина
+ * контура и [paletteShapeSize] — сторона рамки в единицах макета, которые получит новая фигура. [isCapturingStroke] — касание мимо фигуры собирается в штрих: выделения уже нет, панель
  * обычная, но слой жестов над листом остаётся, пока перо не оторвано, чтобы линия шла с первой точки.
  */
 data class EditorScreenState(
@@ -37,6 +37,7 @@ data class EditorScreenState(
     val selectedShape: SelectedShape? = null,
     val isShapePaletteOpen: Boolean = false,
     val paletteOutlineWidth: Int = 3,
+    val paletteShapeSize: Int = 220,
     val isCapturingStroke: Boolean = false,
 )
 
@@ -73,6 +74,9 @@ sealed interface EditorAction {
 
     /** Ползунок толщины контура 1…12: действует на новые фигуры. */
     data class SetOutlineWidth(val width: Int) : EditorAction
+
+    /** Ползунок размера новой фигуры 100…440 с шагом 10, единицы макета: действует на новые фигуры. */
+    data class SetShapeSize(val size: Int) : EditorAction
 
     /**
      * Перо коснулось листа при выделенной фигуре. [handle] — ручка, за которую взялись, `null` — любое другое место

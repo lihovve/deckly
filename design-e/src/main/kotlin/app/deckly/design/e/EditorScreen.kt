@@ -51,7 +51,7 @@ fun EditorScreen(
     ScreenFrame(
         overlay = {
             state.dialog?.let { EditorDialogHost(it, onAction) }
-            if (state.isShapePaletteOpen) ShapePalette(state.paletteOutlineWidth, onAction, shapeGlyph)
+            if (state.isShapePaletteOpen) ShapePalette(state.paletteOutlineWidth, state.paletteShapeSize, onAction, shapeGlyph)
         },
     ) {
         EditorHeader(state.isNewCard, onAction)

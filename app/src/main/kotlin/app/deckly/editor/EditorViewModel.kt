@@ -99,7 +99,7 @@ class EditorViewModel(
     private var dialog: EditorDialog? = null
     private var isLeaving = false
 
-    // Фигура в руках и жест над ней; палитра и запомненная толщина контура новых фигур (в единицах макета).
+    // Фигура в руках и жест над ней; палитра и запомненные толщина контура и размер новых фигур (в единицах макета).
     private var held: HeldShape? = null
     private var gesture: ActiveShapeGesture? = null
 
@@ -107,6 +107,7 @@ class EditorViewModel(
     private var capture: CapturedLine? = null
     private var isPaletteOpen = false
     private var outlineWidth = settings.readOutlineWidth().coerceIn(MIN_OUTLINE_WIDTH, MAX_OUTLINE_WIDTH)
+    private var shapeSize = snapShapeSize(settings.readShapeSize())
 
     private data class UiSignature(
         val thickness: Thickness,
@@ -233,9 +234,10 @@ class EditorViewModel(
     private fun handlePaletteAction(action: EditorAction) {
         when (action) {
             is EditorAction.SetOutlineWidth -> rememberOutlineWidth(action.width)
+            is EditorAction.SetShapeSize -> rememberShapeSize(action.size)
             // Новая фигура встаёт по центру листа с запомненным контуром, выделена и в руках; в черновик не входит.
             is EditorAction.ChooseShape -> {
-                val shape = insertShape(action.kind.toDomainKind(), outlineWidth.toShapeWidth())
+                val shape = insertShape(action.kind.toDomainKind(), outlineWidth.toShapeWidth(), shapeSize.toFloat())
                 isPaletteOpen = false
                 held = HeldShape(shape, editedIndex = null, original = null)
                 publish()
@@ -333,6 +335,15 @@ class EditorViewModel(
         if (next == outlineWidth) return
         outlineWidth = next
         settings.writeOutlineWidth(next)
+        publish()
+    }
+
+    // Размер новой фигуры: ползунок шлёт его на каждое движение пера, в границы и шаг его приводим, одно и то же не пишем.
+    private fun rememberShapeSize(size: Int) {
+        val next = snapShapeSize(size)
+        if (next == shapeSize) return
+        shapeSize = next
+        settings.writeShapeSize(next)
         publish()
     }
 
@@ -493,7 +504,7 @@ class EditorViewModel(
     )
 
     private fun buildState(): EditorScreenState? =
-        session?.let { buildEditorScreenState(it, thickness, dialog, held, isPaletteOpen, outlineWidth, isCapturingStroke = capture != null) }
+        session?.let { buildEditorScreenState(it, thickness, dialog, held, isPaletteOpen, outlineWidth, shapeSize, isCapturingStroke = capture != null) }
 
     // Видимая сторона с фигурой в руках и линией, которая собирается из касания мимо (кусками из двух точек).
     private fun buildShownSide(): CardSide {

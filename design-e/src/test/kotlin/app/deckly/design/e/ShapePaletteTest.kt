@@ -65,7 +65,7 @@ class ShapePaletteTest {
         val title = composeRule.onNodeWithText("Shapes").getUnclippedBoundsInRoot()
         val firstChoice = composeRule.onNodeWithContentDescription("Line").getUnclippedBoundsInRoot()
         val cross = findCross().getUnclippedBoundsInRoot()
-        val slider = findSlider().getUnclippedBoundsInRoot()
+        val slider = findSizeSlider().getUnclippedBoundsInRoot()
 
         // Окно: слева 32, ширина 672, снизу 160 от низа кадра; рамка 2 и поля 32 по бокам, 24 сверху.
         assertEquals(32f + 2f + 32f, title.left.value, 0.5f)
@@ -73,7 +73,7 @@ class ShapePaletteTest {
         assertEquals(32f + 672f - 2f - 32f, cross.right.value, 0.5f)
         assertEquals(64f, cross.right.value - cross.left.value, 0.5f)
         assertEquals(64f, cross.bottom.value - cross.top.value, 0.5f)
-        // Слайдер заканчивается на 28 выше внутренней кромки рамки; окно закрыто снизу на 160 от кадра.
+        // Последний ползунок (размер фигуры) заканчивается на 28 выше внутренней кромки рамки; окно на 160 выше низа кадра.
         assertEquals(1323f - 160f - 2f - 28f, slider.bottom.value, 0.5f)
         // Заголовок и крест стоят в одной строке, заголовок слева от креста.
         assertTrue(title.right.value <= cross.left.value)
@@ -334,6 +334,139 @@ class ShapePaletteTest {
         )
     }
 
+    // --- размер новой фигуры (`.shape-width.shape-size`) ---------------------------------------
+
+    @Test
+    fun sizeRowShowsLabelAndNumberAtTheRightWithoutASample() {
+        host.show(buildEditorState(isShapePaletteOpen = true, paletteShapeSize = 300))
+
+        val label = composeRule.onNodeWithText("Default shape size", useUnmergedTree = true)
+        val number = composeRule.onNodeWithText("300", useUnmergedTree = true)
+        assertEquals(22f, readTextStyle(label).fontSize.value, 0.01f)
+        assertEquals(22f, readTextStyle(number).fontSize.value, 0.01f)
+        // Две колонки `1fr auto`: подпись у левого края содержимого окна, число у правого, образца линии справа от него нет.
+        assertEquals(32f + 2f + 32f, label.getUnclippedBoundsInRoot().left.value, 0.5f)
+        assertEquals(32f + 672f - 2f - 32f, number.getUnclippedBoundsInRoot().right.value, 1f)
+    }
+
+    @Test
+    fun sizeBlockSitsUnderTheOutlineBlockBehindALineAndTwentyFourOfPadding() {
+        host.show(buildEditorState(isShapePaletteOpen = true))
+
+        val outline = findSlider().getUnclippedBoundsInRoot()
+        val label = composeRule.onNodeWithText("Default shape size", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val slider = findSizeSlider().getUnclippedBoundsInRoot()
+        val bitmap = composeRule.onNodeWithTag("frame").captureToImage().asAndroidBitmap()
+        // Между блоками промежуток 20 окна, затем линия 1 на всю ширину содержимого и поле 24 до строки с подписью.
+        val line = (outline.bottom.value + 20f).toInt()
+        assertTrue("линия блока", (64 + 100..64 + 500).all { bitmap.isInkAt(it, line) })
+        assertTrue("над линией пусто", (64 + 100..64 + 500).none { bitmap.isInkAt(it, line - 1) })
+        assertEquals(line + 1f + 24f, label.top.value, 1.5f)
+        // Ползунок на 8 ниже строки, высота 64 и вся ширина содержимого 604.
+        assertEquals(label.bottom.value + 8f, slider.top.value, 1.5f)
+        assertEquals(64f, slider.bottom.value - slider.top.value, 0.5f)
+        assertEquals(604f, slider.right.value - slider.left.value, 0.5f)
+    }
+
+    @Test
+    fun sizeSliderRangeIsOneHundredToFourHundredFortyInTens() {
+        host.show(buildEditorState(isShapePaletteOpen = true, paletteShapeSize = 240))
+
+        val range = findSizeSlider().fetchSemanticsNode().config[SemanticsProperties.ProgressBarRangeInfo]
+        assertEquals(240f, range.current, 0f)
+        assertEquals(100f..440f, range.range)
+        // Значений 35, между крайними 33.
+        assertEquals(33, range.steps)
+    }
+
+    @Test
+    fun sizeThumbMovesFromOneEndOfTheTrackToTheOther() {
+        host.show(buildEditorState(isShapePaletteOpen = true, paletteShapeSize = 100))
+        val atMinimum = findThumbCenter(findSizeSlider())
+
+        host.show(buildEditorState(isShapePaletteOpen = true, paletteShapeSize = 440))
+        val atMaximum = findThumbCenter(findSizeSlider())
+
+        assertEquals(16f, atMinimum.first, 1.5f)
+        assertEquals(604f - 16f, atMaximum.first, 1.5f)
+    }
+
+    @Test
+    fun fingerTouchOnSizeSliderChoosesTheTenUnderIt() {
+        host.show(buildEditorState(isShapePaletteOpen = true))
+
+        val slider = findSizeSlider()
+        slider.performTouchInput { click(Offset(16f, 32f)) }
+        slider.performTouchInput { click(Offset(width - 16f, 32f)) }
+        slider.performTouchInput { click(Offset(width / 2f, 32f)) }
+
+        // Края дают 100 и 440, середина 100 + 340 · 0,5 = 270.
+        assertEquals(
+            listOf<EditorAction>(EditorAction.SetShapeSize(100), EditorAction.SetShapeSize(440), EditorAction.SetShapeSize(270)),
+            actions,
+        )
+    }
+
+    @Test
+    fun fingerDragOnSizeSliderReportsOnlyWholeTensInGrowingOrder() {
+        host.show(buildEditorState(isShapePaletteOpen = true))
+
+        findSizeSlider().performTouchInput {
+            down(Offset(16f, 32f))
+            moveTo(Offset(width / 3f, 32f))
+            moveTo(Offset(width - 16f, 32f))
+            up()
+        }
+
+        val sizes = actions.filterIsInstance<EditorAction.SetShapeSize>().map { it.size }
+        assertEquals(100, sizes.first())
+        assertEquals(440, sizes.last())
+        assertTrue("кратно 10: $sizes", sizes.all { it % 10 == 0 })
+        assertEquals("значения растут", sizes.sorted(), sizes)
+    }
+
+    @Test
+    fun penChoosesSizeAndDragPastTheEndsIsClamped() {
+        host.show(buildEditorState(isShapePaletteOpen = true))
+        val bounds = findSizeSlider().getUnclippedBoundsInRoot()
+        val y = bounds.top.value + 32f
+        val left = bounds.left.value
+
+        dispatchGesture(composeRule.activity, composeRule, MotionEvent.TOOL_TYPE_STYLUS, listOf((left + 302f) to y, (left + 640f) to y))
+        assertEquals(listOf<EditorAction>(EditorAction.SetShapeSize(270), EditorAction.SetShapeSize(440)), actions.toList())
+        actions.clear()
+        dispatchGesture(composeRule.activity, composeRule, MotionEvent.TOOL_TYPE_STYLUS, listOf((left + 302f) to y, (left - 40f) to y))
+        assertEquals(listOf<EditorAction>(EditorAction.SetShapeSize(270), EditorAction.SetShapeSize(100)), actions.toList())
+    }
+
+    @Test
+    fun accessibilityActionSnapsTheSizeToTensWithinBounds() {
+        host.show(buildEditorState(isShapePaletteOpen = true))
+
+        val setProgress = findSizeSlider().fetchSemanticsNode().config[SemanticsActions.SetProgress].action
+        assertNotNull(setProgress)
+        composeRule.runOnUiThread {
+            assertTrue(setProgress!!.invoke(254f))
+            assertTrue(setProgress.invoke(256f))
+            assertTrue(setProgress.invoke(1000f))
+            assertTrue(setProgress.invoke(-3f))
+        }
+
+        assertEquals(
+            listOf<EditorAction>(EditorAction.SetShapeSize(250), EditorAction.SetShapeSize(260), EditorAction.SetShapeSize(440), EditorAction.SetShapeSize(100)),
+            actions,
+        )
+    }
+
+    @Test
+    fun outlineSliderStillMovesInOnesWhileTheSizeSliderExists() {
+        host.show(buildEditorState(isShapePaletteOpen = true))
+
+        findSlider().performTouchInput { click(Offset(width / 2f, 32f)) }
+
+        assertEquals(listOf<EditorAction>(EditorAction.SetOutlineWidth(7)), actions)
+    }
+
     // --- закрытие ------------------------------------------------------------------------------
 
     @Test
@@ -398,6 +531,8 @@ class ShapePaletteTest {
 
     private fun findSlider(): SemanticsNodeInteraction = composeRule.onNodeWithContentDescription("Outline width")
 
+    private fun findSizeSlider(): SemanticsNodeInteraction = composeRule.onNodeWithContentDescription("Default shape size")
+
     // Описание «Close shape menu» у двух узлов: у прозрачного фона (первым в дереве) и у креста в заголовке.
     private fun findCross(): SemanticsNodeInteraction = composeRule.onAllNodesWithContentDescription("Close shape menu")[1]
 
@@ -414,8 +549,8 @@ class ShapePaletteTest {
     }
 
     // Центр бегунка по горизонтали: середина между крайними столбцами круга, видного выше и ниже дорожки.
-    private fun findThumbCenter(): Pair<Float, Float> {
-        val bitmap = findSlider().captureToImage().asAndroidBitmap()
+    private fun findThumbCenter(slider: SemanticsNodeInteraction = findSlider()): Pair<Float, Float> {
+        val bitmap = slider.captureToImage().asAndroidBitmap()
         val columns = (0 until bitmap.width).filter { x -> bitmap.isInkAt(x, 20) || bitmap.isInkAt(x, bitmap.height - 21) }
         return (columns.first() + columns.last()) / 2f to bitmap.height / 2f
     }

@@ -72,6 +72,16 @@ class AppContainerTest {
     }
 
     @Test
+    fun shapeSizeIsRememberedInTheSameSettingsAndSurvivesANewContainer() {
+        val first = AppContainer(application, hasFileAccess = { true })
+        first.editorSettingsStore.writeShapeSize(310)
+
+        val second = AppContainer(application, hasFileAccess = { true })
+
+        assertEquals(310, second.editorSettingsStore.readShapeSize())
+    }
+
+    @Test
     fun outlineWidthIsThreeOnTheFirstRun() {
         application.getSharedPreferences("deckly-settings", Context.MODE_PRIVATE).edit().clear().commit()
 

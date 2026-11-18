@@ -61,8 +61,11 @@ internal fun buildEditorState(
     selectedShape: SelectedShape? = null,
     isShapePaletteOpen: Boolean = false,
     paletteOutlineWidth: Int = 3,
+    paletteShapeSize: Int = 220,
     isCapturingStroke: Boolean = false,
-) = EditorScreenState(isNewCard, side, thickness, canUndo, dialog, selectedShape, isShapePaletteOpen, paletteOutlineWidth, isCapturingStroke)
+) = EditorScreenState(
+    isNewCard, side, thickness, canUndo, dialog, selectedShape, isShapePaletteOpen, paletteOutlineWidth, paletteShapeSize, isCapturingStroke,
+)
 
 /** Отсчёт пера внутри одного события: точка и нажим. */
 internal data class PenSample(val x: Float, val y: Float, val pressure: Float)

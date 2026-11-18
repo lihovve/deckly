@@ -25,6 +25,7 @@ fun buildEditorScreenState(
     held: HeldShape? = null,
     isShapePaletteOpen: Boolean = false,
     paletteOutlineWidth: Int = DEFAULT_OUTLINE_WIDTH,
+    paletteShapeSize: Int = DEFAULT_SHAPE_SIZE,
     isCapturingStroke: Boolean = false,
 ): EditorScreenState = EditorScreenState(
     isNewCard = session.draft.cardId == null,
@@ -35,6 +36,7 @@ fun buildEditorScreenState(
     selectedShape = held?.shape?.toSelectedShape(),
     isShapePaletteOpen = isShapePaletteOpen,
     paletteOutlineWidth = paletteOutlineWidth,
+    paletteShapeSize = paletteShapeSize,
     isCapturingStroke = isCapturingStroke,
 )
 

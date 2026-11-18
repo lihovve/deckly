@@ -138,6 +138,133 @@ class EditorViewModelShapesTest {
     }
 
     @Test
+    fun paletteShowsTheRememberedShapeSize() {
+        settings.shapeSize = 300
+        startNewCard()
+
+        assertEquals(300, shown.paletteShapeSize)
+    }
+
+    @Test
+    fun settingShapeSizeRemembersItAndShowsIt() {
+        startNewCard()
+        viewModel.onAction(EditorAction.OpenShapePalette)
+
+        viewModel.onAction(EditorAction.SetShapeSize(300))
+        viewModel.onAction(EditorAction.SetShapeSize(150))
+        runUntilIdle()
+
+        assertEquals(listOf(300, 150), settings.sizeWrites)
+        assertEquals(150, shown.paletteShapeSize)
+        assertTrue(shown.isShapePaletteOpen)
+    }
+
+    @Test
+    fun sameShapeSizeInARowIsWrittenOnce() {
+        startNewCard()
+        viewModel.onAction(EditorAction.OpenShapePalette)
+
+        viewModel.onAction(EditorAction.SetShapeSize(300))
+        viewModel.onAction(EditorAction.SetShapeSize(300))
+        viewModel.onAction(EditorAction.SetShapeSize(220))
+        viewModel.onAction(EditorAction.SetShapeSize(220))
+        runUntilIdle()
+
+        assertEquals(listOf(300, 220), settings.sizeWrites)
+    }
+
+    @Test
+    fun shapeSizeEqualToTheRememberedOneIsNotWritten() {
+        settings.shapeSize = 340
+        startNewCard()
+        viewModel.onAction(EditorAction.OpenShapePalette)
+
+        viewModel.onAction(EditorAction.SetShapeSize(340))
+        runUntilIdle()
+
+        assertTrue(settings.sizeWrites.isEmpty())
+    }
+
+    @Test
+    fun shapeSizeIsSnappedToTensAndClampedToTheSlider() {
+        startNewCard()
+        viewModel.onAction(EditorAction.OpenShapePalette)
+
+        for (size in listOf(1000, 5, 254, 255, 441, 99, -30)) viewModel.onAction(EditorAction.SetShapeSize(size))
+        runUntilIdle()
+
+        assertEquals(listOf(440, 100, 250, 260, 440, 100), settings.sizeWrites)
+    }
+
+    @Test
+    fun rememberedShapeSizeOffTheStepIsReadAsTheNearestTen() {
+        settings.shapeSize = 333
+        startNewCard()
+
+        assertEquals(330, shown.paletteShapeSize)
+    }
+
+    @Test
+    fun insertedShapeHasTheRememberedSizeAtTheCenterOfTheSheet() {
+        settings.shapeSize = 300
+        startNewCard()
+
+        chooseShape(ShapeKind.OVAL)
+
+        val frame = checkNotNull(shown.selectedShape).frame
+        // Рамка 300 × 300 единиц макета по центру листа 928 × 963.
+        assertEquals(314f * unit, frame.left, 0.01f)
+        assertEquals(331.5f * unit, frame.top, 0.01f)
+        assertEquals(614f * unit, frame.right, 0.01f)
+        assertEquals(631.5f * unit, frame.bottom, 0.01f)
+    }
+
+    @Test
+    fun insertedLinearShapeHasTheRememberedLengthAndStaysEightyThick() {
+        settings.shapeSize = 400
+        startNewCard()
+
+        chooseShape(ShapeKind.ARROW)
+
+        val frame = checkNotNull(shown.selectedShape).frame
+        assertTrue(frame.isLinear)
+        assertEquals(400f * unit, frame.right - frame.left, 0.01f)
+        assertEquals(80f * unit, frame.bottom - frame.top, 0.01f)
+    }
+
+    @Test
+    fun sizeSetInThePaletteReachesTheNextInsertedShape() {
+        startNewCard()
+        viewModel.onAction(EditorAction.OpenShapePalette)
+        viewModel.onAction(EditorAction.SetShapeSize(120))
+        viewModel.onAction(EditorAction.ChooseShape(ShapeKind.HEART))
+        runUntilIdle()
+
+        val frame = checkNotNull(shown.selectedShape).frame
+        assertEquals(120f * unit, frame.right - frame.left, 0.01f)
+        assertEquals(120f * unit, frame.bottom - frame.top, 0.01f)
+    }
+
+    @Test
+    fun shapeSizeDoesNotChangeShapesThatAreAlreadyPlacedOrInHand() {
+        startWithShapes(rectangle)
+        viewModel.onAction(EditorAction.OpenShapePalette)
+        viewModel.onAction(EditorAction.SetShapeSize(400))
+        viewModel.onAction(EditorAction.CloseShapePalette)
+        runUntilIdle()
+        assertEquals(listOf(rectangle), viewModel.canvas.value.side.shapes)
+
+        // Фигура в руках: действие палитры её не трогает и ничего не запоминает.
+        chooseShape(ShapeKind.OVAL)
+        val held = checkNotNull(shown.selectedShape).frame
+        viewModel.onAction(EditorAction.SetShapeSize(150))
+        runUntilIdle()
+
+        assertEquals(held, checkNotNull(shown.selectedShape).frame)
+        assertEquals(listOf(400), settings.sizeWrites)
+    }
+
+    @Test
     fun outlineWidthDoesNotChangeShapesThatAreAlreadyPlaced() {
         startWithShapes(rectangle)
         viewModel.onAction(EditorAction.OpenShapePalette)

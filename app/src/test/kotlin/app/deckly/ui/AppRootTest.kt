@@ -519,6 +519,22 @@ class AppRootTest {
     }
 
     @Test
+    fun rememberedShapeSizeReachesTheNextEditorFromThePreferences() {
+        val container = AppContainer(application, hasFileAccess = { true })
+        container.editorSettingsStore.writeShapeSize(300)
+        val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
+        startApp(buildData(drafts = drafts))
+        composeRule.onNodeWithContentDescription("Shapes").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Rectangle").performClick()
+        composeRule.waitForIdle()
+
+        // Новая фигура встаёт с запомненным размером: 300 единиц макета.
+        val shape = sheets.canvases.last().side.shapes.single()
+        assertEquals(300f * app.deckly.domain.model.CardUnits.PER_DESIGN_UNIT, shape.right - shape.left, 1e-2f)
+    }
+
+    @Test
     fun strokeAndEraseFromCanvasReachEditor() {
         val drafts = FakeDraftRepository(StoredDraft(DECK_ID, buildEmptyDraft()))
         startApp(buildData(drafts = drafts))
