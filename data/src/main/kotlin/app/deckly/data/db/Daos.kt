@@ -177,12 +177,19 @@ abstract class AppStateDao {
     )
     abstract suspend fun findAppState(): AppStateEntity?
 
+    /**
+     * Запоминает текущую колоду и возвращает число изменённых строк: 0, если [deckId] уже записан (`IS NOT` сравнивает
+     * и с `NULL`, поэтому после сброса та же колода снова меняет строку). Экран колоды пишет текущую колоду при каждом
+     * открытии, а в этих путях значение уже то же: `UPDATE`, не нашедший строк, ничего не меняет в базе, и повторная
+     * запись не открывает запись в неё.
+     */
     @Query(
         "UPDATE app_state\n" +
         "   SET current_deck_id = :deckId\n" +
-        " WHERE app_state.id = 1",
+        " WHERE app_state.id              = 1\n" +
+        "   AND app_state.current_deck_id IS NOT :deckId",
     )
-    abstract suspend fun updateCurrentDeck(deckId: Long)
+    abstract suspend fun updateCurrentDeck(deckId: Long): Int
 
     @Query(
         "UPDATE app_state\n" +
