@@ -125,8 +125,8 @@ object Tokens {
     val ShapeHandleTarget = 64.dp
     val ShapeHandleMark = 16.dp
     val ShapeHandleMarkBorder = 2.dp
-    val ShapeHandleOffset = 32.dp
-    val ShapeRotateTop = 80.dp
+    /** Центр ручки поворота над верхней стороной рамки: цель 64 dp на `top:-80px` в макете. */
+    val ShapeRotateDistance = 48.dp
     val ShapeRotateIcon = 24.dp
     val ShapeRotateLineWidth = 1.dp
     val ShapeRotateLineHeight = 16.dp

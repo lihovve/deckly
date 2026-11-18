@@ -9,7 +9,6 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
@@ -19,11 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerInputChange
@@ -32,19 +33,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.SelectedShape
 import app.deckly.ui.contract.ShapeHandleKind
-import kotlin.math.roundToInt
 
 /**
  * Слой жестов пера над листом и, пока фигура выделена, её рамка и ручки (`.shape-object.is-selected` с ручками в макете).
  * Сама фигура на листе: её контур рисует `ink`, здесь только то, что видно при выделении, и жесты. Рамка повёрнута вокруг
- * центра на угол фигуры. У обычного вида: пунктир в 1 dp, четыре квадрата в углах и ручка поворота над рамкой со значком
- * и чертой. У линии и стрелок: без пунктира, два круга на концах оси. [selected] == `null`: рамки нет, слой остаётся ради
+ * центра на угол фигуры. У обычного вида: пунктир в 1 dp по границе рамки, четыре квадрата в углах и ручка поворота над
+ * рамкой со значком и чертой. У линии и стрелок: без пунктира, два круга на концах оси. Знак стоит центром в точке ручки. [selected] == `null`: рамки нет, слой остаётся ради
  * жеста, который начался при выделении и стал линией (касание мимо): он не должен оборваться, пока перо не оторвано.
  *
  * Жесты только пером (`PointerType.Stylus`) и без нажатой кнопки: палец и ладонь ничего не двигают и не ставят, перо с
@@ -155,99 +152,86 @@ private fun collectPenPoints(change: PointerInputChange, event: MotionEvent?): L
 private fun isStylusButtonPressed(event: MotionEvent?): Boolean =
     event != null && event.buttonState and MotionEvent.BUTTON_STYLUS_PRIMARY != 0
 
-// Рамка в пикселях листа: левый верхний угол и размер до поворота; поворот вокруг центра слоем.
+// Рамка в пикселях листа: размер до поворота; левый верхний угол и поворот вокруг центра ставит слой, дробными пикселями,
+// чтобы знаки стояли там же, где `findHandleAt` ищет цели.
 @Composable
 private fun ShapeFrameMarks(selected: SelectedShape, scale: Float) {
     val frame = selected.frame
     val density = LocalDensity.current
-    val width = with(density) { ((frame.right - frame.left) * scale).toDp() }
-    val height = with(density) { ((frame.bottom - frame.top) * scale).toDp() }
+    val width = (frame.right - frame.left) * scale
+    val height = (frame.bottom - frame.top) * scale
     Box(
         Modifier
-            .offset { IntOffset((frame.left * scale).roundToInt(), (frame.top * scale).roundToInt()) }
-            .size(width, height)
-            .graphicsLayer { rotationZ = frame.angle }
+            .size(with(density) { width.toDp() }, with(density) { height.toDp() })
+            .graphicsLayer {
+                translationX = frame.left * scale
+                translationY = frame.top * scale
+                rotationZ = frame.angle
+            }
             .semantics { contentDescription = EditorTexts.describeShape(selected.kind) }
-            .then(if (frame.isLinear) Modifier else Modifier.drawBehind { drawDashedFrame() }),
+            .drawBehind { if (!frame.isLinear) drawFrameOutline(Size(width, height)) },
     ) {
-        if (frame.isLinear) {
-            HandleMark(width * Tokens.ShapeStartShare, height / 2, CircleShape, EditorTexts.describeEndpoint(ShapeHandleKind.START))
-            HandleMark(width * Tokens.ShapeEndShare, height / 2, CircleShape, EditorTexts.describeEndpoint(ShapeHandleKind.END))
-        } else {
-            HandleMark(0.dp, 0.dp, RectangleShape, EditorTexts.describeCorner(ShapeHandleKind.TOP_LEFT))
-            HandleMark(width, 0.dp, RectangleShape, EditorTexts.describeCorner(ShapeHandleKind.TOP_RIGHT))
-            HandleMark(0.dp, height, RectangleShape, EditorTexts.describeCorner(ShapeHandleKind.BOTTOM_LEFT))
-            HandleMark(width, height, RectangleShape, EditorTexts.describeCorner(ShapeHandleKind.BOTTOM_RIGHT))
-            RotateMark(width)
+        for (place in listLocalHandlePlaces(frame, scale, density.density)) HandleMark(place)
+    }
+}
+
+// Штрих 3 и промежуток 2 толщины линии, как у пунктира Chrome, но без подгонки под длину стороны.
+private const val DASH_LINES = 3f
+private const val GAP_LINES = 2f
+
+// Пунктир одним прямоугольником: линия 1 dp идёт по центру границы рамки. Над серединой верхней стороны чёрная черта ручки
+// поворота по оси рамки, от низа цели до рамки.
+private fun DrawScope.drawFrameOutline(frameSize: Size) {
+    val line = Tokens.ShapeFrameDash.toPx()
+    drawRect(Tokens.Black, size = frameSize, style = Stroke(line, pathEffect = PathEffect.dashPathEffect(floatArrayOf(DASH_LINES * line, GAP_LINES * line))))
+    val lineWidth = Tokens.ShapeRotateLineWidth.toPx()
+    val lineHeight = Tokens.ShapeRotateLineHeight.toPx()
+    drawRect(Tokens.Black, Offset(frameSize.width / 2f - lineWidth / 2f, -lineHeight), Size(lineWidth, lineHeight))
+}
+
+// Цель касания 64 dp с центром в точке ручки и знак по центру цели: центр знака там же, где центр цели. Квадрат у углов, круг у
+// концов линии, значок у поворота.
+@Composable
+private fun HandleMark(place: HandlePlace) {
+    Box(
+        Modifier
+            .centerAt(place.x, place.y)
+            .size(Tokens.ShapeHandleTarget)
+            .semantics { contentDescription = describeHandle(place.handle) },
+        contentAlignment = Alignment.Center,
+    ) {
+        when (place.handle) {
+            ShapeHandleKind.ROTATE -> Image(
+                DecklyIcons.Undo,
+                contentDescription = null,
+                modifier = Modifier.size(Tokens.ShapeRotateIcon).background(Tokens.White),
+                colorFilter = ColorFilter.tint(Tokens.Black),
+            )
+            ShapeHandleKind.START, ShapeHandleKind.END -> Sign(CircleShape)
+            else -> Sign(RectangleShape)
         }
     }
 }
 
-// Пунктир в 1 dp снаружи рамки (`outline:1px dashed #000` не входит в размер): внешний контур на 1 шире рамки с каждой
-// стороны. Как у Chrome, каждая сторона начинается со штриха в своём начале (слева направо и сверху вниз) и им же
-// кончается: штрих 3, промежуток около 2 подгоняется под длину стороны.
-private fun DrawScope.drawDashedFrame() {
-    val line = Tokens.ShapeFrameDash.toPx()
-    val width = size.width
-    val height = size.height
-    drawDashedSide(Offset(-line, -line / 2f), Offset(width + line, -line / 2f), line)
-    drawDashedSide(Offset(-line, height + line / 2f), Offset(width + line, height + line / 2f), line)
-    drawDashedSide(Offset(-line / 2f, -line), Offset(-line / 2f, height + line), line)
-    drawDashedSide(Offset(width + line / 2f, -line), Offset(width + line / 2f, height + line), line)
-}
-
-private fun DrawScope.drawDashedSide(from: Offset, to: Offset, line: Float) {
-    val length = (to - from).getDistance()
-    val dash = 3f * line
-    val count = ((length + 2f * line) / (5f * line)).roundToInt().coerceAtLeast(2)
-    val gap = (length - dash * count) / (count - 1)
-    drawLine(Tokens.Black, from, to, strokeWidth = line, pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash, gap)))
-}
-
-// Цель касания 64 dp с центром в ([centerX], [centerY]) рамки; знак `::after` стоит в ней на (24, 24). У псевдоэлемента нет
-// `box-sizing: border-box` из `*{…}`, поэтому Chrome рисует знак 16 + 2 · 2 = 20 dp: рамка снаружи содержимого, и знак
-// сдвинут на 2 dp вправо и вниз от середины цели. Квадрат или круг.
+// Белый знак 16 с чёрной рамкой 2 снаружи: 20 dp в поперечнике.
 @Composable
-private fun HandleMark(centerX: Dp, centerY: Dp, shape: Shape, description: String) {
-    val inset = (Tokens.ShapeHandleTarget - Tokens.ShapeHandleMark) / 2
+private fun Sign(shape: Shape) {
     Box(
         Modifier
-            .offset(centerX - Tokens.ShapeHandleOffset, centerY - Tokens.ShapeHandleOffset)
-            .size(Tokens.ShapeHandleTarget)
-            .semantics { contentDescription = description },
-    ) {
-        Box(
-            Modifier
-                .offset(inset, inset)
-                .size(Tokens.ShapeHandleMark + Tokens.ShapeHandleMarkBorder * 2)
-                .background(Tokens.White, shape)
-                .border(Tokens.ShapeHandleMarkBorder, Tokens.Black, shape),
-        )
-    }
+            .size(Tokens.ShapeHandleMark + Tokens.ShapeHandleMarkBorder * 2)
+            .background(Tokens.White, shape)
+            .border(Tokens.ShapeHandleMarkBorder, Tokens.Black, shape),
+    )
 }
 
-// Ручка поворота: цель 64 dp с верхом на 80 dp выше рамки, значок 24 dp на белом и чёрная черта 1 × 16 dp под ней.
-@Composable
-private fun RotateMark(frameWidth: Dp) {
-    Box(
-        Modifier
-            .offset(frameWidth / 2 - Tokens.ShapeHandleOffset, -Tokens.ShapeRotateTop)
-            .size(Tokens.ShapeHandleTarget)
-            .semantics { contentDescription = EditorTexts.ROTATE_SHAPE },
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            Modifier
-                .align(Alignment.TopStart)
-                .offset(Tokens.ShapeHandleTarget / 2 - Tokens.ShapeRotateLineWidth, Tokens.ShapeHandleTarget)
-                .size(Tokens.ShapeRotateLineWidth, Tokens.ShapeRotateLineHeight)
-                .background(Tokens.Black),
-        )
-        Image(
-            DecklyIcons.Undo,
-            contentDescription = null,
-            modifier = Modifier.size(Tokens.ShapeRotateIcon).background(Tokens.White),
-            colorFilter = ColorFilter.tint(Tokens.Black),
-        )
-    }
+// Ставит свой центр в точку ([x], [y]) родителя дробными пикселями слоя.
+private fun Modifier.centerAt(x: Float, y: Float): Modifier = graphicsLayer {
+    translationX = x - size.width / 2f
+    translationY = y - size.height / 2f
+}
+
+private fun describeHandle(handle: ShapeHandleKind): String = when (handle) {
+    ShapeHandleKind.ROTATE -> EditorTexts.ROTATE_SHAPE
+    ShapeHandleKind.START, ShapeHandleKind.END -> EditorTexts.describeEndpoint(handle)
+    else -> EditorTexts.describeCorner(handle)
 }

@@ -272,13 +272,14 @@ class TokensTest {
         assertDp(findCssNumber(".shape-handle::after", "height"), Tokens.ShapeHandleMark)
         assertEquals("2px solid #000", findCssValue(".shape-handle::after", "border"))
         assertDp(findCssNumber(".shape-handle::after", "border"), Tokens.ShapeHandleMarkBorder)
-        // Знак стоит в середине цели: (64 − 16) / 2 с каждой стороны.
-        assertDp(findCssNumber(".shape-handle::after", "left"), (Tokens.ShapeHandleTarget - Tokens.ShapeHandleMark) / 2)
-        assertDp(findCssNumber(".shape-handle::after", "top"), (Tokens.ShapeHandleTarget - Tokens.ShapeHandleMark) / 2)
-        // Цель выступает за угол рамки наполовину.
+        // Знак стоит центром в центре цели: `left:50%; top:50%; transform:translate(-50%,-50%)`.
+        assertEquals("50%", findCssValue(".shape-handle::after", "left"))
+        assertEquals("50%", findCssValue(".shape-handle::after", "top"))
+        assertEquals("translate(-50%,-50%)", findCssValue(".shape-handle::after", "transform"))
+        // Цель выступает за угол рамки наполовину: центр цели в углу.
         val sides = mapOf("nw" to listOf("top", "left"), "ne" to listOf("top", "right"), "sw" to listOf("bottom", "left"), "se" to listOf("bottom", "right"))
         for ((corner, properties) in sides) {
-            for (property in properties) assertDp(findCssNumber(".shape-handle.$corner", property), -Tokens.ShapeHandleOffset)
+            for (property in properties) assertDp(-findCssNumber(".shape-handle.$corner", property) * 2f, Tokens.ShapeHandleTarget)
         }
         assertEquals("1px dashed #000", findCssValue(".shape-object.is-selected", "outline"))
         assertDp(findCssNumber(".shape-object.is-selected", "outline"), Tokens.ShapeFrameDash)
@@ -292,14 +293,15 @@ class TokensTest {
     fun rotateHandleAndEditToolsMatchStyles() {
         assertDp(findCssNumber(".shape-rotate", "width"), Tokens.ShapeHandleTarget)
         assertDp(findCssNumber(".shape-rotate", "height"), Tokens.ShapeHandleTarget)
-        assertDp(findCssNumber(".shape-rotate", "top"), -Tokens.ShapeRotateTop)
+        // Цель на `top:-80px`: её центр на 48 выше верхней стороны рамки.
+        assertDp(-findCssNumber(".shape-rotate", "top") - Tokens.ShapeHandleTarget.value / 2f, Tokens.ShapeRotateDistance)
         assertEquals("calc(50% - 32px)", findCssValue(".shape-rotate", "left"))
         assertDp(findCssNumber(".shape-rotate .icon", "width"), Tokens.ShapeRotateIcon)
         assertDp(findCssNumber(".shape-rotate .icon", "height"), Tokens.ShapeRotateIcon)
-        assertDp(findCssNumber(".shape-rotate::before", "top"), Tokens.ShapeHandleTarget)
-        assertDp(findCssNumber(".shape-rotate::before", "left"), Tokens.ShapeHandleTarget / 2 - Tokens.ShapeRotateLineWidth)
         assertDp(findCssNumber(".shape-rotate::before", "width"), Tokens.ShapeRotateLineWidth)
         assertDp(findCssNumber(".shape-rotate::before", "height"), Tokens.ShapeRotateLineHeight)
+        // Черта идёт от низа цели до верхней стороны рамки.
+        assertDp(Tokens.ShapeRotateDistance.value - Tokens.ShapeHandleTarget.value / 2f, Tokens.ShapeRotateLineHeight)
         assertDp(findCssNumber(".shape-edit-tools .shape-graphic", "width"), Tokens.ShapeEditSample)
         assertDp(findCssNumber(".shape-edit-tools .shape-graphic", "height"), Tokens.ShapeEditSample)
     }

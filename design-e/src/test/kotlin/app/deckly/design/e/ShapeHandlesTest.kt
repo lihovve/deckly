@@ -44,6 +44,56 @@ class ShapeHandlesTest {
     }
 
     @Test
+    fun localPlacesAreMeasuredFromTheTopLeftCornerInTheAxesOfTheFrame() {
+        val places = listLocalHandlePlaces(plain, scale, density).associate { it.handle to (it.x to it.y) }
+
+        // Рамка 200 × 100: углы в углах, ручка поворота по оси на 48 выше верхней стороны.
+        assertEquals(
+            mapOf(
+                ShapeHandleKind.TOP_LEFT to (0f to 0f),
+                ShapeHandleKind.TOP_RIGHT to (200f to 0f),
+                ShapeHandleKind.BOTTOM_LEFT to (0f to 100f),
+                ShapeHandleKind.BOTTOM_RIGHT to (200f to 100f),
+                ShapeHandleKind.ROTATE to (100f to -48f),
+            ),
+            places,
+        )
+    }
+
+    @Test
+    fun localPlacesOfALineAreOnTheAxisAtTwelveAndEightyEightPercent() {
+        val places = listLocalHandlePlaces(plain.copy(isLinear = true), scale, density).associate { it.handle to (it.x to it.y) }
+
+        assertEquals(setOf(ShapeHandleKind.START, ShapeHandleKind.END), places.keys)
+        assertEquals(24f, places.getValue(ShapeHandleKind.START).first, 0.001f)
+        assertEquals(176f, places.getValue(ShapeHandleKind.END).first, 0.001f)
+        assertEquals(50f, places.getValue(ShapeHandleKind.START).second, 0.001f)
+        assertEquals(50f, places.getValue(ShapeHandleKind.END).second, 0.001f)
+    }
+
+    @Test
+    fun localPlacesFollowScaleAndDensity() {
+        val places = listLocalHandlePlaces(plain, 2f, 3f).associate { it.handle to (it.x to it.y) }
+
+        assertEquals(400f to 200f, places.getValue(ShapeHandleKind.BOTTOM_RIGHT))
+        assertEquals(200f to -48f * 3f, places.getValue(ShapeHandleKind.ROTATE))
+    }
+
+    @Test
+    fun worldPlacesOfAFrameTurnedByThirtyDegreesAreTheLocalOnesTurnedAroundTheCenter() {
+        val turned = plain.copy(angle = 30f)
+
+        val places = listHandlePlaces(turned, scale, density).associate { it.handle to (it.x to it.y) }
+
+        // Центр (200, 150). Верхний левый угол (−100, −50) по часовой на 30°: (−100·cos + 50·sin, −100·sin − 50·cos).
+        assertEquals(138.4f, places.getValue(ShapeHandleKind.TOP_LEFT).first, 0.05f)
+        assertEquals(56.7f, places.getValue(ShapeHandleKind.TOP_LEFT).second, 0.05f)
+        // Ручка поворота (0, −98): (49, −84,9).
+        assertEquals(249f, places.getValue(ShapeHandleKind.ROTATE).first, 0.05f)
+        assertEquals(65.1f, places.getValue(ShapeHandleKind.ROTATE).second, 0.05f)
+    }
+
+    @Test
     fun placesFollowScaleAndDensity() {
         // Лист в 2 пикселя на единицу, 3 пикселя на dp: углы масштабируются, расстояние до поворота считается в dp.
         val places = listHandlePlaces(plain, 2f, 3f).associate { it.handle to (it.x to it.y) }

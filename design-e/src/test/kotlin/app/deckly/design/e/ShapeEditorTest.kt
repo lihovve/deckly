@@ -1,6 +1,7 @@
 package app.deckly.design.e
 
 import android.graphics.Bitmap
+import android.graphics.Color as AndroidColor
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.geometry.Offset
@@ -32,7 +33,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 /** Панели с фигурой и без, рамка с ручками над листом и жесты пером (`.shape-edit-tools`, `.shape-handle`, `.shape-rotate`). */
 @RunWith(RobolectricTestRunner::class)
@@ -207,78 +212,117 @@ class ShapeEditorTest {
     }
 
     @Test
-    fun plainFrameHasDashedOutlineAndSquareMarksAtTheCorners() {
+    fun frameIsOneDashedLineWhoseCenterLiesOnTheBorder() {
         host.show(buildEditorState(selectedShape = rectangle))
 
         val bitmap = captureFrame()
-        val frame = composeRule.onNodeWithContentDescription("Rectangle").findBounds()
-        val left = frame.left.value.roundToInt()
-        val top = frame.top.value.roundToInt()
-        val right = frame.right.value.roundToInt()
-        val bottom = frame.bottom.value.roundToInt()
-        // Пунктир 1 снаружи рамки, как у Chrome: на строке над верхней кромкой штрихи по 3 через промежуток 2, отсчёт от угла
-        // внешнего контура (на 1 левее рамки). Углы закрыты знаками 16, поэтому смотрим на середину стороны; внутри рамки
-        // и ещё выше пусто.
-        val row = ((left - 1)..right).map { bitmap.isInkAt(it, top - 1) }
-        assertDashPattern("верхняя сторона", row)
-        // Кроме середины, где от ручки поворота спускается чёрная черта.
-        val xs = ((left + 40) until (right - 40)).filter { kotlin.math.abs(it - (left + right) / 2) > 3 }
-        assertTrue(xs.none { bitmap.isInkAt(it, top) })
-        assertTrue(xs.none { bitmap.isInkAt(it, top - 2) })
-        // Левая сторона тем же рисунком сверху вниз.
-        assertDashPattern("левая сторона", ((top - 1)..bottom).map { bitmap.isInkAt(left - 1, it) })
-        // Нижняя и правая стороны: тоже с начала стороны, слева направо и сверху вниз.
-        assertDashPattern("нижняя сторона", ((left - 1)..right).map { bitmap.isInkAt(it, bottom) })
-        assertDashPattern("правая сторона", ((top - 1)..bottom).map { bitmap.isInkAt(right, it) })
-        // Четыре квадрата 20 (16 и рамка 2 снаружи) с белой серединой на углах рамки.
-        for ((cx, cy) in listOf(left to top, right to top, left to bottom, right to bottom)) {
-            assertMark(bitmap, cx, cy, isCircle = false)
+        val points = listHandlePoints(rectangle)
+        val topLeft = points.getValue(ShapeHandleKind.TOP_LEFT)
+        val topRight = points.getValue(ShapeHandleKind.TOP_RIGHT)
+        val bottomLeft = points.getValue(ShapeHandleKind.BOTTOM_LEFT)
+        val axis = (topLeft.x + topRight.x) / 2f
+        // Штрих 3 и промежуток 2 толщины линии (в этом тесте 1 пиксель) на каждой стороне, без подгонки под её длину. Первые
+        // и последние 14 пикселей закрыты знаками углов, у верхней стороны середину занимает черта ручки поворота.
+        val sideColumns = (topLeft.x.toInt() + 14) until (topRight.x.toInt() - 14)
+        val sideRows = (topLeft.y.toInt() + 14) until (bottomLeft.y.toInt() - 14)
+        assertDashes("верхняя сторона", findDashRuns(sideColumns) { bitmap.measureBand(it, topLeft.y.toInt() - 1..topLeft.y.toInt() + 1, isColumn = true) }, (axis.toInt() - 5)..(axis.toInt() + 5))
+        assertDashes("нижняя сторона", findDashRuns(sideColumns) { bitmap.measureBand(it, bottomLeft.y.toInt() - 1..bottomLeft.y.toInt() + 1, isColumn = true) }, null)
+        assertDashes("левая сторона", findDashRuns(sideRows) { bitmap.measureBand(it, topLeft.x.toInt() - 1..topLeft.x.toInt() + 1, isColumn = false) }, null)
+        assertDashes("правая сторона", findDashRuns(sideRows) { bitmap.measureBand(it, topRight.x.toInt() - 1..topRight.x.toInt() + 1, isColumn = false) }, null)
+        // Линия лежит серединой на границе, а не снаружи (у `outline` макета) и не внутри: возьмём середину первого штриха.
+        val dash = findDashRuns(sideColumns) { bitmap.measureBand(it, topLeft.y.toInt() - 1..topLeft.y.toInt() + 1, isColumn = true) }.first { it.last < axis.toInt() - 5 }
+        val column = (dash.first + dash.last) / 2
+        val rows = (topLeft.y.toInt() - 3)..(topLeft.y.toInt() + 3)
+        val weight = rows.sumOf { bitmap.measureDarkness(column, it).toDouble() }
+        val centerY = rows.sumOf { bitmap.measureDarkness(column, it) * (it + 0.5) } / weight
+        assertEquals("центр линии на границе", topLeft.y.toDouble(), centerY, 0.3)
+    }
+
+    @Test
+    fun squareMarksStandWithTheirCentersOnTheCorners() {
+        host.show(buildEditorState(selectedShape = rectangle))
+
+        val bitmap = captureFrame()
+        val points = listHandlePoints(rectangle)
+        for (corner in listOf(ShapeHandleKind.TOP_LEFT, ShapeHandleKind.TOP_RIGHT, ShapeHandleKind.BOTTOM_LEFT, ShapeHandleKind.BOTTOM_RIGHT)) {
+            assertMarkCenter("$corner", bitmap, points.getValue(corner), angle = 0f, tolerance = 0.6f)
+            assertMarkShape("$corner", bitmap, points.getValue(corner), isCircle = false)
         }
     }
 
     @Test
-    fun rotateHandleHasIconOnWhiteAndOneByTwelveLineBelowIt() {
+    fun rotateHandleHasItsIconCenteredFortyEightAboveTheTopSideAndALineOnTheAxisBelowIt() {
         host.show(buildEditorState(selectedShape = rectangle))
 
         val bitmap = captureFrame()
-        val rotate = composeRule.onNodeWithContentDescription("Rotate shape").findBounds()
-        val frame = composeRule.onNodeWithContentDescription("Rectangle").findBounds()
-        val cx = findCenterX(rotate).roundToInt()
-        val cy = findCenterY(rotate).roundToInt()
-        // Значок 24 × 24 в центре цели и чёрная черта 1 × 16 от низа цели до верха рамки (`top:64px; left:31px`).
-        val icon = measureInkBox(bitmap, (cx - 12) until (cx + 12), (cy - 12) until (cy + 12))
+        val points = listHandlePoints(rectangle)
+        val rotate = points.getValue(ShapeHandleKind.ROTATE)
+        val topLeft = points.getValue(ShapeHandleKind.TOP_LEFT)
+        val axis = (topLeft.x + points.getValue(ShapeHandleKind.TOP_RIGHT).x) / 2f
+        assertEquals("ручка на оси рамки", axis, rotate.x, 0.01f)
+        assertEquals("центр на 48 выше верхней стороны", topLeft.y - 48f, rotate.y, 0.01f)
+        // Значок 24 × 24 на белом, центром в точке (чернила значка не симметричны: допуск на его рисунок).
+        val icon = measureInkCenter(bitmap, rotate, angle = 0f, half = 14f)
         assertNotNull("значка поворота нет", icon)
-        assertTrue("значок не больше 24: $icon", icon!!.width <= 24f && icon.height <= 24f && icon.width >= 12f && icon.height >= 12f)
-        val lineTop = rotate.bottom.value.roundToInt()
-        val lineX = (rotate.left.value + 31f).roundToInt()
-        assertEquals(16, (lineTop until lineTop + 16).count { bitmap.isInkAt(lineX, it) })
-        assertTrue("черта в один пиксель", !bitmap.isInkAt(lineX - 1, lineTop + 8) && !bitmap.isInkAt(lineX + 1, lineTop + 8))
-        // Над чертой белая цель, ниже черта упирается в верх рамки: она кончается там, где начинается рамка.
-        assertTrue(!bitmap.isInkAt(lineX, lineTop - 1))
-        assertEquals(frame.top.value, (lineTop + 16).toFloat(), 1f)
+        assertEquals("значок: центр по x", rotate.x, icon!!.x, 1.5f)
+        assertEquals("значок: центр по y", rotate.y, icon.y, 1.5f)
+        // Чёрная черта 1 × 16 по оси, от низа цели (центр + 32) до верхней стороны: каждая строка черты тёмная и одна колонка.
+        val lineTop = rotate.y + 32f
+        for (row in (lineTop.toInt() + 2) until (topLeft.y.toInt() - 1)) {
+            val columns = (axis.toInt() - 3)..(axis.toInt() + 3)
+            val weight = columns.sumOf { bitmap.measureDarkness(it, row).toDouble() }
+            assertEquals("строка $row: ровно один пиксель чёрного", 1.0, weight, 0.15)
+            assertEquals("строка $row: центр по оси", axis.toDouble(), columns.sumOf { bitmap.measureDarkness(it, row) * (it + 0.5) } / weight, 0.35)
+        }
+        // Между значком и чертой пусто: черта начинается там, где кончается цель, а не от значка.
+        val gapRows = (rotate.y.toInt() + 14)..(lineTop.toInt() - 1)
+        assertTrue("между значком и чертой пусто", gapRows.none { row -> ((axis.toInt() - 3)..(axis.toInt() + 3)).any { bitmap.measureDarkness(it, row) > 0.2f } })
     }
 
     @Test
-    fun linearShapeHasTwoRoundMarksAtTheEndsOfTheAxisAndNoDashedFrame() {
+    fun linearShapeHasTwoRoundMarksCenteredOnTheEndsOfTheAxisAndNoDashedFrame() {
         host.show(buildEditorState(selectedShape = line))
 
         val bitmap = captureFrame()
         val frame = composeRule.onNodeWithContentDescription("Arrow").findBounds()
+        val points = listHandlePoints(line)
         val start = composeRule.onNodeWithContentDescription("Move start point").findBounds()
         val end = composeRule.onNodeWithContentDescription("Move end point").findBounds()
 
-        // Концы на 12 и 88 % ширины рамки, на середине её высоты; цель 64.
-        assertEquals(frame.left.value + 0.12f * (frame.right.value - frame.left.value), findCenterX(start), 1f)
-        assertEquals(frame.left.value + 0.88f * (frame.right.value - frame.left.value), findCenterX(end), 1f)
-        assertEquals((frame.top.value + frame.bottom.value) / 2f, findCenterY(start), 1f)
-        assertEquals(64f, start.right.value - start.left.value, 0.5f)
+        // Концы на 12 и 88 % ширины рамки, на середине её высоты; цель 64 с центром в той же точке, что и знак.
+        for ((kind, target) in listOf(ShapeHandleKind.START to start, ShapeHandleKind.END to end)) {
+            val point = points.getValue(kind)
+            assertEquals("$kind: цель 64", 64f, target.right.value - target.left.value, 0.5f)
+            assertEquals("$kind: центр цели по x", point.x, findCenterX(target), 0.6f)
+            assertEquals("$kind: центр цели по y", point.y, findCenterY(target), 0.6f)
+            assertMarkCenter("$kind", bitmap, point, angle = 0f, tolerance = 0.6f)
+            assertMarkShape("$kind", bitmap, point, isCircle = true)
+        }
         composeRule.onNodeWithContentDescription("Rotate shape").assertDoesNotExist()
         composeRule.onNodeWithContentDescription("Resize: top left corner").assertDoesNotExist()
-        for (target in listOf(start, end)) assertMark(bitmap, findCenterX(target).roundToInt(), findCenterY(target).roundToInt(), isCircle = true)
         // Пунктира нет: ни выше, ни ниже оси между концами.
         val xs = (findCenterX(start).roundToInt() + 30) until (findCenterX(end).roundToInt() - 30)
-        assertTrue(xs.none { bitmap.isInkAt(it, frame.top.value.roundToInt() - 1) })
-        assertTrue(xs.none { bitmap.isInkAt(it, frame.bottom.value.roundToInt()) })
+        assertTrue(xs.none { x -> (frame.top.value.roundToInt() - 2..frame.top.value.roundToInt() + 1).any { bitmap.measureDarkness(x, it) > 0.2f } })
+        assertTrue(xs.none { x -> (frame.bottom.value.roundToInt() - 2..frame.bottom.value.roundToInt() + 1).any { bitmap.measureDarkness(x, it) > 0.2f } })
+    }
+
+    @Test
+    fun marksOfARotatedFrameStandOnTheRotatedPoints() {
+        for (angle in listOf(90f, 30f)) {
+            val turned = rectangle.copy(frame = rectangle.frame.copy(angle = angle))
+            host.show(buildEditorState(selectedShape = turned))
+
+            val bitmap = captureFrame()
+            val points = listHandlePoints(turned)
+            for (corner in listOf(ShapeHandleKind.TOP_LEFT, ShapeHandleKind.TOP_RIGHT, ShapeHandleKind.BOTTOM_LEFT, ShapeHandleKind.BOTTOM_RIGHT)) {
+                assertMarkCenter("угол $corner при $angle°", bitmap, points.getValue(corner), angle, tolerance = 1f)
+            }
+            val rotate = points.getValue(ShapeHandleKind.ROTATE)
+            val icon = measureInkCenter(bitmap, rotate, angle, half = 14f)
+            assertNotNull("значка поворота при $angle° нет", icon)
+            assertEquals("значок при $angle°: центр по x", rotate.x, icon!!.x, 2f)
+            assertEquals("значок при $angle°: центр по y", rotate.y, icon.y, 2f)
+        }
     }
 
     @Test
@@ -863,30 +907,93 @@ class ShapeEditorTest {
 
     private fun findCenterY(box: DpRect) = (box.top.value + box.bottom.value) / 2f
 
-    // Знак ручки в том виде, в каком его рисует Chrome: 16 и рамка 2 снаружи, то есть 20 × 20, левый верхний угол знака в
-    // (24, 24) цели 64, а значит середина знака на 2 правее и ниже середины цели. По строке через середину цели два куска
-    // рамки по 2 с белой серединой 16 между ними; у квадрата угол знака чёрный, у круга нет.
-    private fun assertMark(bitmap: Bitmap, cx: Int, cy: Int, isCircle: Boolean) {
-        // Окно по знаку (cx − 8…cx + 11) плюс пиксель по краям: за ним у угла рамки идёт пунктир.
-        val runs = findInkRuns(bitmap, cy, (cx - 9)..(cx + 12))
-        assertEquals("знак ($cx, $cy): два куска рамки в строке через центр $runs", 2, runs.size)
-        assertEquals("знак ($cx, $cy): рамка 2", listOf(2, 2), runs.map { it.last - it.first + 1 })
-        assertEquals("знак ($cx, $cy): белая середина 16", 16, runs[1].first - runs[0].last - 1)
-        assertEquals("знак ($cx, $cy): размер 20", 20, runs[1].last - runs[0].first + 1)
-        assertEquals("знак ($cx, $cy): левый край на 8 левее центра цели", cx - 8, runs[0].first)
-        val corner = bitmap.isInkAt(runs[0].first + 1, cy - 7)
-        assertEquals("знак ($cx, $cy): угол ${if (isCircle) "круга пуст" else "квадрата чёрный"}", !isCircle, corner)
+    // Точки ручек в корне окна: лист занимает слот целиком, слой жестов лежит над ним; плотность mdpi, 1 dp = 1 пиксель.
+    private fun listHandlePoints(shape: SelectedShape): Map<ShapeHandleKind, Offset> {
+        val sheet = composeRule.onNodeWithTag("slot").fetchSemanticsNode().boundsInRoot
+        return listHandlePlaces(shape.frame, sheet.width / 1000f, 1f).associate { it.handle to Offset(sheet.left + it.x, sheet.top + it.y) }
     }
 
-    private fun findInkRuns(bitmap: Bitmap, y: Int, xs: IntRange): List<IntRange> =
-        findRuns(xs.map { bitmap.isInkAt(it, y) }).map { (it.first + xs.first)..(it.last + xs.first) }
+    // Тёмность пикселя от 0 (белый) до 1 (чёрный): у сглаженных краёв линии доля неполная, центры считаются по ней.
+    private fun Bitmap.measureDarkness(x: Int, y: Int): Float = (255 - AndroidColor.red(getPixel(x, y))) / 255f
 
-    // Штрихи пунктира вне знаков в углах (первые и последние 14 пикселей закрыты знаками 20): по 3, начало кратно периоду 5.
-    private fun assertDashPattern(side: String, flags: List<Boolean>) {
-        val visible = findRuns(flags).filter { it.first >= 14 && it.last <= flags.lastIndex - 14 }
-        assertTrue("$side: штрихов мало: ${findRuns(flags)}", visible.size >= 20)
+    // Сумма тёмности поперёк стороны: по [band] строк у столбца [index] или по [band] столбцов у строки [index].
+    private fun Bitmap.measureBand(index: Int, band: IntRange, isColumn: Boolean): Float =
+        band.sumOf { (if (isColumn) measureDarkness(index, it) else measureDarkness(it, index)).toDouble() }.toFloat()
+
+    // Штрихи вдоль стороны: вдоль [along] тёмность поперёк не меньше половины пикселя. Штрихи, упирающиеся в край диапазона,
+    // обрезаны им и не считаются.
+    private fun findDashRuns(along: IntRange, measure: (Int) -> Float): List<IntRange> =
+        findRuns(along.map { measure(it) >= 0.5f })
+            .filter { it.first > 0 && it.last < along.count() - 1 }
+            .map { (it.first + along.first)..(it.last + along.first) }
+
+    // Штрихи по 3 через промежуток 2; [skip] — участок, где сторону перекрывает чужая черта: его штрихи и промежутки рядом не считаются.
+    private fun assertDashes(side: String, runs: List<IntRange>, skip: IntRange?) {
+        val visible = runs.filter { skip == null || (it.first > skip.last || it.last < skip.first) }
+        assertTrue("$side: штрихов мало: $runs", visible.size >= 20)
         assertTrue("$side: штрихи по 3: $visible", visible.all { it.last - it.first + 1 == 3 })
-        assertTrue("$side: штрихи через 5 от угла: $visible", visible.all { it.first % 5 == 0 })
+        val gaps = visible.zipWithNext { current, next -> next.first - current.last - 1 }.filter { skip == null || it < 3 }
+        assertTrue("$side: промежутки по 2: $gaps", gaps.all { it == 2 })
+    }
+
+    // Центр тяжести тёмного в квадрате [half] вокруг [point] (в осях, повёрнутых на [angle]); вес пикселя — его тёмность.
+    private fun findDarkCenter(bitmap: Bitmap, point: Offset, angle: Float, half: Float): Offset? {
+        var sum = 0.0
+        var sumX = 0.0
+        var sumY = 0.0
+        forEachPixelInSquare(bitmap, point, angle, half) { x, y ->
+            val dark = bitmap.measureDarkness(x, y).toDouble()
+            sum += dark
+            sumX += dark * (x + 0.5)
+            sumY += dark * (y + 0.5)
+        }
+        return if (sum == 0.0) null else Offset((sumX / sum).toFloat(), (sumY / sum).toFloat())
+    }
+
+    // Середина охвата чернил (пиксели темнее половины) в том же квадрате: так проверяется значок, чей рисунок несимметричен.
+    private fun measureInkCenter(bitmap: Bitmap, point: Offset, angle: Float, half: Float): Offset? {
+        val ink = mutableListOf<Offset>()
+        forEachPixelInSquare(bitmap, point, angle, half) { x, y -> if (bitmap.isInkAt(x, y)) ink += Offset(x + 0.5f, y + 0.5f) }
+        if (ink.isEmpty()) return null
+        return Offset((ink.minOf { it.x } + ink.maxOf { it.x }) / 2f, (ink.minOf { it.y } + ink.maxOf { it.y }) / 2f)
+    }
+
+    private fun forEachPixelInSquare(bitmap: Bitmap, point: Offset, angle: Float, half: Float, visit: (Int, Int) -> Unit) {
+        val cosine = cos(Math.toRadians(angle.toDouble())).toFloat()
+        val sine = sin(Math.toRadians(angle.toDouble())).toFloat()
+        val reach = ceil(half * 1.5f).toInt()
+        for (y in (point.y.toInt() - reach).coerceAtLeast(0)..(point.y.toInt() + reach).coerceAtMost(bitmap.height - 1)) {
+            for (x in (point.x.toInt() - reach).coerceAtLeast(0)..(point.x.toInt() + reach).coerceAtMost(bitmap.width - 1)) {
+                // Середина пикселя в осях фигуры относительно точки: поворот обратно на угол рамки.
+                val dx = x + 0.5f - point.x
+                val dy = y + 0.5f - point.y
+                val localX = dx * cosine + dy * sine
+                val localY = -dx * sine + dy * cosine
+                if (abs(localX) <= half && abs(localY) <= half) visit(x, y)
+            }
+        }
+    }
+
+    // Центр знака (квадрат или круг 16 с рамкой 2 снаружи) совпадает с точкой ручки: центр тяжести рамки знака в окне 12.
+    private fun assertMarkCenter(label: String, bitmap: Bitmap, point: Offset, angle: Float, tolerance: Float) {
+        val center = findDarkCenter(bitmap, point, angle, half = 12f)
+        assertNotNull("$label: знака нет у $point", center)
+        assertEquals("$label: центр знака по x", point.x, center!!.x, tolerance)
+        assertEquals("$label: центр знака по y", point.y, center.y, tolerance)
+    }
+
+    // Знак 20 в поперечнике: по строке рамка 2, белая середина 16, рамка 2. У квадрата угол чёрный, у круга пуст. Квадрат смотрим
+    // на 4 ниже центра: строка через центр угла рамки совпала бы с её линией, которая продолжает рамку знака.
+    private fun assertMarkShape(label: String, bitmap: Bitmap, point: Offset, isCircle: Boolean) {
+        val row = point.y.toInt() + if (isCircle) 0 else 4
+        val xs = (point.x.toInt() - 12)..(point.x.toInt() + 12)
+        val runs = findRuns(xs.map { bitmap.measureDarkness(it, row) >= 0.5f }).map { (it.first + xs.first)..(it.last + xs.first) }
+        assertEquals("$label: два куска рамки в строке через центр $runs", 2, runs.size)
+        assertEquals("$label: рамка 2", listOf(2, 2), runs.map { it.last - it.first + 1 })
+        assertEquals("$label: белая середина 16", 16, runs[1].first - runs[0].last - 1)
+        assertEquals("$label: размер 20", 20, runs[1].last - runs[0].first + 1)
+        val corner = bitmap.isInkAt(runs[0].first + 1, point.y.toInt() - 7)
+        assertEquals("$label: угол ${if (isCircle) "круга пуст" else "квадрата чёрный"}", !isCircle, corner)
     }
 
     // Отрезки подряд идущих `true`: индексы первого и последнего.
