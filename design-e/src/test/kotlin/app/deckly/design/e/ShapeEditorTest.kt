@@ -235,7 +235,7 @@ class ShapeEditorTest {
         val rows = (topLeft.y.toInt() - 3)..(topLeft.y.toInt() + 3)
         val weight = rows.sumOf { bitmap.measureDarkness(column, it).toDouble() }
         val centerY = rows.sumOf { bitmap.measureDarkness(column, it) * (it + 0.5) } / weight
-        assertEquals("центр линии на границе", topLeft.y.toDouble(), centerY, 0.3)
+        assertEquals("центр линии на границе", topLeft.y.toDouble(), centerY, 0.6)
     }
 
     @Test
@@ -245,8 +245,26 @@ class ShapeEditorTest {
         val bitmap = captureFrame()
         val points = listHandlePoints(rectangle)
         for (corner in listOf(ShapeHandleKind.TOP_LEFT, ShapeHandleKind.TOP_RIGHT, ShapeHandleKind.BOTTOM_LEFT, ShapeHandleKind.BOTTOM_RIGHT)) {
-            assertMarkCenter("$corner", bitmap, points.getValue(corner), angle = 0f, tolerance = 0.6f)
+            assertMarkCenter("$corner", bitmap, points.getValue(corner), angle = 0f, tolerance = 0.75f)
             assertMarkShape("$corner", bitmap, points.getValue(corner), isCircle = false)
+        }
+    }
+
+    @Test
+    fun squareMarksStandOnWholePixelsSoNoEdgeIsGrey() {
+        host.show(buildEditorState(selectedShape = rectangle))
+
+        // Редактор обновляет экран в режиме DU: серое он режет в чёрное или белое, и знак на дробном пикселе вышел бы с рамками
+        // разной толщины. Внутри знака (квадрат 20 вокруг точки) промежуточного серого нет.
+        val bitmap = captureFrame()
+        val points = listHandlePoints(rectangle)
+        for (corner in listOf(ShapeHandleKind.TOP_LEFT, ShapeHandleKind.TOP_RIGHT, ShapeHandleKind.BOTTOM_LEFT, ShapeHandleKind.BOTTOM_RIGHT)) {
+            val point = points.getValue(corner)
+            val grey = mutableListOf<Offset>()
+            forEachPixelInSquare(bitmap, point, angle = 0f, half = 10f) { x, y ->
+                if (bitmap.measureDarkness(x, y) in 0.1f..0.9f) grey += Offset(x.toFloat(), y.toFloat())
+            }
+            assertTrue("$corner: серые пиксели в знаке $grey", grey.isEmpty())
         }
     }
 
@@ -272,11 +290,33 @@ class ShapeEditorTest {
             val columns = (axis.toInt() - 3)..(axis.toInt() + 3)
             val weight = columns.sumOf { bitmap.measureDarkness(it, row).toDouble() }
             assertEquals("строка $row: ровно один пиксель чёрного", 1.0, weight, 0.15)
-            assertEquals("строка $row: центр по оси", axis.toDouble(), columns.sumOf { bitmap.measureDarkness(it, row) * (it + 0.5) } / weight, 0.35)
+            assertEquals("строка $row: центр по оси", axis.toDouble(), columns.sumOf { bitmap.measureDarkness(it, row) * (it + 0.5) } / weight, 0.6)
         }
         // Между значком и чертой пусто: черта начинается там, где кончается цель, а не от значка.
         val gapRows = (rotate.y.toInt() + 14)..(lineTop.toInt() - 1)
         assertTrue("между значком и чертой пусто", gapRows.none { row -> ((axis.toInt() - 3)..(axis.toInt() + 3)).any { bitmap.measureDarkness(it, row) > 0.2f } })
+    }
+
+    @Test
+    fun rotateLineIsOneCrispPixelWhetherTheFrameIsEvenOrOddWide() {
+        // Ширина рамки 232 и 233 пикселя: у чётной ось падает на границу пикселей, и линия 1 px вышла бы серой в два.
+        for (right in listOf(450f, 451f)) {
+            val narrow = rectangle.copy(frame = rectangle.frame.copy(right = right))
+            host.show(buildEditorState(selectedShape = narrow))
+
+            val bitmap = captureFrame()
+            val points = listHandlePoints(narrow)
+            val rotate = points.getValue(ShapeHandleKind.ROTATE)
+            val axis = rotate.x
+            val rows = (rotate.y.toInt() + 34)..(rotate.y.toInt() + 44)
+            for (row in rows) {
+                val values = ((axis.toInt() - 3)..(axis.toInt() + 3)).map { bitmap.measureDarkness(it, row) }
+                assertTrue("правая граница $right, строка $row: серые пиксели $values", values.all { it < 0.1f || it > 0.9f })
+                assertEquals("правая граница $right, строка $row: один чёрный пиксель", 1, values.count { it > 0.9f })
+                val column = ((axis.toInt() - 3)..(axis.toInt() + 3)).first { bitmap.measureDarkness(it, row) > 0.9f }
+                assertEquals("правая граница $right, строка $row: черта у оси", axis, column + 0.5f, 1f)
+            }
+        }
     }
 
     @Test
@@ -293,9 +333,9 @@ class ShapeEditorTest {
         for ((kind, target) in listOf(ShapeHandleKind.START to start, ShapeHandleKind.END to end)) {
             val point = points.getValue(kind)
             assertEquals("$kind: цель 64", 64f, target.right.value - target.left.value, 0.5f)
-            assertEquals("$kind: центр цели по x", point.x, findCenterX(target), 0.6f)
-            assertEquals("$kind: центр цели по y", point.y, findCenterY(target), 0.6f)
-            assertMarkCenter("$kind", bitmap, point, angle = 0f, tolerance = 0.6f)
+            assertEquals("$kind: центр цели по x", point.x, findCenterX(target), 0.75f)
+            assertEquals("$kind: центр цели по y", point.y, findCenterY(target), 0.75f)
+            assertMarkCenter("$kind", bitmap, point, angle = 0f, tolerance = 0.75f)
             assertMarkShape("$kind", bitmap, point, isCircle = true)
         }
         composeRule.onNodeWithContentDescription("Rotate shape").assertDoesNotExist()

@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
@@ -33,9 +34,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntOffset
 import app.deckly.ui.contract.EditorAction
 import app.deckly.ui.contract.SelectedShape
 import app.deckly.ui.contract.ShapeHandleKind
+import kotlin.math.roundToInt
 
 /**
  * Слой жестов пера над листом и, пока фигура выделена, её рамка и ручки (`.shape-object.is-selected` с ручками в макете).
@@ -152,24 +155,20 @@ private fun collectPenPoints(change: PointerInputChange, event: MotionEvent?): L
 private fun isStylusButtonPressed(event: MotionEvent?): Boolean =
     event != null && event.buttonState and MotionEvent.BUTTON_STYLUS_PRIMARY != 0
 
-// Рамка в пикселях листа: размер до поворота; левый верхний угол и поворот вокруг центра ставит слой, дробными пикселями,
-// чтобы знаки стояли там же, где `findHandleAt` ищет цели.
+// Рамка в пикселях листа: левый верхний угол и размер до поворота, оба в целых пикселях; поворот вокруг центра слоем.
 @Composable
 private fun ShapeFrameMarks(selected: SelectedShape, scale: Float) {
     val frame = selected.frame
     val density = LocalDensity.current
-    val width = (frame.right - frame.left) * scale
-    val height = (frame.bottom - frame.top) * scale
+    val width = with(density) { ((frame.right - frame.left) * scale).toDp() }
+    val height = with(density) { ((frame.bottom - frame.top) * scale).toDp() }
     Box(
         Modifier
-            .size(with(density) { width.toDp() }, with(density) { height.toDp() })
-            .graphicsLayer {
-                translationX = frame.left * scale
-                translationY = frame.top * scale
-                rotationZ = frame.angle
-            }
+            .offset { IntOffset((frame.left * scale).roundToInt(), (frame.top * scale).roundToInt()) }
+            .size(width, height)
+            .graphicsLayer { rotationZ = frame.angle }
             .semantics { contentDescription = EditorTexts.describeShape(selected.kind) }
-            .drawBehind { if (!frame.isLinear) drawFrameOutline(Size(width, height)) },
+            .drawBehind { if (!frame.isLinear) drawFrameOutline() },
     ) {
         for (place in listLocalHandlePlaces(frame, scale, density.density)) HandleMark(place)
     }
@@ -179,23 +178,29 @@ private fun ShapeFrameMarks(selected: SelectedShape, scale: Float) {
 private const val DASH_LINES = 3f
 private const val GAP_LINES = 2f
 
-// Пунктир одним прямоугольником: линия 1 dp идёт по центру границы рамки. Над серединой верхней стороны чёрная черта ручки
-// поворота по оси рамки, от низа цели до рамки.
-private fun DrawScope.drawFrameOutline(frameSize: Size) {
+// Пунктир одним прямоугольником по размеру слоя: линия 1 dp идёт по центру границы рамки. Над серединой верхней стороны
+// чёрная черта ручки поворота по оси рамки, от низа цели до рамки; её ширина и левый край в целых пикселях, иначе при чётной
+// ширине рамки ось падает на границу пикселей, и черта выходит серой в два (DU серое режет, см. HandleMark).
+private fun DrawScope.drawFrameOutline() {
     val line = Tokens.ShapeFrameDash.toPx()
-    drawRect(Tokens.Black, size = frameSize, style = Stroke(line, pathEffect = PathEffect.dashPathEffect(floatArrayOf(DASH_LINES * line, GAP_LINES * line))))
-    val lineWidth = Tokens.ShapeRotateLineWidth.toPx()
+    drawRect(Tokens.Black, style = Stroke(line, pathEffect = PathEffect.dashPathEffect(floatArrayOf(DASH_LINES * line, GAP_LINES * line))))
+    val lineWidth = Tokens.ShapeRotateLineWidth.roundToPx().coerceAtLeast(1)
+    val lineLeft = (size.width / 2f - lineWidth / 2f).roundToInt()
     val lineHeight = Tokens.ShapeRotateLineHeight.toPx()
-    drawRect(Tokens.Black, Offset(frameSize.width / 2f - lineWidth / 2f, -lineHeight), Size(lineWidth, lineHeight))
+    drawRect(Tokens.Black, Offset(lineLeft.toFloat(), -lineHeight), Size(lineWidth.toFloat(), lineHeight))
 }
 
-// Цель касания 64 dp с центром в точке ручки и знак по центру цели: центр знака там же, где центр цели. Квадрат у углов, круг у
-// концов линии, значок у поворота.
+// Цель касания 64 dp с центром в точке ручки и знак по центру цели: центр знака там же, где центр цели. Положение цели
+// округляется до целого пикселя: редактор обновляет экран в режиме DU, он рубит серое в чёрное или белое, и знак на дробном
+// пикселе вышел бы с рамками разной толщины. Квадрат у углов, круг у концов линии, значок у поворота.
 @Composable
 private fun HandleMark(place: HandlePlace) {
     Box(
         Modifier
-            .centerAt(place.x, place.y)
+            .offset {
+                val half = Tokens.ShapeHandleTarget.toPx() / 2f
+                IntOffset((place.x - half).roundToInt(), (place.y - half).roundToInt())
+            }
             .size(Tokens.ShapeHandleTarget)
             .semantics { contentDescription = describeHandle(place.handle) },
         contentAlignment = Alignment.Center,
@@ -222,12 +227,6 @@ private fun Sign(shape: Shape) {
             .background(Tokens.White, shape)
             .border(Tokens.ShapeHandleMarkBorder, Tokens.Black, shape),
     )
-}
-
-// Ставит свой центр в точку ([x], [y]) родителя дробными пикселями слоя.
-private fun Modifier.centerAt(x: Float, y: Float): Modifier = graphicsLayer {
-    translationX = x - size.width / 2f
-    translationY = y - size.height / 2f
 }
 
 private fun describeHandle(handle: ShapeHandleKind): String = when (handle) {
