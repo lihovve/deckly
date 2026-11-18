@@ -8,6 +8,7 @@ import app.deckly.data.db.DatabaseDamagedException
 import app.deckly.fakes.buildFakeData
 import app.deckly.navigation.AppScreen
 import app.deckly.ui.contract.StartupState
+import app.deckly.ui.contract.Thickness
 import java.io.File
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -58,6 +59,16 @@ class AppContainerTest {
         val second = AppContainer(application, hasFileAccess = { true })
 
         assertEquals(9, second.editorSettingsStore.readOutlineWidth())
+    }
+
+    @Test
+    fun penThicknessIsRememberedInTheSameSettingsAndSurvivesANewContainer() {
+        val first = AppContainer(application, hasFileAccess = { true })
+        first.editorSettingsStore.writePenThickness(Thickness.THICK)
+
+        val second = AppContainer(application, hasFileAccess = { true })
+
+        assertEquals(Thickness.THICK, second.editorSettingsStore.readPenThickness())
     }
 
     @Test

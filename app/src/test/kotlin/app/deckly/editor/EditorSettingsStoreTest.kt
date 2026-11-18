@@ -3,6 +3,7 @@ package app.deckly.editor
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
+import app.deckly.ui.contract.Thickness
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -69,5 +70,58 @@ class EditorSettingsStoreTest {
         preferences.edit().putString("outline_width", "много").commit()
 
         assertEquals(3, PreferencesEditorSettingsStore(preferences).readOutlineWidth())
+    }
+
+    @Test
+    fun penThicknessIsMediumUntilSomethingIsWritten() {
+        assertEquals(Thickness.MEDIUM, PreferencesEditorSettingsStore(preferences).readPenThickness())
+    }
+
+    @Test
+    fun writtenPenThicknessSurvivesANewStoreOnTheSamePreferences() {
+        PreferencesEditorSettingsStore(preferences).writePenThickness(Thickness.THICK)
+
+        assertEquals(Thickness.THICK, PreferencesEditorSettingsStore(preferences).readPenThickness())
+    }
+
+    @Test
+    fun everyPenThicknessIsKeptAndTheLastWriteWins() {
+        val store = PreferencesEditorSettingsStore(preferences)
+        for (thickness in Thickness.entries) {
+            store.writePenThickness(thickness)
+
+            assertEquals(thickness, store.readPenThickness())
+        }
+        store.writePenThickness(Thickness.THIN)
+        store.writePenThickness(Thickness.THICK)
+
+        assertEquals(Thickness.THICK, store.readPenThickness())
+    }
+
+    @Test
+    fun unknownStringUnderThePenKeyIsReadAsMedium() {
+        for (stored in listOf("HUGE", "", "thin", "1")) {
+            preferences.edit().putString("pen_thickness", stored).commit()
+
+            assertEquals("записано «$stored»", Thickness.MEDIUM, PreferencesEditorSettingsStore(preferences).readPenThickness())
+        }
+    }
+
+    @Test
+    fun valueOfAnotherTypeUnderThePenKeyIsReadAsMedium() {
+        preferences.edit().putInt("pen_thickness", 2).commit()
+
+        assertEquals(Thickness.MEDIUM, PreferencesEditorSettingsStore(preferences).readPenThickness())
+    }
+
+    @Test
+    fun penThicknessAndOutlineWidthDoNotTouchEachOther() {
+        val store = PreferencesEditorSettingsStore(preferences)
+
+        store.writePenThickness(Thickness.THIN)
+        store.writeOutlineWidth(11)
+
+        assertEquals(Thickness.THIN, store.readPenThickness())
+        assertEquals(11, store.readOutlineWidth())
     }
 }

@@ -19,6 +19,7 @@ import app.deckly.domain.port.DeckSummary
 import app.deckly.domain.port.DeckTransfer
 import app.deckly.domain.port.DraftRepository
 import app.deckly.domain.port.StoredDraft
+import app.deckly.ui.contract.Thickness
 import kotlinx.coroutines.CompletableDeferred
 import java.io.File
 import java.io.InputStream
@@ -124,14 +125,25 @@ private object UnusedDeckTransfer : DeckTransfer {
     override suspend fun importDeck(input: InputStream): Deck = error("Порт не нужен тесту")
 }
 
-/** Толщина контура в памяти: [writes] — все записи по порядку, [width] — что прочитает следующий редактор. */
-class FakeEditorSettingsStore(var width: Int = 3) : app.deckly.editor.EditorSettingsStore {
+/**
+ * Настройки редактора в памяти: [writes] — все записи толщины контура по порядку, [width] — что прочитает следующий
+ * редактор; так же [penWrites] и [penThickness] для толщины пера.
+ */
+class FakeEditorSettingsStore(var width: Int = 3, var penThickness: Thickness = Thickness.MEDIUM) : app.deckly.editor.EditorSettingsStore {
     val writes = mutableListOf<Int>()
+    val penWrites = mutableListOf<Thickness>()
 
     override fun readOutlineWidth(): Int = width
 
     override fun writeOutlineWidth(width: Int) {
         writes += width
         this.width = width
+    }
+
+    override fun readPenThickness(): Thickness = penThickness
+
+    override fun writePenThickness(thickness: Thickness) {
+        penWrites += thickness
+        penThickness = thickness
     }
 }

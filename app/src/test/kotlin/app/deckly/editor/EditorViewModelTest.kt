@@ -687,6 +687,57 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun editorStartsWithTheRememberedPenThickness() {
+        settings.penThickness = Thickness.THICK
+
+        startNewCard()
+        runUntilIdle()
+
+        assertEquals(Thickness.THICK, shown.thickness)
+        assertEquals(25f, viewModel.canvas.value.penWidthPx, 0f)
+    }
+
+    @Test
+    fun selectedThicknessIsRemembered() {
+        startNewCard()
+        runUntilIdle()
+
+        viewModel.onAction(EditorAction.SelectThickness(Thickness.THIN))
+        viewModel.onAction(EditorAction.SelectThickness(Thickness.THICK))
+        runUntilIdle()
+
+        assertEquals(listOf(Thickness.THIN, Thickness.THICK), settings.penWrites)
+        assertEquals(Thickness.THICK, settings.penThickness)
+    }
+
+    @Test
+    fun thicknessThatDoesNotChangeIsNotWritten() {
+        settings.penThickness = Thickness.THIN
+        startNewCard()
+        runUntilIdle()
+
+        // То же значение подряд и значение, с которого редактор начал, на диск не идут.
+        viewModel.onAction(EditorAction.SelectThickness(Thickness.THIN))
+        viewModel.onAction(EditorAction.SelectThickness(Thickness.THICK))
+        viewModel.onAction(EditorAction.SelectThickness(Thickness.THICK))
+        runUntilIdle()
+
+        assertEquals(listOf(Thickness.THICK), settings.penWrites)
+    }
+
+    @Test
+    fun thicknessSelectedUnderADialogIsNotRemembered() {
+        startNewCard()
+        runUntilIdle()
+        viewModel.onAction(EditorAction.Back)
+
+        viewModel.onAction(EditorAction.SelectThickness(Thickness.THIN))
+        runUntilIdle()
+
+        assertTrue(settings.penWrites.isEmpty())
+    }
+
+    @Test
     fun repeatedSelectionDoesNotBumpRevision() {
         startNewCard()
         runUntilIdle()

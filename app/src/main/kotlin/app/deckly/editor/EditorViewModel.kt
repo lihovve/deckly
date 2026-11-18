@@ -92,10 +92,10 @@ class EditorViewModel(
         data class ShapeTapped(val index: Int) : Input
     }
 
-    // Что вне черновика и не пишется в базу: толщина, окно. `null` в session — редактор ещё грузится.
+    // Что вне черновика и не пишется в базу: толщина пера (её запоминает настройка), окно. `null` в session — редактор ещё грузится.
     private var session: EditorSession? = (start as? EditorStart.NewCard)?.let { startNewCard(it.returnSection) }
     private var hasDraft = false
-    private var thickness = Thickness.MEDIUM
+    private var thickness = settings.readPenThickness()
     private var dialog: EditorDialog? = null
     private var isLeaving = false
 
@@ -213,6 +213,8 @@ class EditorViewModel(
         when (action) {
             is EditorAction.SelectSide -> applyChange(current.switchSide(action.side.toSide()), startsDraft = false)
             is EditorAction.SelectThickness -> {
+                // Запоминаем только перемену: тот же выбор подряд на диск не идёт.
+                if (action.thickness != thickness) settings.writePenThickness(action.thickness)
                 thickness = action.thickness
                 publish()
             }
