@@ -121,9 +121,9 @@ class AppViewModelTest {
         val viewModel = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        viewModel.navigate(AppScreen.DeckName)
+        viewModel.navigate(AppScreen.DeckName())
 
-        assertEquals(AppScreen.DeckName, viewModel.screen.value)
+        assertEquals(AppScreen.DeckName(), viewModel.screen.value)
     }
 
     @Test
@@ -283,10 +283,10 @@ class AppViewModelTest {
         val viewModel = createViewModel()
         dispatcher.scheduler.advanceUntilIdle()
 
-        viewModel.navigate(AppScreen.DeckName)
+        viewModel.navigate(AppScreen.DeckName())
 
-        assertEquals(AppScreen.DeckName, viewModel.screen.value)
-        assertEquals(AppScreen.DeckName, viewModel.entry.value.screen)
+        assertEquals(AppScreen.DeckName(), viewModel.screen.value)
+        assertEquals(AppScreen.DeckName(), viewModel.entry.value.screen)
     }
 
     @Test

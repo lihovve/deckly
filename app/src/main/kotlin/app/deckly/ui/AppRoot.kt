@@ -149,7 +149,7 @@ private fun ScreenHost(entry: ScreenEntry, environment: ScreenEnvironment) {
             }
         }
         AppScreen.DeckList -> DeckListHost(entry, environment)
-        AppScreen.DeckName -> DeckNameHost(entry, environment)
+        is AppScreen.DeckName -> DeckNameHost(entry, environment)
         is AppScreen.Deck -> DeckHost(entry, screen, environment)
         is AppScreen.Editor -> EditorHost(entry, screen, environment)
     }

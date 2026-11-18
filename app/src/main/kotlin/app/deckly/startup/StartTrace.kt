@@ -21,7 +21,7 @@ object StartTrace {
         AppScreen.Loading -> "loading"
         is AppScreen.Startup -> "startup"
         AppScreen.DeckList -> "list"
-        AppScreen.DeckName -> "new-deck"
+        is AppScreen.DeckName -> "new-deck"
         is AppScreen.Deck -> "deck"
         is AppScreen.Editor -> "editor"
     }

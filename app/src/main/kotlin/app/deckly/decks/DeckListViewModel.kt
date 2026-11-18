@@ -68,7 +68,7 @@ class DeckListViewModel(
     private suspend fun handle(action: DeckListAction) {
         when (action) {
             is DeckListAction.OpenDeck -> openDeck(action.id)
-            DeckListAction.CreateDeck -> navigate(AppScreen.DeckName)
+            DeckListAction.CreateDeck -> navigate(AppScreen.DeckName())
             DeckListAction.Back -> currentDeckId?.let { navigate(AppScreen.Deck(it)) }
         }
     }

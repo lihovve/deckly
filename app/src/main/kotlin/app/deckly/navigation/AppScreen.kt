@@ -12,8 +12,8 @@ sealed interface AppScreen {
 
     data object DeckList : AppScreen
 
-    /** Форма новой колоды. */
-    data object DeckName : AppScreen
+    /** Форма названия колоды: новой, а если задано [rename], существующей, которую переименовывают. */
+    data class DeckName(val rename: DeckToRename? = null) : AppScreen
 
     /**
      * [openSection] — секция, которую открыть после загрузки, а [focusCardId] — карточка, на которой её показать:
@@ -23,6 +23,9 @@ sealed interface AppScreen {
 
     data class Editor(val deckId: Long, val start: EditorStart) : AppScreen
 }
+
+/** Колода, которую переименовывают: её [id] и название на момент нажатия «Rename». */
+data class DeckToRename(val id: Long, val name: String)
 
 /** Как открывается редактор; [returnSection] — секция, в которую вернётся экран колоды. */
 sealed interface EditorStart {

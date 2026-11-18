@@ -593,10 +593,10 @@ class AppRootTest {
         composeRule.onNodeWithContentDescription("Show answer").performClick()
         composeRule.waitForIdle()
         // Переворот не смена: 29 смен экрана после него всё ещё не дают обновления, а 30-я даёт.
-        navigateAround(app, REFRESH_PERIOD - 1, AppScreen.DeckName)
+        navigateAround(app, REFRESH_PERIOD - 1, AppScreen.DeckName())
         assertEquals("переворот не считается", 1, fullRefreshes)
 
-        app.navigate(AppScreen.DeckName)
+        app.navigate(AppScreen.DeckName())
         composeRule.waitForIdle()
         assertEquals("30-я смена экрана", 2, fullRefreshes)
     }
@@ -613,7 +613,7 @@ class AppRootTest {
         val app = startApp(buildData())
         assertEquals("список колод — первый экран после запуска", 1, fullRefreshes)
 
-        app.navigate(AppScreen.DeckName)
+        app.navigate(AppScreen.DeckName())
         composeRule.waitForIdle()
 
         assertEquals("форма новой колоды — обычная смена, её обновляет прошивка", 1, fullRefreshes)
@@ -681,10 +681,10 @@ class AppRootTest {
         composeRule.waitForIdle()
         repeat(9) { clickSide(if (it % 2 == 0) "Answer" else "Question") }
         // 10 карточек, вход в редактор и 9 смен стороны — 20 смен; ещё 9 смен экрана — 29.
-        navigateAround(app, 9, AppScreen.DeckName)
+        navigateAround(app, 9, AppScreen.DeckName())
         assertEquals("29 смен вперемешку", 1, fullRefreshes)
 
-        app.navigate(AppScreen.DeckName)
+        app.navigate(AppScreen.DeckName())
         composeRule.waitForIdle()
         assertEquals("30-я смена", 2, fullRefreshes)
     }

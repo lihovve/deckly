@@ -214,7 +214,7 @@ class DeckListViewModelTest {
         viewModel.onAction(DeckListAction.CreateDeck)
         runUntilIdle()
 
-        assertEquals(listOf<AppScreen>(AppScreen.DeckName), navigated)
+        assertEquals(listOf<AppScreen>(AppScreen.DeckName()), navigated)
         assertTrue(catalog.createdNames.isEmpty())
     }
 
@@ -248,7 +248,7 @@ class DeckListViewModelTest {
         viewModel.onAction(DeckListAction.CreateDeck)
         runUntilIdle()
 
-        assertEquals(listOf<AppScreen>(AppScreen.DeckName), navigated)
+        assertEquals(listOf<AppScreen>(AppScreen.DeckName()), navigated)
     }
 
     // --- вспомогательное -----------------------------------------------------------------------

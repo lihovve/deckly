@@ -35,6 +35,6 @@ class StartTraceTest {
     @Test
     fun screensThatAreNotFirstResultsStillHaveAKind() {
         assertEquals("start screen=loading sinceProcessStart=1.0ms", StartTrace.describeFirstScreen(AppScreen.Loading, 1.0))
-        assertEquals("start screen=new-deck sinceProcessStart=1.0ms", StartTrace.describeFirstScreen(AppScreen.DeckName, 1.0))
+        assertEquals("start screen=new-deck sinceProcessStart=1.0ms", StartTrace.describeFirstScreen(AppScreen.DeckName(), 1.0))
     }
 }
