@@ -78,8 +78,8 @@ class RoomDraftRepository(
         val draft = stored.draft
         var newFile: String? = null
         val fileStartNanos = System.nanoTime()
-        var transactionStartNanos = 0L
-        var transactionEndNanos = 0L
+        val transactionStartNanos: Long
+        val transactionEndNanos: Long
         val previousFile = try {
             // Имя запоминается внутри блока: отмена может прийти, когда файл уже записан, а блок ещё не вернулся.
             withContext(Dispatchers.IO) { newFile = files.writeDraftFile(draft.front, draft.back) }
