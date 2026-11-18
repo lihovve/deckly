@@ -3,6 +3,7 @@ package app.deckly.fakes
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.DeckState
+import app.deckly.domain.model.Section
 import app.deckly.domain.model.createDeck as buildNewDeck
 import app.deckly.domain.port.DeckRepository
 import app.deckly.domain.port.DeckSummary
@@ -16,7 +17,11 @@ class FakeDeckCatalog(initial: List<DeckState> = emptyList()) : DeckRepository {
     val createdNames = mutableListOf<String>()
     private var nextDeckId = (initial.maxOfOrNull { it.deck.id } ?: 0L) + 1
 
-    override suspend fun listDecks(): List<DeckSummary> = decks.map { DeckSummary(it.deck.id, it.deck.name) }
+    /** Сколько раз читали состояние колоды целиком: список колод его не читает. */
+    var stateLoads = 0
+        private set
+
+    override suspend fun listDecks(): List<DeckSummary> = decks.map(::summarize)
 
     override suspend fun createDeck(name: String): Deck {
         createdNames += name
@@ -25,7 +30,10 @@ class FakeDeckCatalog(initial: List<DeckState> = emptyList()) : DeckRepository {
         return deck
     }
 
-    override suspend fun loadDeckState(deckId: Long): DeckState = decks.first { it.deck.id == deckId }
+    override suspend fun loadDeckState(deckId: Long): DeckState {
+        stateLoads++
+        return decks.first { it.deck.id == deckId }
+    }
 
     override suspend fun renameDeck(deckId: Long, name: String) = error("Порт не нужен тесту")
 
@@ -33,3 +41,12 @@ class FakeDeckCatalog(initial: List<DeckState> = emptyList()) : DeckRepository {
 
     override suspend fun saveDeckChanges(changes: DeckChanges) = error("Порт не нужен тесту")
 }
+
+/** Сводка колоды из её состояния: то, что репозиторий отдаёт списком колод одним запросом. */
+fun summarize(state: DeckState): DeckSummary = DeckSummary(
+    id = state.deck.id,
+    name = state.deck.name,
+    currentEpoch = state.deck.currentEpoch,
+    cardCount = state.cards.size,
+    learnedCount = state.cards.count { it.section == Section.LEARNED },
+)

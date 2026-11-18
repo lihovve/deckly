@@ -5,6 +5,7 @@ import app.deckly.domain.model.DeckState
 import app.deckly.domain.model.Section
 import app.deckly.fakes.FakeAppStateRepository
 import app.deckly.fakes.FakeDeckCatalog
+import app.deckly.fakes.summarize
 import app.deckly.fixtures.buildCard
 import app.deckly.fixtures.buildDeck
 import app.deckly.fixtures.buildDeckState
@@ -90,11 +91,23 @@ class DeckListViewModelTest {
         // Колода из одних ждущих карточек: на вкладках их нет, но строка не показывает «0 карточек».
         val resting = (1L..3L).map { buildCard(it, Section.RESTING, position = it.toInt()) }
 
-        val row = buildDeckRow(buildDeckState(buildDeck(id = 9, name = "Ожидание", currentEpoch = 1), resting), isCurrent = false)
+        val row = buildDeckRow(summarize(buildDeckState(buildDeck(id = 9, name = "Ожидание", currentEpoch = 1), resting)), isCurrent = false)
 
         assertEquals(3, row.cardCount)
         assertEquals(1, row.activeEpoch)
         assertFalse(row.isAllLearned)
+    }
+
+    @Test
+    fun listDoesNotLoadDeckStates() {
+        appState.currentDeckId = 1
+        startWith(buildTypicalDecks())
+
+        runUntilIdle()
+
+        // Строки собираются из сводок одного запроса: ни карточки, ни состояние колоды не читаются.
+        assertEquals(4, readState().decks.size)
+        assertEquals(0, catalog.stateLoads)
     }
 
     @Test
@@ -257,7 +270,7 @@ class DeckListViewModelTest {
     private fun isAllLearned(learnedCards: Int, otherCards: Int): Boolean {
         val cards = (1..learnedCards).map { buildCard(it.toLong(), Section.LEARNED, position = it) } +
             (1..otherCards).map { buildCard(100L + it, Section.EPOCH_4, position = it) }
-        return buildDeckRow(buildDeckState(buildDeck(id = 9, name = "x"), cards), isCurrent = false).isAllLearned
+        return buildDeckRow(summarize(buildDeckState(buildDeck(id = 9, name = "x"), cards)), isCurrent = false).isAllLearned
     }
 
     private fun startWith(decks: List<DeckState>, writerScheduler: TestCoroutineScheduler = scheduler) {

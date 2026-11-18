@@ -4,12 +4,25 @@ import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.DeckState
 
-data class DeckSummary(val id: Long, val name: String)
+/**
+ * Строка списка колод: всё, что список показывает, без самих карточек. [cardCount] — все карточки колоды, в том числе
+ * ждущие ночи, [learnedCount] — из них в стеке выученных.
+ */
+data class DeckSummary(
+    val id: Long,
+    val name: String,
+    val currentEpoch: Int,
+    val cardCount: Int,
+    val learnedCount: Int,
+)
 
 /** Колоды и состояние алгоритма. Реализация — модуль `data`. */
 interface DeckRepository {
 
-    /** Колоды по id, то есть в порядке создания. */
+    /**
+     * Колоды по id, то есть в порядке создания, со счётчиками карточек. Один запрос: карточки и состояния колод для
+     * списка не читаются.
+     */
     suspend fun listDecks(): List<DeckSummary>
 
     /** Новая колода в начальном состоянии (`createDeck(id, name)` из domain). */

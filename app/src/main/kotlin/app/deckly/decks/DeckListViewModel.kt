@@ -3,10 +3,9 @@ package app.deckly.decks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.deckly.SerialWriter
-import app.deckly.domain.model.DeckState
-import app.deckly.domain.model.Section
 import app.deckly.domain.port.AppStateRepository
 import app.deckly.domain.port.DeckRepository
+import app.deckly.domain.port.DeckSummary
 import app.deckly.navigation.AppScreen
 import app.deckly.ui.contract.DeckListAction
 import app.deckly.ui.contract.DeckListState
@@ -18,16 +17,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Строка списка. Эпоха с ▶ — текущая эпоха колоды; у пустой колоды и у полностью выученной её нет: проходить
- * нечего. Пустая колода не считается выученной.
+ * Строка списка из сводки колоды. Эпоха с ▶ — текущая эпоха колоды; у пустой колоды и у полностью выученной её нет:
+ * проходить нечего. Пустая колода не считается выученной.
  */
-fun buildDeckRow(state: DeckState, isCurrent: Boolean): DeckRow {
-    val isAllLearned = state.cards.isNotEmpty() && state.cards.all { it.section == Section.LEARNED }
+fun buildDeckRow(summary: DeckSummary, isCurrent: Boolean): DeckRow {
+    val isAllLearned = summary.cardCount > 0 && summary.learnedCount == summary.cardCount
     return DeckRow(
-        id = state.deck.id,
-        name = state.deck.name,
-        cardCount = state.cards.size,
-        activeEpoch = if (state.cards.isEmpty() || isAllLearned) null else state.deck.currentEpoch,
+        id = summary.id,
+        name = summary.name,
+        cardCount = summary.cardCount,
+        activeEpoch = if (summary.cardCount == 0 || isAllLearned) null else summary.currentEpoch,
         isAllLearned = isAllLearned,
         isCurrent = isCurrent,
     )
@@ -56,7 +55,7 @@ class DeckListViewModel(
         viewModelScope.launch {
             val summaries = decks.listDecks()
             currentDeckId = appState.loadCurrentDeckId()?.takeIf { id -> summaries.any { it.id == id } }
-            val rows = summaries.map { buildDeckRow(decks.loadDeckState(it.id), isCurrent = it.id == currentDeckId) }
+            val rows = summaries.map { buildDeckRow(it, isCurrent = it.id == currentDeckId) }
             mutableState.value = DeckListState(rows, canGoBack = currentDeckId != null)
             for (action in actions) handle(action)
         }

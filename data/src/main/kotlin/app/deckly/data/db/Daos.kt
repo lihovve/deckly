@@ -7,8 +7,14 @@ import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import androidx.room3.Update
 
-/** Колонки `id` и `name` колоды: список колод не читает остальное. */
-data class DeckNameRow(val id: Long, val name: String)
+/** Строка списка колод: колонки колоды, которые он показывает, и два счётчика карточек, подсчитанные запросом. */
+data class DeckSummaryRow(
+    val id: Long,
+    val name: String,
+    @ColumnInfo(name = "current_epoch") val currentEpoch: Int,
+    @ColumnInfo(name = "card_count") val cardCount: Int,
+    @ColumnInfo(name = "learned_count") val learnedCount: Int,
+)
 
 /** Какой файл штрихов у карточки: всё, что нужно уборке. */
 data class CardFileRow(val id: Long, @ColumnInfo(name = "content_file") val contentFile: String)
@@ -38,13 +44,27 @@ abstract class DeckDao {
     )
     abstract suspend fun findDeck(deckId: Long): DeckEntity?
 
+    /**
+     * Колоды по id со счётчиками карточек одним запросом. Левое соединение оставляет колоду без карточек: `COUNT`
+     * считает по `card.id` и по `CASE` без `ELSE`, поэтому у неё нули, а не `NULL`. Имя секции выученных приходит
+     * параметром ([learnedSection]), чтобы не дублировать его в тексте запроса.
+     */
     @Query(
-        "  SELECT deck.id,\n" +
-        "         deck.name\n" +
-        "    FROM deck\n" +
-        "ORDER BY deck.id",
+        "   SELECT deck.id,\n" +
+        "          deck.name,\n" +
+        "          deck.current_epoch,\n" +
+        "          COUNT(card.id) AS card_count,\n" +
+        "          COUNT(CASE\n" +
+        "                  WHEN card.section = :learnedSection\n" +
+        "                  THEN 1\n" +
+        "                END)     AS learned_count\n" +
+        "     FROM deck\n" +
+        "LEFT JOIN card\n" +
+        "       ON card.deck_id = deck.id\n" +
+        " GROUP BY 1, 2, 3\n" +
+        " ORDER BY deck.id",
     )
-    abstract suspend fun listDeckNames(): List<DeckNameRow>
+    abstract suspend fun listDeckSummaries(learnedSection: String): List<DeckSummaryRow>
 
     @Query(
         "DELETE\n" +

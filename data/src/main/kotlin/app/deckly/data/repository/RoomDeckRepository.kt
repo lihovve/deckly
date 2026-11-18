@@ -10,6 +10,7 @@ import app.deckly.data.strokes.StrokeFiles
 import app.deckly.domain.model.Deck
 import app.deckly.domain.model.DeckChanges
 import app.deckly.domain.model.DeckState
+import app.deckly.domain.model.Section
 import app.deckly.domain.port.DeckRepository
 import app.deckly.domain.port.DeckSummary
 import app.deckly.domain.model.createDeck as buildInitialDeck
@@ -26,7 +27,8 @@ class RoomDeckRepository(
 ) : DeckRepository {
 
     override suspend fun listDecks(): List<DeckSummary> =
-        database.deckDao().listDeckNames().map { DeckSummary(it.id, it.name) }
+        database.deckDao().listDeckSummaries(Section.LEARNED.name)
+            .map { DeckSummary(it.id, it.name, it.currentEpoch, it.cardCount, it.learnedCount) }
 
     override suspend fun createDeck(name: String): Deck {
         val id = database.deckDao().insertDeck(mapDeckEntity(buildInitialDeck(0, name)))
