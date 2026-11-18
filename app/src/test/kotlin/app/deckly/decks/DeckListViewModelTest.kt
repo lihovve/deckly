@@ -493,6 +493,7 @@ class DeckListViewModelTest {
     fun chosenFileGetsTheExportOfTheAskedDeck() {
         startWith(buildTypicalDecks())
         runUntilIdle()
+        files.contents["content://picked/1"] = ByteArray(0)
         viewModel.onAction(DeckListAction.ExportDeck(3))
         runUntilIdle()
 
@@ -521,54 +522,86 @@ class DeckListViewModelTest {
         assertTrue(files.deleted.isEmpty())
     }
 
+    // Окно создания файла возвращает и адрес существующего файла, если пользователь подтвердил замену: такой файл
+    // трогать нельзя, пока мы в него ничего не писали. Только что созданный окном файл пуст.
+
     @Test
-    fun fileChosenWithoutARequestIsNotWrittenAndTheEmptyFileIsRemoved() {
+    fun fileChosenWithoutARequestIsNotWrittenAndOnlyAnEmptyFileIsRemoved() {
         startWith(buildTypicalDecks())
         runUntilIdle()
+        files.contents["content://picked/new"] = ByteArray(0)
+        files.contents["content://picked/users"] = "чужое".toByteArray()
 
-        viewModel.onExportFileChosen("content://picked/1")
+        viewModel.onExportFileChosen("content://picked/new")
+        viewModel.onExportFileChosen("content://picked/users")
         runUntilIdle()
 
         assertTrue(transfer.exportedIds.isEmpty())
         assertTrue(files.written.isEmpty())
-        assertEquals(listOf("content://picked/1"), files.deleted)
+        assertFalse("пустой файл убран", files.contents.containsKey("content://picked/new"))
+        assertEquals("файл пользователя цел", "чужое", String(files.contents.getValue("content://picked/users")))
+        assertEquals(listOf("content://picked/new"), files.deleted)
     }
 
     @Test
-    fun exportFileChosenWhileAnImportRunsIsNotWrittenAndTheEmptyFileIsRemoved() {
+    fun fileOfUnknownSizeIsNeverRemoved() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+
+        viewModel.onExportFileChosen("content://picked/unknown")
+        runUntilIdle()
+
+        assertTrue(files.deleted.isEmpty())
+    }
+
+    @Test
+    fun exportFileChosenWhileAnImportRunsIsNotWrittenAndOnlyAnEmptyFileIsRemoved() {
         startWith(buildTypicalDecks())
         files.readGate = CompletableDeferred()
         runUntilIdle()
         files.contents["content://picked/1"] = "Первая".toByteArray()
+        files.contents["content://picked/new"] = ByteArray(0)
+        files.contents["content://picked/users"] = "чужое".toByteArray()
         viewModel.onAction(DeckListAction.ExportDeck(3))
         runUntilIdle()
         viewModel.onImportFileChosen("content://picked/1")
         runUntilIdle()
 
-        viewModel.onExportFileChosen("content://picked/2")
+        viewModel.onExportFileChosen("content://picked/new")
+        runUntilIdle()
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        viewModel.onExportFileChosen("content://picked/users")
         runUntilIdle()
 
         assertTrue(transfer.exportedIds.isEmpty())
-        assertEquals(listOf("content://picked/2"), files.deleted)
+        assertTrue(files.written.isEmpty())
+        assertEquals(listOf("content://picked/new"), files.deleted)
+        assertEquals("чужое", String(files.contents.getValue("content://picked/users")))
         files.readGate!!.complete(Unit)
         runUntilIdle()
     }
 
     @Test
-    fun failedExportDeletesTheCreatedFileAndOnlyWritesTheLog() {
+    fun failedBuildOfTheExportNeverOpensTheChosenFileAndRemovesOnlyAnEmptyOne() {
         startWith(buildTypicalDecks())
         transfer.exportFailure = IOException("диск полон")
         runUntilIdle()
-        viewModel.onAction(DeckListAction.ExportDeck(3))
-        runUntilIdle()
+        files.contents["content://picked/new"] = ByteArray(0)
+        files.contents["content://picked/users"] = "чужое".toByteArray()
 
-        viewModel.onExportFileChosen("content://picked/1")
-        runUntilIdle()
+        for (file in listOf("content://picked/new", "content://picked/users")) {
+            viewModel.onAction(DeckListAction.ExportDeck(3))
+            runUntilIdle()
+            viewModel.onExportFileChosen(file)
+            runUntilIdle()
+        }
 
-        assertEquals(listOf("content://picked/1"), files.deleted)
-        assertFalse(files.contents.containsKey("content://picked/1"))
-        assertEquals(1, reports.size)
-        assertTrue(reports.single().second is IOException)
+        assertTrue("файл на запись не открывали", files.written.isEmpty())
+        assertFalse(files.contents.containsKey("content://picked/new"))
+        assertEquals("файл пользователя цел", "чужое", String(files.contents.getValue("content://picked/users")))
+        assertEquals(listOf("content://picked/new"), files.deleted)
+        assertEquals(2, reports.size)
+        assertTrue(reports.all { it.second is IOException })
         // Окна об ошибке экспорта нет: список и окна как были.
         assertFalse(readState().isImportErrorShown)
         assertNull(readState().deleteDialog)
@@ -576,18 +609,37 @@ class DeckListViewModelTest {
     }
 
     @Test
-    fun failedWriteOfTheFileAlsoDeletesIt() {
+    fun failedWriteOfTheBytesDeletesTheFileWhateverItHeldBefore() {
         startWith(buildTypicalDecks())
         files.writeFailure = IOException("нет доступа")
         runUntilIdle()
+        // Пользователь согласился на замену: прежнее содержимое стёрто записью, половина файла хуже, чем его отсутствие.
+        files.contents["content://picked/users"] = "чужое".toByteArray()
         viewModel.onAction(DeckListAction.ExportDeck(3))
         runUntilIdle()
 
-        viewModel.onExportFileChosen("content://picked/1")
+        viewModel.onExportFileChosen("content://picked/users")
         runUntilIdle()
 
-        assertEquals(listOf("content://picked/1"), files.deleted)
+        assertEquals(listOf("content://picked/users"), files.written)
+        assertEquals(listOf("content://picked/users"), files.deleted)
+        assertFalse(files.contents.containsKey("content://picked/users"))
         assertEquals(1, reports.size)
+    }
+
+    @Test
+    fun exportReplacesTheContentOfAnExistingFileThatTheUserAgreedToReplace() {
+        startWith(buildTypicalDecks())
+        runUntilIdle()
+        files.contents["content://picked/users"] = "прежняя длинная колода".toByteArray()
+        viewModel.onAction(DeckListAction.ExportDeck(3))
+        runUntilIdle()
+
+        viewModel.onExportFileChosen("content://picked/users")
+        runUntilIdle()
+
+        assertEquals("deck:3", String(files.contents.getValue("content://picked/users")))
+        assertTrue(files.deleted.isEmpty())
     }
 
     @Test

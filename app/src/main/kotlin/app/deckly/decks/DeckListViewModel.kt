@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -177,13 +178,14 @@ class DeckListViewModel(
         fileChannel.trySend(FileRequest.CreateDeckFile(suggestExportFileName(row.name)))
     }
 
-    // Отказ от выбора ничего не делает. Выбор без просьбы (после перезапуска модели) или во время другого переноса не пишется,
-    // а файл, который успело создать системное окно, удаляется: оно всегда создаёт новый пустой файл, чужой не затрагивается.
+    // Отказ от выбора ничего не делает. Выбор без просьбы (после перезапуска модели) или во время другого переноса не пишется.
+    // Окно создания файла возвращает и адрес существующего файла, если пользователь подтвердил замену: такой файл не трогаем,
+    // а убираем только пустой, то есть только что созданный окном.
     private suspend fun startExport(file: String?) {
         val id = pendingExportId
         pendingExportId = null
         if (file == null) return
-        if (id == null || isTransferring) return deleteQuietly(file)
+        if (id == null || isTransferring) return deleteIfEmptyQuietly(file)
         isTransferring = true
         viewModelScope.launch {
             try {
@@ -194,25 +196,39 @@ class DeckListViewModel(
         }
     }
 
-    // Окна об ошибке экспорта в макете нет: сбой уходит в журнал, а пустой файл, который создал системный выбор, удаляется.
+    // Окна об ошибке экспорта в макете нет: сбой уходит в журнал. Файл собирается в памяти, и выбранный файл открывается на
+    // запись только готовыми байтами: упала сборка, он остался как был (пустой, только что созданный окном, убирается). Упала
+    // сама запись: прежнего содержимого уже нет (пользователь согласился на замену), а половина файла хуже, чем его отсутствие.
     private suspend fun exportTo(id: Long, file: String) {
-        try {
-            files.write(file) { transfer.exportDeck(id, it) }
+        val bytes = try {
+            ByteArrayOutputStream().also { transfer.exportDeck(id, it) }.toByteArray()
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
-            report("Экспорт колоды $id не удался", failure)
+            report("Экспорт колоды $id не собран", failure)
+            return deleteIfEmptyQuietly(file)
+        }
+        try {
+            files.write(file, bytes)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            report("Экспорт колоды $id не записан", failure)
             deleteQuietly(file)
         }
     }
 
-    private suspend fun deleteQuietly(file: String) {
+    private suspend fun deleteIfEmptyQuietly(file: String) = deleteSafely("Пустой файл экспорта не удалён") { files.deleteIfEmpty(file) }
+
+    private suspend fun deleteQuietly(file: String) = deleteSafely("Недописанный файл экспорта не удалён") { files.delete(file) }
+
+    private suspend fun deleteSafely(message: String, delete: suspend () -> Unit) {
         try {
-            files.delete(file)
+            delete()
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
-            report("Пустой файл экспорта не удалён", failure)
+            report(message, failure)
         }
     }
 

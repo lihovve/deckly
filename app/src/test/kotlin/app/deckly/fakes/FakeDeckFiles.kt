@@ -2,13 +2,13 @@ package app.deckly.fakes
 
 import app.deckly.decks.DeckFiles
 import kotlinx.coroutines.CompletableDeferred
-import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.io.OutputStream
 
 /**
- * Файлы колод в памяти: [contents] — что в файле, [written] и [deleted] — какие файлы писали и удаляли по порядку.
- * [readFailure] и [writeFailure] — чем заканчивается чтение и запись; [readGate] и [writeGate] держат их, пока тест не отпустит.
+ * Файлы колод в памяти: [contents] — что в файле (нет записи — файла нет или размер неизвестен), [written] — какие файлы
+ * открывали на запись, [deleted] — какие файлы удалены. [readFailure] и [writeFailure] — чем заканчивается чтение и
+ * запись; [readGate] и [writeGate] держат их, пока тест не отпустит. Запись стирает прежнее содержимое до сбоя, как режим «wt»,
+ * а при сбое оставляет половину байтов.
  */
 class FakeDeckFiles : DeckFiles {
     val contents = mutableMapOf<String, ByteArray>()
@@ -25,15 +25,20 @@ class FakeDeckFiles : DeckFiles {
         return contents[file] ?: throw IOException("Нет файла $file")
     }
 
-    override suspend fun write(file: String, block: suspend (OutputStream) -> Unit) {
+    override suspend fun write(file: String, bytes: ByteArray) {
         written += file
-        // Файл создаёт системное окно выбора, поэтому он есть и пустым, и после неудачной записи.
         contents[file] = ByteArray(0)
-        val buffer = ByteArrayOutputStream()
         writeGate?.await()
-        block(buffer)
-        writeFailure?.let { throw it }
-        contents[file] = buffer.toByteArray()
+        // Запись может упасть посередине: половина байтов уже в файле, и он непуст.
+        writeFailure?.let {
+            contents[file] = bytes.copyOf(bytes.size / 2)
+            throw it
+        }
+        contents[file] = bytes
+    }
+
+    override suspend fun deleteIfEmpty(file: String) {
+        if (contents[file]?.isEmpty() == true) delete(file)
     }
 
     override suspend fun delete(file: String) {
